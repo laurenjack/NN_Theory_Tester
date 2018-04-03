@@ -3,6 +3,7 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
 import numpy as np
+from matplotlib.patches import Ellipse
 
 def animate(zs, z_bars, taus):
     fig, ax = plt.subplots()
@@ -23,14 +24,17 @@ def animate(zs, z_bars, taus):
     # Plot the inital centres
     scats = []
     to_draw = []
+    fig = plt.figure(1)
     for k in xrange(num_classes):
         z = zs[k]
         z_bar = z_bars[k]
+        tau = taus[k]
         z_init = z[0]
         z_bar_init = z_bar[0]
+        tau_init = tau[0]
         colour = color_func(k)
-        scat_z = _plot_scatter(z_init, colour)
-        scat_z_bar = _plot_scatter(z_bar_init, colour, marker='x')
+        scat_z = _plot_scatter(z_init, colour, fig)
+        scat_z_bar = _plot_scatter(z_bar_init, colour, fig, tau=tau_init, marker='x')
         scats.append(scat_z)
         scats.append(scat_z_bar)
         to_draw.append(z)
@@ -48,8 +52,8 @@ def animate(zs, z_bars, taus):
             scat.set_offsets(as_list)
 
     #Run the animation
-    ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init, interval=500, repeat=False)
-    plt.show()
+    #ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init, interval=5000, repeat=False)
+    #plt.show()
     _show_1_culster(zs[0], z_bars[0], taus[0])
     plt.show()
 
@@ -79,23 +83,32 @@ def _prep_z_bars(z_bars, taus, num_class, d):
 def _show_1_culster(zs, z_bar_list, tau_list):
     epochs = len(zs)
     t = np.arange(epochs)
-    plt.figure(1)
+    plt.figure(2)
     m = zs[0].shape[0]
     for i in xrange(m):
-        z_means = [np.mean(z[i]) for z in zs]
+        z_means = [z[i][0] for z in zs]
         plt.plot(t, z_means)
-    plt.figure(2)
-    z_bar_means = [np.mean(z_bar) for z_bar in z_bar_list]
-    plt.plot(t, z_bar_means)
     plt.figure(3)
-    tau_means = [np.mean(tau) for tau in tau_list]
+    for i in xrange(m):
+        z_means = [z[i][1] for z in zs]
+        plt.plot(t, z_means)
+    plt.figure(4)
+    z_bar_means = [z_bar[0] for z_bar in z_bar_list]
+    plt.plot(t, z_bar_means)
+    plt.figure(5)
+    tau_means = [tau[0] for tau in tau_list]
     plt.plot(t, tau_means)
 
-def _plot_scatter(clust_or_centres, colour, marker=None):
+def _plot_scatter(clust_or_centres, colour, fig, tau=None, marker=None):
     xs = clust_or_centres[:, 0]
     ys = clust_or_centres[:, 1]
     if marker is None:
         return plt.scatter(xs, ys, color=colour)
+    centre = clust_or_centres[0]
+    taus = tau[0]
+    ell = Ellipse(xy=centre, width=1.0 /taus[0], height=1.0/taus[1], fill=False)
+    ax = fig.gca()
+    ax.add_artist(ell)
     return plt.scatter(xs, ys, color=colour, marker=marker)
 
 

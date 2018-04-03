@@ -8,14 +8,14 @@ class Conf:
     pass
 
 conf = Conf()
-conf.n = 50
-conf.num_class = 10
+conf.n = 12
+conf.num_class = 3
 conf.d = 2
 conf.rbf_c = 10.0
 conf.z_bar_init_sd = 3.0
 conf.z_sd = 4.0
 conf.lr = 0.5
-epochs = 100
+epochs = 4
 
 net = RBF(conf)
 all_ops = net.all_ops()
