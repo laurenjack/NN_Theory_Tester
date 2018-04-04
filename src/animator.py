@@ -5,12 +5,14 @@ import matplotlib.colors as colors
 import numpy as np
 from matplotlib.patches import Ellipse
 
-def animate(zs, z_bars, taus):
+def animate(zs, z_bars, taus, conf):
+    show_details = conf.show_details
+    show_animation = conf.show_animation
     fig, ax = plt.subplots()
     #_draw(clusters)
-    epochs = len(zs)
-    ax.set_xlim(-7.0, 7.0)
-    ax.set_ylim(-7.0, 7.0)
+    epochs = len(zs[0])
+    ax.set_xlim(-50.0, 50.0)
+    ax.set_ylim(-50.0, 50.0)
 
     #Reshape the z bars for drawing
     init_z_bar = z_bars[0]
@@ -24,7 +26,7 @@ def animate(zs, z_bars, taus):
     # Plot the inital centres
     scats = []
     to_draw = []
-    fig = plt.figure(1)
+    #fig = plt.figure(1)
     for k in xrange(num_classes):
         z = zs[k]
         z_bar = z_bars[k]
@@ -52,9 +54,11 @@ def animate(zs, z_bars, taus):
             scat.set_offsets(as_list)
 
     #Run the animation
-    #ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init, interval=5000, repeat=False)
+    if show_animation:
+        ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init, interval=500, repeat=False)
     #plt.show()
-    _show_1_culster(zs[0], z_bars[0], taus[0])
+    if show_details:
+        _show_details_1_culster(zs[0], z_bars[0], taus[0])
     plt.show()
 
 def _prep_z_bars(z_bars, taus, num_class, d):
@@ -80,7 +84,7 @@ def _prep_z_bars(z_bars, taus, num_class, d):
 #         cluster = clusters[i]
 #         _plot_scatter(cluster, color_func(i))
 
-def _show_1_culster(zs, z_bar_list, tau_list):
+def _show_details_1_culster(zs, z_bar_list, tau_list):
     epochs = len(zs)
     t = np.arange(epochs)
     plt.figure(2)
