@@ -1,6 +1,22 @@
 import tensorflow as tf
 import numpy as np
 
+g_grad = None
+g_new_grad = None
+
+@tf.RegisterGradient("normalised")
+def _normalised(unused_op, grad):
+    global g_grad
+    global g_new_grad
+    m, d, K = grad.shape
+    K = K.value
+    grad_mag = tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
+    new_grad = grad / tf.reshape(grad_mag, [-1, 1, K])
+    g_grad = grad
+    g_new_grad = new_grad
+    return new_grad, tf.negative(new_grad)
+
+
 class RBF:
 
     def __init__(self, conf):
@@ -17,7 +33,13 @@ class RBF:
         self.tau = tf.abs(tf.get_variable("tau", shape=[self.d, self.num_class],
                                           initializer=tf.constant_initializer(np.array([[0.25, 0.25], [0.25, 0.25]]))))#initializer=tf.truncated_normal_initializer(stddev=0.5)))
         self.tau_square = tf.reshape(self.tau ** 2.0, [1, self.d, self.num_class])
-        self.x_diff_sq = (tf.reshape(self.z, [-1, self.d, 1]) - tf.reshape(self.z_bar, [1, self.d, self.num_class])) ** 2.0
+        z_re = tf.reshape(self.z, [-1, self.d, 1])
+        z_tile = tf.tile(z_re, [1, 1, self.d])
+        g = tf.get_default_graph()
+        with g.gradient_override_map({'Identity': "normalised"}):
+            z_identity = tf.identity(z_tile, name='Identity')
+        x_diff = tf.subtract(z_identity, tf.reshape(self.z_bar, [1, self.d, self.num_class]), name='Sub')
+        self.x_diff_sq = x_diff ** 2.0
         self.weighted_x_diff_sq = tf.multiply(self.tau_square, self.x_diff_sq)
         self.neg_dist = -tf.reduce_sum(self.weighted_x_diff_sq, axis = 1)
         self.exp = tf.exp(self.neg_dist)
@@ -30,7 +52,7 @@ class RBF:
             self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
 
     def all_ops(self):
-        return self.train_op, self.z, self.z_bar, self.tau, # self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
+        return self.train_op, self.z, self.z_bar, self.tau, g_grad, g_new_grad # self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
 
 
 
