@@ -1,20 +1,25 @@
 import tensorflow as tf
 import numpy as np
 
-g_grad = None
-g_new_grad = None
+xe_sm_grad = None
+
+@tf.RegisterGradient("stub_and_save")
+def _stub_and_save(unused_op, grad):
+    global xe_sm_grad
+    xe_sm_grad = grad
+    return tf.ones(grad.shape)
 
 @tf.RegisterGradient("normalised")
 def _normalised(unused_op, grad):
-    global g_grad
-    global g_new_grad
     m, d, K = grad.shape
     K = K.value
     grad_mag = tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
-    new_grad = grad / tf.reshape(grad_mag, [-1, 1, K])
-    g_grad = grad
-    g_new_grad = new_grad
+    normalised = grad / tf.reshape(grad_mag, [-1, 1, K])
+    shaped_xe_sm = tf.reshape(xe_sm_grad, [-1, 1, K])
+    new_grad = shaped_xe_sm * normalised
     return new_grad
+
+
 
 
 class RBF:
@@ -44,7 +49,9 @@ class RBF:
         self.neg_dist = -tf.reduce_sum(self.weighted_x_diff_sq, axis = 1)
         self.exp = tf.exp(self.neg_dist)
         rbf = self.rbf_c * self.exp
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf)
+        with g.gradient_override_map({'Identity': "stub_and_save"}):
+            rbf_identity = tf.identity(rbf)
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
         if not train_centres_taus:
             var_list = [self.z]
             self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss, var_list=var_list)
@@ -52,7 +59,7 @@ class RBF:
             self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
 
     def all_ops(self):
-        return self.train_op, self.z, self.z_bar, self.tau, g_grad, g_new_grad # self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
+        return self.train_op, self.z, self.z_bar, self.tau, xe_sm_grad # self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
 
 
 
