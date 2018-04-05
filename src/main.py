@@ -8,13 +8,13 @@ class Conf:
     pass
 
 conf = Conf()
-conf.n = 12
+conf.n = 6
 conf.num_class = 2
 conf.d = 2
 conf.rbf_c = 10.0
 conf.z_bar_init_sd = 3.0
 conf.z_sd = 4.0
-conf.lr = 1.0
+conf.lr = 0.2
 conf.show_details = False
 conf.show_animation = True
 conf.train_centres_taus = False
@@ -34,7 +34,7 @@ z_bar_list = []
 tau_list = []
 
 for e in xrange(epochs):
-    _, z, z_bar, tau, xe_sm_grad = sess.run(all_ops, feed_dict={net.y: y})
+    _, z, z_bar, tau, a, xe_sm_grad = sess.run(all_ops, feed_dict={net.y: y})
     for k in xrange(conf.num_class):
         ind_of_class = np.argwhere(y == k)[:, 0]
         class_wise_z_list[k].append(z[ind_of_class])

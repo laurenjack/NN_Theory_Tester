@@ -17,7 +17,9 @@ def _normalised(unused_op, grad):
     normalised = grad / tf.reshape(grad_mag, [-1, 1, K])
     shaped_xe_sm = tf.reshape(xe_sm_grad, [-1, 1, K])
     new_grad = shaped_xe_sm * normalised
-    return new_grad
+    re_mag = tf.reduce_sum(new_grad ** 2.0, axis=1) ** 0.5
+    re_nomarlised = new_grad / tf.reshape(re_mag, [-1, 1, K])
+    return re_nomarlised
 
 
 
@@ -30,7 +32,8 @@ class RBF:
         self.d = conf.d
         train_centres_taus = conf.train_centres_taus
         self.z = tf.get_variable("z", shape=[self.n, self.d],
-                                 initializer=tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd))
+                                 initializer=tf.constant_initializer(np.array([[-5.0, -5.0], [-1.0, -1.0], [5.0, 5.0], [-5.5, -5.5], [-1.5, -1.5], [5.5, 5.5]])))
+                                 #initializer=tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd))
         self.y = tf.placeholder(tf.int32, shape=[self.n], name="y")
         self.rbf_c = conf.rbf_c
         self.z_bar = tf.get_variable("z_bar", shape=[self.d, self.num_class],
@@ -48,9 +51,9 @@ class RBF:
         self.weighted_x_diff_sq = tf.multiply(self.tau_square, self.x_diff_sq)
         self.neg_dist = -tf.reduce_sum(self.weighted_x_diff_sq, axis = 1)
         self.exp = tf.exp(self.neg_dist)
-        rbf = self.rbf_c * self.exp
+        self.rbf = self.rbf_c * self.exp
         with g.gradient_override_map({'Identity': "stub_and_save"}):
-            rbf_identity = tf.identity(rbf)
+            rbf_identity = tf.identity(self.rbf)
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
         if not train_centres_taus:
             var_list = [self.z]
@@ -59,7 +62,7 @@ class RBF:
             self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
 
     def all_ops(self):
-        return self.train_op, self.z, self.z_bar, self.tau, xe_sm_grad # self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
+        return self.train_op, self.z, self.z_bar, self.tau, tf.nn.softmax(self.rbf), xe_sm_grad # self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
 
 
 

@@ -8,6 +8,6 @@ def gen_train_labels(conf):
     #balanced classes
     y = np.array(range(num_class) * num_reps)
     y = y[:n]
-    np.random.shuffle(y)
+    #np.random.shuffle(y)
     return y
 
