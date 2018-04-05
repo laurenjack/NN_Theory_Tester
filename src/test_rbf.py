@@ -8,13 +8,12 @@ g_new_grad = None
 def _normalised(unused_op, grad):
     global g_grad
     global g_new_grad
-    m, d, K = grad.shape
-    K = K.value
+    #m, d = grad.shape
     grad_mag = tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
-    new_grad = grad / tf.reshape(grad_mag, [-1, 1, K])
+    new_grad = grad / tf.reshape(grad_mag, [-1, 1])
     g_grad = grad
     g_new_grad = new_grad
-    return new_grad, tf.negative(new_grad)
+    return new_grad
 
 
 class RBF:
@@ -33,12 +32,12 @@ class RBF:
         self.tau = tf.abs(tf.get_variable("tau", shape=[self.d, self.num_class],
                                           initializer=tf.constant_initializer(np.array([[0.25, 0.25], [0.25, 0.25]]))))#initializer=tf.truncated_normal_initializer(stddev=0.5)))
         self.tau_square = tf.reshape(self.tau ** 2.0, [1, self.d, self.num_class])
-        z_re = tf.reshape(self.z, [-1, self.d, 1])
-        z_tile = tf.tile(z_re, [1, 1, self.d])
         g = tf.get_default_graph()
         with g.gradient_override_map({'Identity': "normalised"}):
-            z_identity = tf.identity(z_tile, name='Identity')
-        x_diff = tf.subtract(z_identity, tf.reshape(self.z_bar, [1, self.d, self.num_class]), name='Sub')
+            z_identity = tf.identity(self.z, name='Identity')
+        z_re = tf.reshape(z_identity, [-1, self.d, 1])
+        z_tile = tf.tile(z_re, [1, 1, self.d])
+        x_diff = tf.subtract(z_tile, tf.reshape(self.z_bar, [1, self.d, self.num_class]), name='Sub')
         self.x_diff_sq = x_diff ** 2.0
         self.weighted_x_diff_sq = tf.multiply(self.tau_square, self.x_diff_sq)
         self.neg_dist = -tf.reduce_sum(self.weighted_x_diff_sq, axis = 1)

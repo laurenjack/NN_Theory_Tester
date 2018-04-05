@@ -11,8 +11,8 @@ def animate(zs, z_bars, taus, conf):
     fig, ax = plt.subplots()
     #_draw(clusters)
     epochs = len(zs[0])
-    ax.set_xlim(-50.0, 50.0)
-    ax.set_ylim(-50.0, 50.0)
+    ax.set_xlim(-10.0, 10.0)
+    ax.set_ylim(-10.0, 10.0)
 
     #Reshape the z bars for drawing
     init_z_bar = z_bars[0]
