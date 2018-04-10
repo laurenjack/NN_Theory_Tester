@@ -34,7 +34,7 @@ z_bar_list = []
 tau_list = []
 
 for e in xrange(epochs):
-    _, z, z_bar, tau, a, xe_sm_grad = sess.run(all_ops, feed_dict={net.y: y})
+    _, z, z_bar, tau, a, xe_sm_grad, xe_grad = sess.run(all_ops, feed_dict={net.y: y})
     for k in xrange(conf.num_class):
         ind_of_class = np.argwhere(y == k)[:, 0]
         class_wise_z_list[k].append(z[ind_of_class])
