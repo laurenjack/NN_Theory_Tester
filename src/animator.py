@@ -25,7 +25,9 @@ def animate(zs, z_bars, taus, conf):
 
     # Plot the inital centres
     scats = []
+    ellipses = []
     to_draw = []
+    ellipse_centres = []
     #fig = plt.figure(1)
     for k in xrange(num_classes):
         z = zs[k]
@@ -36,15 +38,20 @@ def animate(zs, z_bars, taus, conf):
         tau_init = tau[0]
         colour = color_func(k)
         scat_z = _plot_scatter(z_init, colour, fig)
-        scat_z_bar = _plot_scatter(z_bar_init, colour, fig, tau=tau_init, marker='x')
+        scat_z_bar, ellipse = _plot_scatter(z_bar_init, colour, fig, tau=tau_init, marker='x')
+        ellipses.append(ellipse)
         scats.append(scat_z)
         scats.append(scat_z_bar)
         to_draw.append(z)
         to_draw.append(z_bar)
+        ellipse_centres.append(z_bar)
+    all_artists = []
+    all_artists.extend(scats)
+    all_artists.extend(ellipses)
 
     #Delegates required for the animator
     def init():
-        return scats
+        return all_artists
 
     def update(frame):
         for scat, all_prev in zip(scats, to_draw):
@@ -52,10 +59,17 @@ def animate(zs, z_bars, taus, conf):
             num_points, _ = current_points.shape
             as_list = np.split(current_points, num_points, axis=0)
             scat.set_offsets(as_list)
+        for e in ellipses:
+            e.set_visible(False)
+        for i, z_bar in zip(range(num_classes), ellipse_centres):
+            centre = z_bar[frame+1][0]
+            e = Ellipse(xy=centre, width=4.0, height=4.0, fill=False)
+            ax.add_patch(e)
+            ellipses[i] = e
 
     #Run the animation
     if show_animation:
-        ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init, interval=50, repeat=False)
+        ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init, interval=500, repeat=False)
     #plt.show()
     if show_details:
         _show_details_1_culster(zs[0], z_bars[0], taus[0])
@@ -113,7 +127,7 @@ def _plot_scatter(clust_or_centres, colour, fig, tau=None, marker=None):
     ell = Ellipse(xy=centre, width=1.0 /taus[0], height=1.0/taus[1], fill=False)
     ax = fig.gca()
     ax.add_artist(ell)
-    return plt.scatter(xs, ys, color=colour, marker=marker)
+    return plt.scatter(xs, ys, color=colour, marker=marker), ell
 
 
 def _get_cmap(N):
