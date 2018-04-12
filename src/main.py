@@ -17,7 +17,7 @@ conf.z_sd = 6.0
 conf.lr = 0.2
 conf.show_details = False
 conf.show_animation = True
-conf.train_centres_taus = False
+conf.train_centres_taus = True
 conf.optimizer = tf.train.AdamOptimizer
 epochs = 500
 

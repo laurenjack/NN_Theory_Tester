@@ -4,6 +4,9 @@ import numpy as np
 xe_sm_grad = None
 y_hot = None
 num_duds = 2
+z_normalized = False
+z_bar_normalized = False
+tau_normalized = False
 
 @tf.RegisterGradient("stub_and_save")
 def _stub_and_save(unused_op, grad):
@@ -11,19 +14,53 @@ def _stub_and_save(unused_op, grad):
     xe_sm_grad = grad
     return tf.ones(grad.shape)
 
-@tf.RegisterGradient("normalised")
-def _normalised(unused_op, grad):
+def _normalise(grad):
     m, d, K = grad.shape
     K = K.value
     grad_mag = tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
     normalised = grad / tf.reshape(grad_mag, [-1, 1, K])
-    global y_hot
-    shaped_xe_sm = y_hot * xe_sm_grad
-    shaped_xe_sm = tf.reshape(shaped_xe_sm, [-1, 1, K])
-    new_grad = shaped_xe_sm * normalised
+    return normalised
+
     #re_mag = tf.reduce_sum(new_grad ** 2.0, axis=1) ** 0.5
     #re_nomarlised = new_grad / tf.reshape(re_mag, [-1, 1, K])
     return new_grad
+
+
+def _z_bar_or_tau_grad(grad, do_normalise):
+    m, d, K = grad.shape
+    K = K.value
+    if do_normalise:
+        grad = _normalise(grad)
+    xe_sm_grad_reshaped = tf.reshape(xe_sm_grad, [-1, 1, K])
+    new_grad = xe_sm_grad_reshaped * grad
+    return new_grad
+
+
+@tf.RegisterGradient("z_grad")
+def _z_grad(unused_op, grad):
+    if z_normalized:
+        grad = _normalise(grad)
+    m, d, K = grad.shape
+    K = K.value
+    ones = tf.ones(shape=(m - num_duds * K, K), dtype=tf.float32)
+    zeros = tf.zeros(shape=(num_duds * K, K), dtype=tf.float32)
+    duds_mask = tf.concat([ones, zeros], axis=0)
+    global y_hot
+    y_hot_mask = y_hot * duds_mask #* xe_sm_grad
+    y_hot_mask = tf.reshape(y_hot_mask, [-1, 1, K])
+    new_grad = y_hot_mask * grad
+    return new_grad
+
+
+@tf.RegisterGradient("z_bar_grad")
+def _z_bar_grad(unused_op, grad):
+    return _z_bar_or_tau_grad(grad, z_bar_normalized)
+
+
+@tf.RegisterGradient("tau_grad")
+def _tau_grad(unused_op, grad):
+    return _z_bar_or_tau_grad(grad, tau_normalized)
+
 
 @tf.RegisterGradient("remove_non_class_grad")
 def _remove_non_class_grad(unused_op, grad):
@@ -55,20 +92,32 @@ class RBF:
                                      initializer=tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd))
         self.tau = tf.abs(tf.get_variable("tau", shape=[self.d, self.num_class],
                                           initializer=tf.constant_initializer(np.array([[0.25, 0.25, 0.25, 0.25], [0.25, 0.25, 0.25, 0.25]]))))#initializer=tf.truncated_normal_initializer(stddev=0.5)))
-        self.tau_square = tf.reshape(self.tau ** 2.0, [1, self.d, self.num_class])
+
         g = tf.get_default_graph()
         z_re = tf.reshape(self.z, [-1, self.d, 1])
         z_tile = tf.tile(z_re, [1, 1, self.num_class])
-        with g.gradient_override_map({'Identity': "remove_non_class_grad"}):
+        with g.gradient_override_map({'Identity': "z_grad"}):
             z_identity = tf.identity(z_tile, name='Identity')
-        x_diff = tf.subtract(z_identity, tf.reshape(self.z_bar, [1, self.d, self.num_class]), name='Sub')
+
+        z_bar_re = tf.reshape(self.z_bar, [1, self.d, -1])
+        z_bar_tile = tf.tile(z_bar_re, [self.n, 1, 1])
+        #with g.gradient_override_map({'Identity': "z_bar_grad"}):
+        z_bar_identity = tf.identity(z_bar_tile, name='Identity')
+
+        tau_re = tf.reshape(self.tau, [1, self.d, -1])
+        tau_tile = tf.tile(tau_re, [self.n, 1, 1])
+        #with g.gradient_override_map({'Identity': "tau_grad"}):
+        tau_identity = tf.identity(tau_tile, name='Identity')
+
+        x_diff = tf.subtract(z_identity, z_bar_identity, name='Sub')
         self.x_diff_sq = x_diff ** 2.0
+        self.tau_square = tau_identity ** 2.0
         self.weighted_x_diff_sq = tf.multiply(self.tau_square, self.x_diff_sq)
         self.neg_dist = -tf.reduce_sum(self.weighted_x_diff_sq, axis = 1)
         self.exp = tf.exp(self.neg_dist)
         self.rbf = self.rbf_c * self.exp
         #with g.gradient_override_map({'Identity': "stub_and_save"}):
-        rbf_identity = tf.identity(self.rbf)
+        rbf_identity = tf.identity(self.rbf, name='Identity')
         sm = tf.nn.softmax(rbf_identity)
         global y_hot
         y_hot = tf.one_hot(self.y, self.num_class)
