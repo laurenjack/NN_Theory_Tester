@@ -4,9 +4,9 @@ import numpy as np
 xe_sm_grad = None
 y_hot = None
 num_duds = 2
-z_normalized = False
-z_bar_normalized = False
-tau_normalized = False
+z_normalized = True
+z_bar_normalized = True
+tau_normalized = True
 
 @tf.RegisterGradient("stub_and_save")
 def _stub_and_save(unused_op, grad):
