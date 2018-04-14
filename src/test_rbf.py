@@ -3,10 +3,12 @@ import numpy as np
 
 xe_sm_grad = None
 y_hot = None
+
 num_duds = 0
+do_useless_dimensions = False
 z_normalized = True
-z_bar_normalized = True
-tau_normalized = True
+z_bar_normalized = False
+tau_normalized = False
 
 @tf.RegisterGradient("stub_and_save")
 def _stub_and_save(unused_op, grad):
@@ -18,7 +20,7 @@ def _normalise(grad):
     m, d, K = grad.shape
     K = K.value
     grad_mag = tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
-    normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + 10 ** (-70))
+    normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + 10 ** (-35))
     return normalised
 
 
@@ -37,13 +39,25 @@ def _z_grad(unused_op, grad):
     if z_normalized:
         grad = _normalise(grad)
     m, d, K = grad.shape
+    m = m.value
+    d = d.value
     K = K.value
+    # Experiment with dud points
     ones = tf.ones(shape=(m - num_duds * K, K), dtype=tf.float32)
     zeros = tf.zeros(shape=(num_duds * K, K), dtype=tf.float32)
     duds_mask = tf.concat([ones, zeros], axis=0)
+    ones = np.ones(shape=(m, d), dtype=np.float32)
     global y_hot
     y_hot_mask = y_hot * duds_mask * xe_sm_grad
     y_hot_mask = tf.reshape(y_hot_mask, [-1, 1, K])
+    if do_useless_dimensions:
+        # Experiment with useless dimensions
+        for i in xrange(0, m, K):
+            ones[i][0] = 0.0
+        ones[i + 1][1] = 0.0
+        useless_dim_mask = tf.constant(ones)
+        reshaped_useless_dim_mask = tf.reshape(useless_dim_mask, [m, d, 1])
+        y_hot_mask = reshaped_useless_dim_mask * y_hot_mask
     new_grad = y_hot_mask * grad
     return new_grad
 

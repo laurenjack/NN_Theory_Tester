@@ -8,18 +8,18 @@ class Conf:
     pass
 
 conf = Conf()
-conf.out_dir='/Users/jack/tf_runs/test_rbf3'
+conf.out_dir='/Users/jack/tf_runs/test_rbf4'
 conf.n = 100
 conf.num_class = 5
 conf.d = 2
 conf.rbf_c = 10.0
 conf.z_bar_init_sd = 3.0
 conf.z_sd = 6.0
-conf.lr = 1.0
+conf.lr = 0.2
 conf.show_details = False
 conf.show_animation = True
 conf.train_centres_taus = True
-conf.optimizer = tf.train.GradientDescentOptimizer
+conf.optimizer = tf.train.AdamOptimizer
 epochs = 500
 
 net = RBF(conf)
@@ -53,5 +53,13 @@ for e in xrange(epochs):
     tau_list.append(tau)
     summary_writer.add_summary(summ_str, e)
 
-animate(class_wise_z_list, z_bar_list, tau_list, conf)
+#Take the last a and evaluate the percentage of correctly classified points
+max_a = np.amax(a, axis=1)
+arg_max_a = np.argmax(a, axis=1)
+correct_responses = np.where(np.logical_and(y == arg_max_a, max_a > 0.9), 1, 0)
+percentage_correct = np.sum(correct_responses) / float(y.shape[0])
+print percentage_correct * 100
+
+if conf.d == 2:
+    animate(class_wise_z_list, z_bar_list, tau_list, conf)
 
