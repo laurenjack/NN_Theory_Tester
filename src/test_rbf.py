@@ -7,8 +7,8 @@ y_hot = None
 num_duds = 0
 do_useless_dimensions = False
 z_normalized = True
-z_bar_normalized = False
-tau_normalized = False
+z_bar_normalized = True
+tau_normalized = True
 
 @tf.RegisterGradient("stub_and_save")
 def _stub_and_save(unused_op, grad):
@@ -20,7 +20,7 @@ def _normalise(grad):
     m, d, K = grad.shape
     K = K.value
     grad_mag = tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
-    normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + 10 ** (-35))
+    normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + 10 ** (-70))
     return normalised
 
 
@@ -58,18 +58,18 @@ def _z_grad(unused_op, grad):
         useless_dim_mask = tf.constant(ones)
         reshaped_useless_dim_mask = tf.reshape(useless_dim_mask, [m, d, 1])
         y_hot_mask = reshaped_useless_dim_mask * y_hot_mask
-    new_grad = y_hot_mask * grad
+    new_grad = float(d) ** 0.5 * y_hot_mask * grad
     return new_grad
 
 
 @tf.RegisterGradient("z_bar_grad")
 def _z_bar_grad(unused_op, grad):
-    return tf.constant(0.01) * _z_bar_or_tau_grad(grad, z_bar_normalized)
+    return tf.constant(2.0 * 0.1) * _z_bar_or_tau_grad(grad, z_bar_normalized)
 
 
 @tf.RegisterGradient("tau_grad")
 def _tau_grad(unused_op, grad):
-    return tf.constant(0.01) * _z_bar_or_tau_grad(grad, tau_normalized)
+    return tf.constant(2.0 * 0.01) * _z_bar_or_tau_grad(grad, tau_normalized)
 
 
 @tf.RegisterGradient("remove_non_class_grad")
@@ -101,7 +101,7 @@ class RBF:
         self.z_bar = tf.get_variable("z_bar", shape=[self.d, self.num_class],
                                      initializer=tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd))
         self.tau = tf.abs(tf.get_variable("tau", shape=[self.d, self.num_class],
-                                          initializer=tf.constant_initializer(np.array([[0.25, 0.25, 0.25, 0.25], [0.25, 0.25, 0.25, 0.25]]))))#initializer=tf.truncated_normal_initializer(stddev=0.5)))
+                                          initializer=tf.constant_initializer(0.5 / float(self.d) ** 0.5 * np.ones(shape=[self.d, self.num_class]))))#initializer=tf.truncated_normal_initializer(stddev=0.5)))
 
         g = tf.get_default_graph()
         z_re = tf.reshape(self.z, [-1, self.d, 1])

@@ -8,19 +8,19 @@ class Conf:
     pass
 
 conf = Conf()
-conf.out_dir='/Users/jack/tf_runs/test_rbf4'
-conf.n = 100
+conf.out_dir='/Users/jack/tf_runs/test_rbf5'
+conf.n = 50
 conf.num_class = 5
-conf.d = 2
+conf.d = 10000
 conf.rbf_c = 10.0
 conf.z_bar_init_sd = 3.0
 conf.z_sd = 6.0
-conf.lr = 0.2
+conf.lr = 0.15
 conf.show_details = False
 conf.show_animation = True
 conf.train_centres_taus = True
-conf.optimizer = tf.train.AdamOptimizer
-epochs = 500
+conf.optimizer = tf.train.GradientDescentOptimizer
+epochs = 300
 
 net = RBF(conf)
 all_ops = net.all_ops()
@@ -28,7 +28,7 @@ all_ops = net.all_ops()
 #Summaries for variables
 for var in tf.trainable_variables():
     zeros = tf.zeros(shape=var.shape)
-    tf.summary.histogram(var.op.name, tf.where(tf.is_nan(var), zeros, var))
+    tf.summary.histogram(var.op.name, tf.where(tf.is_nan(var), var, var))
 summary_op = tf.summary.merge_all()
 all_ops.append(summary_op)
 
