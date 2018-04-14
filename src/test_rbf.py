@@ -3,7 +3,7 @@ import numpy as np
 
 xe_sm_grad = None
 y_hot = None
-num_duds = 2
+num_duds = 0
 z_normalized = True
 z_bar_normalized = True
 tau_normalized = True
@@ -18,12 +18,8 @@ def _normalise(grad):
     m, d, K = grad.shape
     K = K.value
     grad_mag = tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
-    normalised = grad / tf.reshape(grad_mag, [-1, 1, K])
+    normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + 10 ** (-70))
     return normalised
-
-    #re_mag = tf.reduce_sum(new_grad ** 2.0, axis=1) ** 0.5
-    #re_nomarlised = new_grad / tf.reshape(re_mag, [-1, 1, K])
-    return new_grad
 
 
 def _z_bar_or_tau_grad(grad, do_normalise):
@@ -46,7 +42,7 @@ def _z_grad(unused_op, grad):
     zeros = tf.zeros(shape=(num_duds * K, K), dtype=tf.float32)
     duds_mask = tf.concat([ones, zeros], axis=0)
     global y_hot
-    y_hot_mask = y_hot * duds_mask #* xe_sm_grad
+    y_hot_mask = y_hot * duds_mask * xe_sm_grad
     y_hot_mask = tf.reshape(y_hot_mask, [-1, 1, K])
     new_grad = y_hot_mask * grad
     return new_grad
@@ -54,12 +50,12 @@ def _z_grad(unused_op, grad):
 
 @tf.RegisterGradient("z_bar_grad")
 def _z_bar_grad(unused_op, grad):
-    return _z_bar_or_tau_grad(grad, z_bar_normalized)
+    return tf.constant(0.01) * _z_bar_or_tau_grad(grad, z_bar_normalized)
 
 
 @tf.RegisterGradient("tau_grad")
 def _tau_grad(unused_op, grad):
-    return _z_bar_or_tau_grad(grad, tau_normalized)
+    return tf.constant(0.01) * _z_bar_or_tau_grad(grad, tau_normalized)
 
 
 @tf.RegisterGradient("remove_non_class_grad")
@@ -101,13 +97,13 @@ class RBF:
 
         z_bar_re = tf.reshape(self.z_bar, [1, self.d, -1])
         z_bar_tile = tf.tile(z_bar_re, [self.n, 1, 1])
-        #with g.gradient_override_map({'Identity': "z_bar_grad"}):
-        z_bar_identity = tf.identity(z_bar_tile, name='Identity')
+        with g.gradient_override_map({'Identity': "z_bar_grad"}):
+            z_bar_identity = tf.identity(z_bar_tile, name='Identity')
 
         tau_re = tf.reshape(self.tau, [1, self.d, -1])
         tau_tile = tf.tile(tau_re, [self.n, 1, 1])
-        #with g.gradient_override_map({'Identity': "tau_grad"}):
-        tau_identity = tf.identity(tau_tile, name='Identity')
+        with g.gradient_override_map({'Identity': "tau_grad"}):
+            tau_identity = tf.identity(tau_tile, name='Identity')
 
         x_diff = tf.subtract(z_identity, z_bar_identity, name='Sub')
         self.x_diff_sq = x_diff ** 2.0
@@ -116,13 +112,13 @@ class RBF:
         self.neg_dist = -tf.reduce_sum(self.weighted_x_diff_sq, axis = 1)
         self.exp = tf.exp(self.neg_dist)
         self.rbf = self.rbf_c * self.exp
-        #with g.gradient_override_map({'Identity': "stub_and_save"}):
-        rbf_identity = tf.identity(self.rbf, name='Identity')
+        with g.gradient_override_map({'Identity': "stub_and_save"}):
+            rbf_identity = tf.identity(self.rbf, name='Identity')
         sm = tf.nn.softmax(rbf_identity)
         global y_hot
         y_hot = tf.one_hot(self.y, self.num_class)
-        loss = -tf.reduce_mean(tf.reduce_sum(y_hot*tf.log(sm), axis=1))
-        #loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
+        #loss = -tf.reduce_mean(tf.reduce_sum(y_hot*tf.log(sm), axis=1))
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
         if not train_centres_taus:
             var_list = [self.z, self.z_bar]
             self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss, var_list=var_list)
@@ -130,7 +126,6 @@ class RBF:
             self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
 
     def all_ops(self):
-        return self.train_op, self.z, self.z_bar, self.tau, tf.nn.softmax(self.rbf), #xe_sm_grad  self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
-
+        return [self.train_op, self.z, self.z_bar, self.tau, tf.nn.softmax(self.rbf)] #xe_sm_grad  self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
 
 

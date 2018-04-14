@@ -37,3 +37,4 @@ for i in xrange(epochs):
     w_softs.append(w_soft)
 
 show_net_over_time(ws, bs, w_softs)
+
