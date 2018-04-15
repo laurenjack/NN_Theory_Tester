@@ -11,7 +11,7 @@ def train(conf):
     if conf.num_runs == 1:
         for var in tf.trainable_variables():
             zeros = tf.zeros(shape=var.shape)
-            tf.summary.histogram(var.op.name, tf.where(tf.is_nan(var), var, var))
+            tf.summary.histogram(var.op.name, tf.where(tf.is_nan(var), zeros, var))
         summary_op = tf.summary.merge_all()
         all_ops.append(summary_op)
 
@@ -49,21 +49,43 @@ def train(conf):
 
     max_a = np.amax(a, axis=1)
     arg_max_a = np.argmax(a, axis=1)
-    correct_responses = np.where(np.logical_and(y == arg_max_a, max_a > conf.classified_as_thresh), 1, 0)
-    num_correct = np.sum(correct_responses)
+    correct_indicator = np.where(np.logical_and(y == arg_max_a, max_a > conf.classified_as_thresh), 1, 0)
+    incorrect_indicator= np.ones(shape=correct_indicator.shape, dtype=np.int32) - correct_indicator
+    ind_of_incorrect = np.argwhere(incorrect_indicator)
+    incorrect_responses = a[ind_of_incorrect]
+    labels_of_inc = y[ind_of_incorrect]
+    pos_of_inc = z[ind_of_incorrect]
+    num_correct = np.sum(correct_indicator)
 
     sess.close()
     tf.reset_default_graph()
 
-    return TrainResult(num_correct, class_wise_z_list, z_bar_list, tau_list)
+    return TrainResult(num_correct, incorrect_responses, labels_of_inc, pos_of_inc,
+                       conf, class_wise_z_list, z_bar_list, tau_list)
+
 
 class TrainResult:
 
-    def __init__(self, num_correct, class_wise_z_list=None, z_bar_list=None, tau_list=None):
+    def __init__(self, num_correct, incorrect_responses, labels_of_inc, pos_of_inc,
+                 conf, class_wise_z_list=None, z_bar_list=None, tau_list=None):
         self.num_correct = num_correct
+        self.incorrect_responses = incorrect_responses
+        self.labels_of_inc = labels_of_inc
+        self.pos_of_inc = pos_of_inc
         self.class_wise_z_list = class_wise_z_list
         self.z_bar_list = z_bar_list
         self.tau_list = tau_list
+        self.incorr_report_limit = conf.incorr_report_limit
 
     def get(self):
         return self.class_wise_z_list, self.z_bar_list, self.tau_list
+
+    def report_incorrect(self):
+        num_inc = self.incorrect_responses.shape[0]
+        num_to_report = min(self.incorr_report_limit, num_inc)
+        for i in xrange(num_to_report):
+            print str(self.labels_of_inc[i][0]) + ': ' + str(self.incorrect_responses[i])
+            print self.pos_of_inc[i]
+            print ""
+
+

@@ -2,20 +2,30 @@ import tensorflow as tf
 import numpy as np
 
 xe_sm_grad = None
+rbf_grad = None
 y_hot = None
 
 #BackProp Params
-num_duds = 2
+num_duds = 0
 do_useless_dimensions = True
 z_normalized = True
 z_bar_normalized = True
 tau_normalized = True
+
 
 @tf.RegisterGradient("stub_and_save")
 def _stub_and_save(unused_op, grad):
     global xe_sm_grad
     xe_sm_grad = grad
     return tf.ones(grad.shape)
+
+
+@tf.RegisterGradient("stub_rbf_grad")
+def _stub_rbf_grad(unused_op, grad):
+    global rbf_grad
+    rbf_grad = grad
+    return tf.ones(grad.shape)
+
 
 def _normalise(grad):
     m, d, K = grad.shape
@@ -30,6 +40,10 @@ def _z_bar_or_tau_grad(grad, do_normalise):
     K = K.value
     if do_normalise:
         grad = _normalise(grad)
+    else:
+        # Need to include the rbf gradient if not normalising otherwise
+        # furthest points will be parabolically most influential
+        grad *= tf.reshape(rbf_grad, [-1, 1, K])
     xe_sm_grad_reshaped = tf.reshape(xe_sm_grad, [-1, 1, K])
     new_grad = xe_sm_grad_reshaped * grad
     return new_grad
@@ -55,7 +69,7 @@ def _z_grad(unused_op, grad):
         # Experiment with useless dimensions
         for i in xrange(0, m, K):
             ones[i][0] = 0.0
-        ones[i + 1][1] = 0.0
+            # ones[i + 1][1] = 0.0
         useless_dim_mask = tf.constant(ones)
         reshaped_useless_dim_mask = tf.reshape(useless_dim_mask, [m, d, 1])
         y_hot_mask = reshaped_useless_dim_mask * y_hot_mask
@@ -65,15 +79,14 @@ def _z_grad(unused_op, grad):
 
 @tf.RegisterGradient("z_bar_grad")
 def _z_bar_grad(unused_op, grad):
-    return tf.constant(0.1) * _z_bar_or_tau_grad(grad, z_bar_normalized)
+    return  _z_bar_or_tau_grad(grad, z_bar_normalized)
 
 
 @tf.RegisterGradient("tau_grad")
 def _tau_grad(unused_op, grad):
     m, _, _ = grad.shape
     m = m.value
-    return  _z_bar_or_tau_grad(grad, tau_normalized) / float(m) * 3.0
-
+    return _z_bar_or_tau_grad(grad, tau_normalized) / float(m) * 3.0
 
 
 class RBF:
@@ -113,15 +126,17 @@ class RBF:
         self.x_diff_sq = x_diff ** 2.0
         self.tau_square = tau_identity ** 2.0
         self.weighted_x_diff_sq = tf.multiply(self.tau_square, self.x_diff_sq)
-        self.neg_dist = -tf.reduce_sum(self.weighted_x_diff_sq, axis = 1)
-        self.exp = tf.exp(self.neg_dist)
+        self.neg_dist = -tf.reduce_sum(self.weighted_x_diff_sq, axis=1)
+        with g.gradient_override_map({'Identity': "stub_rbf_grad"}):
+            neg_dist_identity = tf.identity(self.neg_dist, name='Identity')
+        self.exp = tf.exp(neg_dist_identity)
         self.rbf = self.rbf_c * self.exp
         with g.gradient_override_map({'Identity': "stub_and_save"}):
             rbf_identity = tf.identity(self.rbf, name='Identity')
         sm = tf.nn.softmax(rbf_identity)
         global y_hot
         y_hot = tf.one_hot(self.y, self.num_class)
-        #loss = -tf.reduce_mean(tf.reduce_sum(y_hot*tf.log(sm), axis=1))
+        # loss = -tf.reduce_mean(tf.reduce_sum(y_hot*tf.log(sm), axis=1))
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
         if not train_centres_taus:
             var_list = [self.z, self.z_bar]
