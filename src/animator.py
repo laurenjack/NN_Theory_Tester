@@ -5,7 +5,8 @@ import matplotlib.colors as colors
 import numpy as np
 from matplotlib.patches import Ellipse
 
-def animate(zs, z_bars, taus, conf):
+def animate(train_result, conf):
+    zs, z_bars, taus = train_result.get()
     show_details = conf.show_details
     show_animation = conf.show_animation
     fig, ax = plt.subplots()
@@ -70,7 +71,8 @@ def animate(zs, z_bars, taus, conf):
 
     #Run the animation
     if show_animation:
-        ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init, interval=100, repeat=False)
+        ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init,
+                            interval=conf.animation_interval, repeat=False)
     #plt.show()
     if show_details:
         _show_details_1_culster(zs[0], z_bars[0], taus[0])
