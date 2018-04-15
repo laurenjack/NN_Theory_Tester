@@ -4,8 +4,9 @@ import numpy as np
 xe_sm_grad = None
 y_hot = None
 
-num_duds = 0
-do_useless_dimensions = False
+#BackProp Params
+num_duds = 2
+do_useless_dimensions = True
 z_normalized = True
 z_bar_normalized = True
 tau_normalized = True
@@ -64,25 +65,14 @@ def _z_grad(unused_op, grad):
 
 @tf.RegisterGradient("z_bar_grad")
 def _z_bar_grad(unused_op, grad):
-    return tf.constant(2.0 * 0.1) * _z_bar_or_tau_grad(grad, z_bar_normalized)
+    return tf.constant(0.1) * _z_bar_or_tau_grad(grad, z_bar_normalized)
 
 
 @tf.RegisterGradient("tau_grad")
 def _tau_grad(unused_op, grad):
-    return tf.constant(2.0 * 0.01) * _z_bar_or_tau_grad(grad, tau_normalized)
-
-
-@tf.RegisterGradient("remove_non_class_grad")
-def _remove_non_class_grad(unused_op, grad):
-    m, d, K = grad.shape
-    K = K.value
-    ones = tf.ones(shape=(m - num_duds*K, K), dtype=tf.float32)
-    zeros = tf.zeros(shape=(num_duds*K, K), dtype=tf.float32)
-    duds_mask = tf.concat([ones, zeros], axis=0)
-    y_hot_masked = duds_mask * y_hot
-    y_hot_reshaped = tf.reshape(y_hot_masked, [-1, 1, K])
-    new_grad = y_hot_reshaped * grad
-    return new_grad
+    m, _, _ = grad.shape
+    m = m.value
+    return  _z_bar_or_tau_grad(grad, tau_normalized) / float(m) * 3.0
 
 
 
