@@ -6,7 +6,7 @@ rbf_grad = None
 y_hot = None
 
 #BackProp Params
-num_duds = 0
+num_duds = 2
 do_useless_dimensions = True
 z_normalized = True
 z_bar_normalized = True
@@ -65,10 +65,14 @@ def _z_grad(unused_op, grad):
     global y_hot
     y_hot_mask = y_hot * duds_mask * xe_sm_grad
     y_hot_mask = tf.reshape(y_hot_mask, [-1, 1, K])
+    all_dim_inds = np.arange(d)
     if do_useless_dimensions:
         # Experiment with useless dimensions
+        zero_inds = [np.random.choice(all_dim_inds, d // 2, replace=False) for j in xrange(K)]
         for i in xrange(0, m, K):
-            ones[i][0] = 0.0
+            for c in xrange(K):
+                zero_inds_c = zero_inds[c]
+                ones[i + c][zero_inds_c] = 0.0
             # ones[i + 1][1] = 0.0
         useless_dim_mask = tf.constant(ones)
         reshaped_useless_dim_mask = tf.reshape(useless_dim_mask, [m, d, 1])

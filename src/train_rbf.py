@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from rbf import RBF
+from rbf import num_duds
 from gen_train_points import *
 
 def train(conf):
@@ -45,13 +46,15 @@ def train(conf):
         else:
             _, z, z_bar, tau, a = sess.run(all_ops, feed_dict={net.y: y})
 
-
-
     max_a = np.amax(a, axis=1)
     arg_max_a = np.argmax(a, axis=1)
     correct_indicator = np.where(np.logical_and(y == arg_max_a, max_a > conf.classified_as_thresh), 1, 0)
     incorrect_indicator= np.ones(shape=correct_indicator.shape, dtype=np.int32) - correct_indicator
-    ind_of_incorrect = np.argwhere(incorrect_indicator)
+    # Don't report the duds, don't expect them to be classified correctly
+    ones = np.ones(shape=conf.n - num_duds * conf.num_class, dtype=np.int32)
+    zeros = np.zeros(shape=num_duds * conf.num_class, dtype=np.int32)
+    duds_mask = np.concatenate([ones, zeros], axis=0)
+    ind_of_incorrect = np.argwhere(duds_mask * incorrect_indicator)
     incorrect_responses = a[ind_of_incorrect]
     labels_of_inc = y[ind_of_incorrect]
     pos_of_inc = z[ind_of_incorrect]
