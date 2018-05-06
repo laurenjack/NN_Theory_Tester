@@ -6,8 +6,8 @@ rbf_grad = None
 y_hot = None
 
 #BackProp Params
-num_duds = 2
-do_useless_dimensions = True
+num_duds = 0
+do_useless_dimensions = False
 z_normalized = True
 z_bar_normalized = True
 tau_normalized = True
@@ -152,3 +152,5 @@ class RBF:
         return [self.train_op, self.z, self.z_bar, self.tau, tf.nn.softmax(self.rbf)] #xe_sm_grad  self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
 
 
+foo = np.array([1,2,3])
+print foo[0:1]
