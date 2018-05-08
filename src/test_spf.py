@@ -7,7 +7,7 @@ class Conf:
 conf = Conf()
 
 conf.d = 4
-conf.spf_lr = 0.1
+conf.spf_lr = 0.01
 conf.spf_epochs = 1
 
 #Test z bars

@@ -151,6 +151,3 @@ class RBF:
     def all_ops(self):
         return [self.train_op, self.z, self.z_bar, self.tau, tf.nn.softmax(self.rbf)] #xe_sm_grad  self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
 
-
-foo = np.array([1,2,3])
-print foo[0:1]

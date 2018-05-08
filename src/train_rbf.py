@@ -63,7 +63,7 @@ def train(conf):
         num_correct = np.sum(correct_indicator)
 
         sess.close()
-        tf.reset_default_graph()
+        #tf.reset_default_graph()
 
     return TrainResult(num_correct, incorrect_responses, labels_of_inc, pos_of_inc,
                        conf, class_wise_z_list, z_bar_list, tau_list)

@@ -5,7 +5,40 @@ import matplotlib.colors as colors
 import numpy as np
 from matplotlib.patches import Ellipse
 
-def animate(train_result, conf, spf_z_list):
+
+def animate_spf(z_bar, tau, z_over_time, conf):
+    fig, ax = plt.subplots()
+    epochs = len(z_over_time)
+    ax.set_xlim(-10.0, 10.0)
+    ax.set_ylim(-10.0, 10.0)
+
+    z_bar_i = z_bar[:, 0]
+    z_bar_j = z_bar[:, 1]
+    tau_i = tau[:, 0]
+    tau_j = tau[:, 1]
+
+    #Plot the two z_bars
+    _plot_scatter(np.array([z_bar_i]), 'r', fig, tau=[tau_i], marker='x')
+    _plot_scatter(np.array([z_bar_j]), 'b', fig, tau=[tau_j], marker='x')
+
+    #Plot the z
+    z_init = z_over_time[0]
+    one_point_scat = _plot_scatter(z_init, 'k', fig)
+
+    def init():
+        return one_point_scat
+
+    def update(frame):
+        current_points = z_over_time[frame+1]
+        as_list = np.split(current_points, 2, axis=0)
+        one_point_scat.set_offsets(as_list)
+
+    ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init,
+                        interval=conf.spf_animation_interval, repeat=False)
+    plt.show()
+
+
+def animate(train_result, conf):
     zs, z_bars, taus = train_result.get()
     show_details = conf.show_details
     show_animation = conf.show_animation
@@ -17,7 +50,7 @@ def animate(train_result, conf, spf_z_list):
 
     #Reshape the z bars for drawing
     d, num_classes = z_bars[0].shape
-    z_bars, taus, spf_zs = _prep_z_bars(z_bars, taus, num_classes, d, spf_z_list)
+    z_bars, taus = _prep_z_bars(z_bars, taus, num_classes, d)
 
     # Build a colour function based on the number of classes
     color_func = _get_cmap(num_classes)
@@ -43,10 +76,6 @@ def animate(train_result, conf, spf_z_list):
         scats.append(scat_z_bar)
         to_draw.append(z)
         to_draw.append(z_bar)
-    spf_z_init = spf_zs[0]
-    scat_spf_z = _plot_scatter(spf_z_init, 'k', fig)
-    scats.append(scat_spf_z)
-    to_draw.append(spf_zs)
 
 
 
@@ -82,7 +111,7 @@ def animate(train_result, conf, spf_z_list):
         _show_details_1_culster(zs[0], z_bars[0], taus[0])
     plt.show()
 
-def _prep_z_bars(z_bars, taus, num_class, d, spf_z_list):
+def _prep_z_bars(z_bars, taus, num_class, d):
     z_bar_new = []
     tau_new = []
     for k in xrange(num_class):
@@ -93,12 +122,8 @@ def _prep_z_bars(z_bars, taus, num_class, d, spf_z_list):
             tau_reshaped = tau[:, k].reshape(1, d)
             z_bar_new[k].append(z_bar_reshaped)
             tau_new[k].append(tau_reshaped)
-    #Reshape spf_list
-    spf_z_new = []
-    for z in spf_z_list:
-        spf_z_new.append(z.reshape(1, d))
 
-    return z_bar_new, tau_new, spf_z_new
+    return z_bar_new, tau_new
 
 
 
@@ -150,3 +175,12 @@ def _get_cmap(N):
     def map_index_to_rgb_color(index):
         return scalar_map.to_rgba(index)
     return map_index_to_rgb_color
+
+
+class Conf:
+    pass
+
+# conf = Conf()
+# conf.animation_interval = 500
+# z_test = [np.array([i * np.ones(2), -i * np.ones(2)]) for i in xrange(-10, 10)]
+# animate_spf(np.array([3.0, -3.0]), np.array([1.0, 2.0]), np.array([-3.0, 3.0]), np.array([3.0, 0.5]), z_test, conf)
