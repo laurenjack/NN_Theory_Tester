@@ -48,6 +48,7 @@ def train(conf):
             else:
                 _, z, z_bar, tau, a = sess.run(all_ops, feed_dict={net.y: y})
 
+
         max_a = np.amax(a, axis=1)
         arg_max_a = np.argmax(a, axis=1)
         correct_indicator = np.where(np.logical_and(y == arg_max_a, max_a > conf.classified_as_thresh), 1, 0)
@@ -66,18 +67,20 @@ def train(conf):
         #tf.reset_default_graph()
 
     return TrainResult(num_correct, incorrect_responses, labels_of_inc, pos_of_inc,
-                       conf, class_wise_z_list, z_bar_list, tau_list)
+                       conf, z_bar, tau, class_wise_z_list, z_bar_list, tau_list)
 
 
 class TrainResult:
 
     def __init__(self, num_correct, incorrect_responses, labels_of_inc, pos_of_inc,
-                 conf, class_wise_z_list=None, z_bar_list=None, tau_list=None):
+                 conf, final_z_bar, final_tau, class_wise_z_list=None, z_bar_list=None, tau_list=None):
         self.num_correct = num_correct
         self.incorrect_responses = incorrect_responses
         self.labels_of_inc = labels_of_inc
         self.pos_of_inc = pos_of_inc
         self.class_wise_z_list = class_wise_z_list
+        self.final_z_bar = final_z_bar
+        self.final_tau = final_tau
         self.z_bar_list = z_bar_list
         self.tau_list = tau_list
         self.incorr_report_limit = conf.incorr_report_limit

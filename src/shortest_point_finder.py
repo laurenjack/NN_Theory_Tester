@@ -52,9 +52,6 @@ def find_shortest_point(conf, z_bar, tau):
             _, theta_b, z_b, C_b, rbf_b = sess.run(ops_b)
             z_list.append(np.array([z_a, z_b]))
 
-        # print report_costs(z_a, z_bar_i, tau_sq_i, z_bar_j, tau_sq_j)
-        # print report_costs(z_b, z_bar_i, tau_sq_i, z_bar_j, tau_sq_j)
-        print "Done"
 
     return z_list, [C_a, C_b], [rbf_a, rbf_b]
 
@@ -122,7 +119,7 @@ class SpfFinder:
         opt = tf.train.AdamOptimizer(spf_lr)
         train_op = opt.minimize(C)
         #Report rbf
-        exp = tf.exp(-C)
+        exp = tf.exp(-d * C)
         #rbf = rbf_c * exp
         return train_op, thetas, z, C, exp
 
