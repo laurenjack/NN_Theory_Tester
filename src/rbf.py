@@ -88,9 +88,12 @@ def _z_bar_grad(unused_op, grad):
 
 @tf.RegisterGradient("tau_grad")
 def _tau_grad(unused_op, grad):
-    m, _, _ = grad.shape
+    m, _, K = grad.shape
     m = m.value
-    return _z_bar_or_tau_grad(grad, tau_normalized) / float(m) * 3.0
+    K = K.value
+    normed = _z_bar_or_tau_grad(grad, tau_normalized) / float(m) * 3.0
+    y_hot_mask = tf.reshape(1.0 - y_hot, [-1, 1, K])
+    return y_hot_mask * normed
 
 
 class RBF:

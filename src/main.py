@@ -8,8 +8,8 @@ class Conf:
 conf = Conf()
 
 #meta_params
-conf.num_runs = 1
-conf.out_dir = '/Users/jack/tf_runs/test_rbf5' #'/home/laurenjack/test_rbf1'
+conf.num_runs = 10
+conf.out_dir = '/home/laurenjack/test_rbf1' #'/Users/jack/tf_runs/test_rbf5'
 conf.show_animation = True
 conf.animation_interval=100
 conf.incorr_report_limit = 3
@@ -27,7 +27,7 @@ conf.epochs = 300
 conf.classified_as_thresh = 0.2
 conf.optimizer = tf.train.GradientDescentOptimizer
 
-conf.spf_lr = 0.1
+conf.spf_lr = 0.01
 conf.spf_lmda = 0.1
 conf.spf_epochs = 500
 conf.spf_animation_interval = 200
