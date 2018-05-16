@@ -83,10 +83,7 @@ def _z_grad(unused_op, grad):
 
 @tf.RegisterGradient("z_bar_grad")
 def _z_bar_grad(unused_op, grad):
-    m, _, K = grad.shape
-    m = m.value
-    K = K.value
-    return _z_bar_or_tau_grad(grad, z_bar_normalized) / float(m) * 2.0
+    return  _z_bar_or_tau_grad(grad, z_bar_normalized)
 
 
 @tf.RegisterGradient("tau_grad")
@@ -94,8 +91,9 @@ def _tau_grad(unused_op, grad):
     m, _, K = grad.shape
     m = m.value
     K = K.value
-    normed = _z_bar_or_tau_grad(grad, tau_normalized) / float(m) * 2.0
-    return normed
+    normed = _z_bar_or_tau_grad(grad, tau_normalized) / float(m) * 3.0
+    y_hot_mask = tf.reshape(1.0 - y_hot, [-1, 1, K])
+    return y_hot_mask * normed
 
 
 class RBF:
@@ -115,24 +113,8 @@ class RBF:
         self.tau = tf.abs(tf.get_variable("tau", shape=[self.d, self.num_class],
                                           initializer=tf.constant_initializer(0.5 / float(self.d) ** 0.5 * np.ones(shape=[self.d, self.num_class]))))#initializer=tf.truncated_normal_initializer(stddev=0.5)))
 
-        self.gen_zs = tf.placeholder(dtype=tf.float32, shape=[None, self.d], name='gen_zs')
-        self.gen_y = tf.placeholder(dtype=tf.int32, shape=[None], name='gen_y')
-        self.ind = tf.placeholder(dtype=tf.float32, shape=[], name='ind')
-
-        _, gen_loss = self._rbf_softmax(self.gen_zs, self.gen_y)
-        self.rbf, main_loss = self._rbf_softmax(self.z, self.y)
-
-
-        if not train_centres_taus:
-            var_list = [self.z, self.z_bar]
-            self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(main_loss, var_list=var_list)
-        else:
-            self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(main_loss)
-            self.train_gen_op = conf.optimizer(learning_rate=conf.lr).minimize(self.ind * gen_loss)
-
-    def _rbf_softmax(self, z, labels, is_gen=False):
         g = tf.get_default_graph()
-        z_re = tf.reshape(z, [-1, self.d, 1])
+        z_re = tf.reshape(self.z, [-1, self.d, 1])
         z_tile = tf.tile(z_re, [1, 1, self.num_class])
         with g.gradient_override_map({'Identity': "z_grad"}):
             z_identity = tf.identity(z_tile, name='Identity')
@@ -148,27 +130,27 @@ class RBF:
             tau_identity = tf.identity(tau_tile, name='Identity')
 
         x_diff = tf.subtract(z_identity, z_bar_identity, name='Sub')
-        x_diff_sq = x_diff ** 2.0
-        tau_square = tau_identity ** 2.0
-        weighted_x_diff_sq = tf.multiply(tau_square, x_diff_sq)
-        neg_dist = -tf.reduce_sum(weighted_x_diff_sq, axis=1)
-
+        self.x_diff_sq = x_diff ** 2.0
+        self.tau_square = tau_identity ** 2.0
+        self.weighted_x_diff_sq = tf.multiply(self.tau_square, self.x_diff_sq)
+        self.neg_dist = -tf.reduce_sum(self.weighted_x_diff_sq, axis=1)
         with g.gradient_override_map({'Identity': "stub_rbf_grad"}):
-            neg_dist_identity = tf.identity(neg_dist, name='Identity')
-        exp = tf.exp(neg_dist_identity)
-        rbf = self.rbf_c * exp
-
+            neg_dist_identity = tf.identity(self.neg_dist, name='Identity')
+        self.exp = tf.exp(neg_dist_identity)
+        self.rbf = self.rbf_c * self.exp
         with g.gradient_override_map({'Identity': "stub_and_save"}):
-            rbf_identity = tf.identity(rbf, name='Identity')
-
+            rbf_identity = tf.identity(self.rbf, name='Identity')
+        sm = tf.nn.softmax(rbf_identity)
         global y_hot
-        y_hot = tf.one_hot(labels, self.num_class)
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=rbf_identity)
-        return rbf, loss
-
+        y_hot = tf.one_hot(self.y, self.num_class)
+        # loss = -tf.reduce_mean(tf.reduce_sum(y_hot*tf.log(sm), axis=1))
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
+        if not train_centres_taus:
+            var_list = [self.z, self.z_bar]
+            self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss, var_list=var_list)
+        else:
+            self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
 
     def all_ops(self):
-        return [self.train_op, self.train_gen_op, self.z, self.z_bar, self.tau, tf.nn.softmax(self.rbf)] #xe_sm_grad  self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
+        return [self.train_op, self.z, self.z_bar, self.tau, tf.nn.softmax(self.rbf)] #xe_sm_grad  self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
 
-    def z_bar_tau_ops(self):
-        return self.z_bar, self.tau

@@ -9,7 +9,6 @@ def train(conf):
     with g_1.as_default():
         net = RBF(conf)
         all_ops = net.all_ops()
-        z_bar_op, tau_op = net.z_bar_tau_ops()
 
         # Summaries for variables
         if conf.num_runs == 1:
@@ -38,36 +37,17 @@ def train(conf):
 
         for e in xrange(conf.epochs):
 
-            z_bar, tau = sess.run([z_bar_op, tau_op])
-            all_labels = np.array(reduce(lambda a, b: a + b, [[j] * 20 for j in xrange(10)])).astype(np.int32)
-            indicies = np.arange(20 * conf.num_class)
-            chosen_indicies = np.random.choice(indicies, size=conf.n, replace=False)
-            standard_normals = np.random.randn(20, conf.d, conf.num_class)
-            tau = abs(tau.reshape(1, conf.d, conf.num_class))
-            z_bar.reshape(1, conf.d, conf.num_class)
-            gen_zs_classwise = z_bar + 1.0 / tau * standard_normals
-            gen_zs_trans = gen_zs_classwise.transpose(2, 0, 1)
-            gen_zs_flattened = gen_zs_trans.reshape(20 * conf.num_class, conf.d)
-            gen_zs = gen_zs_flattened[chosen_indicies]
-            gen_labels = all_labels[chosen_indicies]
-            if e > conf.start_reg:
-                ind = 1.0
-            else:
-                gen_zs = np.ones((conf.n, conf.d))
-                ind = 0.0
-
             if conf.num_runs == 1:
-                _, _, z, z_bar, tau, a, summ_str = sess.run(all_ops, feed_dict={net.y: y, net.gen_zs: gen_zs, net.gen_y: gen_labels, net.ind: ind})
+                _, z, z_bar, tau, a, summ_str = sess.run(all_ops, feed_dict={net.y: y})
                 for k in xrange(conf.num_class):
                     ind_of_class = np.argwhere(y == k)[:, 0]
-                    ind_of_class_gen = np.argwhere(gen_labels == k)[:, 0]
-                    class_zs = np.concatenate([z[ind_of_class], gen_zs[ind_of_class_gen]])
-                    class_wise_z_list[k].append(class_zs)
+                    class_wise_z_list[k].append(z[ind_of_class])
                 z_bar_list.append(z_bar)
                 tau_list.append(tau)
                 summary_writer.add_summary(summ_str, e)
             else:
-                _, _, z, z_bar, tau, a = sess.run(all_ops, feed_dict={net.y: y, net.gen_zs: gen_zs, net.gen_y: gen_labels, net.ind: ind})
+                _, z, z_bar, tau, a = sess.run(all_ops, feed_dict={net.y: y})
+
 
         max_a = np.amax(a, axis=1)
         arg_max_a = np.argmax(a, axis=1)
