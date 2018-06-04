@@ -9,6 +9,7 @@ conf = Conf()
 conf.d = 4
 conf.spf_lr = 0.01
 conf.spf_epochs = 1
+conf.rbf_c = 1.0
 
 #Test z bars
 z_bar = np.array([[-1.0, -1.5, 1.5, 1.0], [2.0, 1.0, 3.0, -1.5]]).transpose()

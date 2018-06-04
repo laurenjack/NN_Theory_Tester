@@ -116,8 +116,16 @@ class SpfFinder:
         # Build the remainder of the graph, onwards to the cost function
         weighted_diffs = tau_sq_i * (z - z_bar_i) ** 2.0
         C = tf.reduce_mean(weighted_diffs)
-        opt = tf.train.AdamOptimizer(spf_lr)
-        train_op = opt.minimize(C)
+        # opt = tf.train.AdamOptimizer(spf_lr)
+        opt = tf.train.GradientDescentOptimizer(spf_lr)
+        grads = opt.compute_gradients(C)
+        new_grads = []
+        for grad, var in grads:
+            if grad is not None:
+                grad = tf.sign(grad)
+            new_grads.append((grad, var))
+        train_op = opt.apply_gradients(new_grads)
+        #train_op = opt.minimize(C)
         #Report rbf
         exp = tf.exp(-d * C)
         #rbf = rbf_c * exp

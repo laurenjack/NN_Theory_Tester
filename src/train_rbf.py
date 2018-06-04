@@ -7,7 +7,10 @@ from gen_train_points import *
 def train(conf):
     g_1 = tf.Graph()
     with g_1.as_default():
-        net = RBF(conf)
+        z_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
+        z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
+        tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
+        net = RBF(conf, z_init, z_bar_init, tau_init)
         all_ops = net.all_ops()
 
         # Summaries for variables
