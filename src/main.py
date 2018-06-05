@@ -11,15 +11,15 @@ def get_conf():
     conf = Conf()
 
     # meta_params
-    conf.num_runs = 5
-    conf.out_dir = '/Users/jack/tf_runs/test_rbf5'  # '/home/laurenjack/test_rbf1'
+    conf.num_runs = 1
+    conf.out_dir = '/home/laurenjack/test_rbf1'  # '/home/laurenjack/test_rbf1' #'/Users/jack/tf_runs/test_rbf5'
     conf.show_animation = True
     conf.animation_interval = 100
     conf.incorr_report_limit = 3
 
     conf.n = 100
     conf.num_class = 5
-    conf.d = 100
+    conf.d = 2
     conf.rbf_c = 4.0
     conf.z_bar_init_sd = 3.0
     conf.z_sd = 6.0

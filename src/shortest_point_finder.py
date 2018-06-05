@@ -127,7 +127,7 @@ class SpfFinder:
         train_op = opt.apply_gradients(new_grads)
         #train_op = opt.minimize(C)
         #Report rbf
-        exp = tf.exp(-d * C)
+        exp = tf.exp(-C)
         #rbf = rbf_c * exp
         return train_op, thetas, z, C, exp
 

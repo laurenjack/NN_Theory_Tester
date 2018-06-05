@@ -13,7 +13,7 @@ z_grad = None
 z_bar_grad = None
 
 #BackProp Params
-num_duds = 0
+num_duds = 2
 do_useless_dimensions = False
 z_normalized = True
 z_bar_normalized = True
