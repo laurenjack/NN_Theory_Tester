@@ -139,12 +139,15 @@ def _secant(theta):
     return sec
 
 def _apply_circle_prod(trig_prods, thetas, start, end, theta_off_set=0):
+    running_chain = 1.0
     for i in xrange(start, end-1):
-        theta = thetas[i+theta_off_set]
-        trig_prods[i] *= tf.cos(theta)
+        theta = thetas[i + theta_off_set]
+        trig_prods[i] *= tf.cos(theta) * running_chain
         sin_theta = tf.sin(theta)
-        for j in xrange(i+1, end):
-            trig_prods[j] *= sin_theta
+        running_chain *= sin_theta
+    #Last dimension, all sines
+    trig_prods[-1] *= running_chain
+
     return trig_prods
 
 
