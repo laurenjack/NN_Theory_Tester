@@ -8,12 +8,11 @@ rbf_grad = None
 y_hot = None
 
 global final_grad
-normed_grad = None
 z_grad = None
 z_bar_grad = None
 
 #BackProp Params
-num_duds = 2
+num_duds = 0
 do_useless_dimensions = False
 z_normalized = True
 z_bar_normalized = True
@@ -129,7 +128,7 @@ def _tau_grad(unused_op, grad):
     # normed_grad = normalised
     global final_grad
     final_grad = tf.reshape(variance_grad, shape=[1, d, K]) * grad
-    final_grad = tf.sign(final_grad) * tf.abs(final_grad) ** 0.5 / float(m) / float(d)
+    final_grad = tf.sign(final_grad) * tf.abs(final_grad / float(m) / float(d)) ** 0.5  * 0.5
     return final_grad
 
 
@@ -217,8 +216,8 @@ class RBF:
 
     def test_ops(self):
         return self.train_op, self.x_diff_sq, self.tau_square, self.weighted_x_diff_sq,\
-               self.weighted_x_diff_sq_other, self.normalise_tau, self.tau, normed_grad, final_grad, variance_grad,\
+               self.weighted_x_diff_sq_other, self.normalise_tau, self.tau, final_grad, variance_grad,\
                self.sm, z_grad, z_bar_grad
 
     def variable_ops(self):
-        self.z, self.z_bar, self.tau
+        return self.z, self.z_bar, self.tau

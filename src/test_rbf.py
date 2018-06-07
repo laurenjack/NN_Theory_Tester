@@ -27,7 +27,7 @@ class TestRbf(test.TestCase):
         sess = tf.InteractiveSession()
         tf.global_variables_initializer().run()
 
-        _, z_diff_sq, tau_sq, wxds, wxdso, norm_tau, tau, normed_grad, final_grad, variance_grad, probs, z_grad, z_bar_grad = sess.run(test_ops, feed_dict={rbf.y: y})
+        _, z_diff_sq, tau_sq, wxds, wxdso, norm_tau, tau, final_grad, variance_grad, probs, z_grad, z_bar_grad = sess.run(test_ops, feed_dict={rbf.y: y})
         final_z, final_z_bar, final_tau = sess.run(variable_ops, feed_dict={rbf.y: y})
 
         #Expectations

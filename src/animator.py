@@ -6,16 +6,14 @@ import numpy as np
 from matplotlib.patches import Ellipse
 
 
-def animate_spf(z_bar, tau, z_over_time, conf):
+def animate_spf(z_bar_pair, tau_pair, z_over_time, conf):
     fig, ax = plt.subplots()
     epochs = len(z_over_time)
     ax.set_xlim(-10.0, 10.0)
     ax.set_ylim(-10.0, 10.0)
 
-    z_bar_i = z_bar[:, 0]
-    z_bar_j = z_bar[:, 1]
-    tau_i = tau[:, 0]
-    tau_j = tau[:, 1]
+    z_bar_i, z_bar_j = z_bar_pair
+    tau_i, tau_j = tau_pair
 
     #Plot the two z_bars
     _plot_scatter(np.array([z_bar_i]), 'r', fig, tau=[tau_i], marker='x')
@@ -98,7 +96,7 @@ def animate(train_result, conf):
         for i, z_bar, tau in zip(range(num_classes), z_bars, taus):
             centre = z_bar[frame+1][0]
             tau = tau[frame][0]
-            e = Ellipse(xy=centre, width=1.0/tau[0], height=1.0/tau[1], fill=False)
+            e = Ellipse(xy=centre, width=2.0/tau[0], height=2.0/tau[1], fill=False)
             ax.add_patch(e)
             ellipses[i] = e
 
@@ -161,7 +159,7 @@ def _plot_scatter(clust_or_centres, colour, fig, tau=None, marker=None):
         return plt.scatter(xs, ys, color=colour)
     centre = clust_or_centres[0]
     tau = tau[0]
-    ell = Ellipse(xy=centre, width=1.0 /tau[0], height=1.0/tau[1], fill=False)
+    ell = Ellipse(xy=centre, width=2.0 /tau[0], height=2.0/tau[1], fill=False)
     ax = fig.gca()
     ax.add_artist(ell)
     return plt.scatter(xs, ys, color=colour, marker=marker), ell

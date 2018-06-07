@@ -9,10 +9,11 @@ def find_shortest_point(conf, z_bar, tau):
     spf_epochs = conf.spf_epochs
 
     #Compute the parameters used in the hyperbola
-    z_bar_i = z_bar[:, 0]
-    z_bar_j = z_bar[:, 1]
-    tau_i = tau[:, 0]
-    tau_j = tau[:, 1]
+    i, j = _quick_shortest(z_bar)
+    z_bar_i = z_bar[:, i]
+    z_bar_j = z_bar[:, j]
+    tau_i = tau[:, i]
+    tau_j = tau[:, j]
 
     tau_sq_i = tau_i ** 2.0
     tau_sq_j = tau_j ** 2.0
@@ -53,7 +54,7 @@ def find_shortest_point(conf, z_bar, tau):
             z_list.append(np.array([z_a, z_b]))
 
 
-    return z_list, [C_a, C_b], [rbf_a, rbf_b]
+    return z_list, [C_a, C_b], [rbf_a, rbf_b], (z_bar_i, z_bar_j), (tau_i, tau_j)
 
 def report_costs(z, z_bar_i, tau_sq_i, z_bar_j, tau_sq_j):
     C1 = np.sum(tau_sq_i * (z - z_bar_i) ** 2.0)
@@ -149,6 +150,22 @@ def _apply_circle_prod(trig_prods, thetas, start, end, theta_off_set=0):
     trig_prods[-1] *= running_chain
 
     return trig_prods
+
+def _quick_shortest(z_bar):
+    dists = []
+    inds = []
+    K = z_bar.shape[1]
+    for i in xrange(K):
+        zb1 = z_bar[:, i]
+        for j in xrange(i+1, K, 1):
+            zb2 = z_bar[:, j]
+            if i != j:
+                dists.append(np.sum((zb1 - zb2) ** 2.0))
+                inds.append((i, j))
+    dists = np.array(dists)
+    ind = np.argmin(dists)
+    return inds[ind]
+
 
 
 

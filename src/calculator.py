@@ -20,8 +20,10 @@ z_sm_grad_shaped = z_sm_grad.reshape([3, 1, 2])
 dz = z_sm_grad_shaped * -tau_sq_z_diff / mag_shaped
 z_update = - 2.0 ** 0.5 * dz
 
+print
+
 d_z_bar = z_bar_sm_grad_shaped * tau_sq_z_diff / mag_shaped
 # print z_bar_sm_grad
-print - d_z_bar
+#print - d_z_bar
 #print -tau_sq_z_diff / mag_shaped
 

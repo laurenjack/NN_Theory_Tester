@@ -12,22 +12,22 @@ def get_conf():
 
     # meta_params
     conf.num_runs = 1
-    conf.out_dir = '/home/laurenjack/test_rbf1'  # '/home/laurenjack/test_rbf1' #'/Users/jack/tf_runs/test_rbf5'
+    conf.out_dir = '/Users/jack/tf_runs/test_rbf5'  # '/home/laurenjack/test_rbf1' #'/Users/jack/tf_runs/test_rbf5'
     conf.show_animation = True
     conf.animation_interval = 100
     conf.incorr_report_limit = 3
 
     conf.n = 100
-    conf.num_class = 5
+    conf.num_class = 10
     conf.d = 2
     conf.rbf_c = 4.0
     conf.z_bar_init_sd = 3.0
     conf.z_sd = 6.0
-    conf.lr = 0.1
+    conf.lr = 0.2
     conf.show_details = False
     conf.train_centres_taus = True
-    conf.epochs = 300
-    conf.classified_as_thresh = 0.2
+    conf.epochs = 1000
+    conf.classified_as_thresh = 0.5
     conf.optimizer = tf.train.GradientDescentOptimizer
 
     conf.spf_lr = 0.01
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         total_correct += num_correct
         z_bar = train_result.final_z_bar
         tau = train_result.final_tau
-        sp_z_list, Cs, rbfs = find_shortest_point(conf, z_bar, tau)
+        sp_z_list, Cs, rbfs, z_bar_pair, tau_pair = find_shortest_point(conf, z_bar, tau)
         print Cs
         print rbfs
     print ""
@@ -59,5 +59,5 @@ if __name__ == '__main__':
     # Take the last a and evaluate the percentage of correctly classified points
     if conf.num_runs == 1 and conf.d == 2:
         animate(train_result, conf)
-        animate_spf(z_bar, tau, sp_z_list, conf)
+        animate_spf(z_bar_pair, tau_pair, sp_z_list, conf)
 
