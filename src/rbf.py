@@ -1,22 +1,16 @@
 import tensorflow as tf
 import numpy as np
+import configuration
 
+conf = configuration.get_conf()
 xe_sm_grad = None
 variance_grad = None
-pre_tau_grad = None
 rbf_grad = None
 y_hot = None
 
-global final_grad
 z_grad = None
 z_bar_grad = None
-
-#BackProp Params
-num_duds = 0
-do_useless_dimensions = False
-z_normalized = True
-z_bar_normalized = True
-tau_normalized = True
+tau_grad = None
 
 @tf.RegisterGradient("stub_and_save")
 def _stub_and_save(unused_op, grad):
@@ -46,50 +40,33 @@ def _normalise(grad):
     m, d, K = grad.shape
     K = K.value
     grad_mag = tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
-    normalised = grad / (tf.reshape(grad_mag, [-1, 1, K])+ 10 ** (-70))
+    normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + conf.norm_epsilon)
     return normalised
-
-
-def _z_bar_or_tau_grad(grad, do_normalise):
-    m, d, K = grad.shape
-    m = m.value
-    K = K.value
-    if do_normalise:
-        grad = _normalise(grad)
-    else:
-        # Need to include the rbf gradient if not normalising otherwise
-        # furthest points will be parabolically most influential
-        grad *= tf.reshape(rbf_grad, [-1, 1, K])
-    xe_sm_grad_reshaped = tf.reshape(xe_sm_grad, [-1, 1, K])
-    new_grad = xe_sm_grad_reshaped * grad
-    return new_grad / float(m) ** 0.5
 
 
 @tf.RegisterGradient("z_grad")
 def _z_grad(unused_op, grad):
-    if z_normalized:
-        grad = _normalise(grad)
+    grad = _normalise(grad)
     m, d, K = grad.shape
     m = m.value
     d = d.value
     K = K.value
     # Experiment with dud points
-    ones = tf.ones(shape=(m - num_duds * K, K), dtype=tf.float32)
-    zeros = tf.zeros(shape=(num_duds * K, K), dtype=tf.float32)
+    ones = tf.ones(shape=(m - conf.num_duds * K, K), dtype=tf.float32)
+    zeros = tf.zeros(shape=(conf.num_duds * K, K), dtype=tf.float32)
     duds_mask = tf.concat([ones, zeros], axis=0)
     ones = np.ones(shape=(m, d), dtype=np.float32)
     global y_hot
     y_hot_mask = y_hot * duds_mask * xe_sm_grad
     y_hot_mask = tf.reshape(y_hot_mask, [-1, 1, K])
     all_dim_inds = np.arange(d)
-    if do_useless_dimensions:
+    if conf.do_useless_dimensions:
         # Experiment with useless dimensions
         zero_inds = [np.random.choice(all_dim_inds, d // 2, replace=False) for j in xrange(K)]
         for i in xrange(0, m, K):
             for c in xrange(K):
                 zero_inds_c = zero_inds[c]
                 ones[i + c][zero_inds_c] = 0.0
-            # ones[i + 1][1] = 0.0
         useless_dim_mask = tf.constant(ones)
         reshaped_useless_dim_mask = tf.reshape(useless_dim_mask, [m, d, 1])
         y_hot_mask = reshaped_useless_dim_mask * y_hot_mask
@@ -98,19 +75,18 @@ def _z_grad(unused_op, grad):
     z_grad = new_grad
     return new_grad
 
-# @tf.RegisterGradient("debug")
-# def _debug(unused_op, grad):
-#     global norm_tau_debug
-#     norm_tau_debug = grad
-#     return grad
-
 
 @tf.RegisterGradient("z_bar_grad")
 def _z_bar_grad(unused_op, grad):
-    new_grad = _z_bar_or_tau_grad(grad, z_bar_normalized)
+    m, d, K = grad.shape
+    m = m.value
+    K = K.value
+    grad = _normalise(grad)
+    xe_sm_grad_reshaped = tf.reshape(xe_sm_grad, [-1, 1, K])
+    grad = xe_sm_grad_reshaped * grad
     global z_bar_grad
-    z_bar_grad = new_grad
-    return new_grad
+    z_bar_grad = grad / float(m) ** 0.5
+    return z_bar_grad
 
 
 @tf.RegisterGradient("tau_grad")
@@ -119,33 +95,19 @@ def _tau_grad(unused_op, grad):
     m = m.value
     d = d.value
     K = K.value
-    global pre_tau_grad
-    pre_tau_grad = grad
-    # reshaped_y_hot = tf.reshape((1.0 - y_hot), [-1, 1, K])
-    # grad_mag = tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
-    # normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + reshaped_y_hot + 10 ** -70)
-    # global normed_grad
-    # normed_grad = normalised
-    global final_grad
-    final_grad = tf.reshape(variance_grad, shape=[1, d, K]) * grad
-    final_grad = tf.sign(final_grad) * tf.abs(final_grad / float(m) / float(d)) ** 0.5  * 0.5
-    return final_grad
+    global tau_grad
+    grad = tf.reshape(variance_grad, shape=[1, d, K]) * grad
+    tau_grad = tf.sign(grad) * tf.abs(grad / float(m)) ** 0.5  * 0.5
+    return tau_grad
 
 
 class RBF:
 
-    # tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
-    # tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
-    #tf.constant_initializer(0.5 / float(self.d) ** 0.5 * np.ones(shape=[self.d, self.num_class])))
-
-    def __init__(self, conf, z_init, z_bar_init, tau_init):
+    def __init__(self, z, z_bar_init, tau_init):
         self.num_class = conf.num_class
         self.n = conf.n
         self.d = conf.d
-        train_centres_taus = conf.train_centres_taus
-        self.z = tf.get_variable("z", shape=[self.n, self.d],
-                                 #initializer=tf.constant_initializer(np.array([[-5.0, -5.0], [-1.0, -1.0], [5.0, 5.0], [-5.5, -5.5], [-1.5, -1.5], [5.5, 5.5]])))
-                                 initializer=z_init)
+        self.z = z
         self.y = tf.placeholder(tf.int32, shape=[self.n], name="y")
         self.rbf_c = conf.rbf_c
         self.z_bar = tf.get_variable("z_bar", shape=[self.d, self.num_class],
@@ -186,7 +148,7 @@ class RBF:
             # TODO there will be an issue here when a class is not present in the batch
         with g.gradient_override_map({'Identity': "stub_and_save_variance_grad"}):
             weighted_variance_id = tf.identity(self.weighted_variance, name='Identity')
-            self.normalise_tau = (1.0 - weighted_variance_id) ** 2.0
+            self.normalise_tau = (conf.target_variance - weighted_variance_id) ** 2.0
             tau_loss = tf.reduce_sum(self.normalise_tau)
 
         with g.gradient_override_map({'Identity': "zero_the_grad"}):
@@ -205,18 +167,14 @@ class RBF:
         # loss = -tf.reduce_mean(tf.reduce_sum(y_hot*tf.log(sm), axis=1))
         self.main_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
         loss = tf.reduce_sum(self.main_loss) + tau_loss
-        if not train_centres_taus:
-            var_list = [self.z, self.z_bar]
-            self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss, var_list=var_list)
-        else:
-            self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
+        self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
 
     def all_ops(self):
-        return [self.train_op, self.z, self.z_bar, self.tau, tf.nn.softmax(self.rbf)] #xe_sm_grad  self.tau_square, self.x_diff_sq, self.weighted_x_diff_sq, self.neg_dist, self.exp
+        return [self.train_op, self.z, self.z_bar, self.tau, tf.nn.softmax(self.rbf)]
 
     def test_ops(self):
         return self.train_op, self.x_diff_sq, self.tau_square, self.weighted_x_diff_sq,\
-               self.weighted_x_diff_sq_other, self.normalise_tau, self.tau, final_grad, variance_grad,\
+               self.weighted_x_diff_sq_other, self.normalise_tau, self.tau, tau_grad, variance_grad,\
                self.sm, z_grad, z_bar_grad
 
     def variable_ops(self):

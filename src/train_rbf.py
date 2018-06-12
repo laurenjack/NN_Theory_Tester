@@ -1,16 +1,16 @@
 import tensorflow as tf
 import numpy as np
 from rbf import RBF
-from rbf import num_duds
 from gen_train_points import *
 
 def train(conf):
     g_1 = tf.Graph()
     with g_1.as_default():
         z_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
+        z = tf.get_variable("z", shape=[conf.n, conf.d], initializer=z_init)
         z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
         tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
-        net = RBF(conf, z_init, z_bar_init, tau_init)
+        net = RBF(z, z_bar_init, tau_init)
         all_ops = net.all_ops()
 
         # Summaries for variables
@@ -57,8 +57,8 @@ def train(conf):
         correct_indicator = np.where(np.logical_and(y == arg_max_a, max_a > conf.classified_as_thresh), 1, 0)
         incorrect_indicator= np.ones(shape=correct_indicator.shape, dtype=np.int32) - correct_indicator
         # Don't report the duds, don't expect them to be classified correctly
-        ones = np.ones(shape=conf.n - num_duds * conf.num_class, dtype=np.int32)
-        zeros = np.zeros(shape=num_duds * conf.num_class, dtype=np.int32)
+        ones = np.ones(shape=conf.n - conf.num_duds * conf.num_class, dtype=np.int32)
+        zeros = np.zeros(shape=conf.num_duds * conf.num_class, dtype=np.int32)
         duds_mask = np.concatenate([ones, zeros], axis=0)
         ind_of_incorrect = np.argwhere(duds_mask * incorrect_indicator)
         incorrect_responses = a[ind_of_incorrect]

@@ -1,10 +1,14 @@
 import numpy as np
+import configuration
+conf = configuration.get_conf()
+
 logits = np.array([[-8.125, -5.28125], [-2.5, -55.125], [-56.125, -18.28125]], dtype=np.float32)
 rbf = np.exp(logits)
 exps = np.exp(4.0 * rbf)
 a = exps / np.sum(exps, axis=1).reshape(3, 1)
 
 tau_sq_z_diff = np.array([[[-0.5, -0.625], [8.0, -9.0]], [[2.0, 0], [-2.0, -31.5]], [[3.5, 0.375], [20.0, 18.0]]], dtype=np.float32)
+
 
 
 y = np.array([[1.0, 0.0], [1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
