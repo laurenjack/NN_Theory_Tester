@@ -2,14 +2,14 @@ import unittest as test
 import tensorflow as tf
 import numpy as np
 import configuration
-from rbf import *
+import rbf as rb
 
 class TestRbf(test.TestCase):
 
     def test_gradients(self):
         conf = configuration.get_conf()
 
-        conf.n = 3
+        conf.m = 3
         conf.num_class = 2
         conf.d = 2
         conf.rbf_c = 4.0
@@ -24,17 +24,18 @@ class TestRbf(test.TestCase):
         tau_init = tf.constant_initializer(tau_start)
         y = np.array([0, 0, 1])
         y_hot = np.array([[1, 0],[1, 0],[0, 1]]).reshape(3,1,2)
-        z_var = tf.get_variable("z", shape=[conf.n, conf.d], initializer=z_init)
-        rbf = RBF(z_var, z_bar_init, tau_init)
-        test_ops = rbf.test_ops()
-        variable_ops = rbf.variable_ops()
+        z_var = tf.get_variable("z", shape=[conf.m, conf.d], initializer=z_init)
+        net = rb.RBF(z_var, z_bar_init, tau_init)
+        test_ops = net.test_ops()
+        variable_ops = net.variable_ops()
 
         #init session
         sess = tf.InteractiveSession()
         tf.global_variables_initializer().run()
 
-        _, z_diff_sq, tau_sq, wxds, wxdso, norm_tau, tau, tau_grad, variance_grad, probs, z_grad, z_bar_grad = sess.run(test_ops, feed_dict={rbf.y: y})
-        final_z, final_z_bar, final_tau = sess.run(variable_ops, feed_dict={rbf.y: y})
+        feed_dict = {net.y: y, rb.batch_size: conf.m}
+        _, z_diff_sq, tau_sq, wxds, wxdso, norm_tau, tau, tau_grad, variance_grad, probs, z_grad, z_bar_grad = sess.run(test_ops, feed_dict=feed_dict)
+        final_z, final_z_bar, final_tau = sess.run(variable_ops, feed_dict=feed_dict)
 
         #Expectations
         exp_z_diff_sq = np.array([[[0.25, 6.25], [4.0, 1.0]], [[4.0, 0.0], [0.25, 12.25]], [[12.25, 2.25], [25.0, 4.0]]], dtype=np.float32)
