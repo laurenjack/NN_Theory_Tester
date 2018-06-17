@@ -1,6 +1,6 @@
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
-from feed_forward_network import Network
+import rbf
 import tensorflow as tf
 
 def train(network, conf):
@@ -45,9 +45,10 @@ def train(network, conf):
 def _feed_and_run(batch, X, Y, op, network, sess):
     x = X[batch]
     y = Y[batch]
-    feed_dict = {network.x: x, network.y: y}
-    logits, result = sess.run((network.logits, op), feed_dict=feed_dict)
-    #print logits
+    batch_size = batch.shape[0]
+    feed_dict = {network.x: x, network.rbf.y: y, rbf.batch_size: batch_size}
+    z, result = sess.run((network.z, op), feed_dict=feed_dict)
+    #print z
     return result
 
 

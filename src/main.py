@@ -5,10 +5,14 @@ import train_rbf
 import train_mnist
 from shortest_point_finder import find_shortest_point
 from feed_forward_network import Network
+import rbf
 import configuration
 
 def run_network(conf):
-    network = Network(conf)
+    z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
+    tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
+    rbf_end = rbf.RBF(z_bar_init, tau_init)
+    network = Network(rbf_end, conf)
     train_mnist.train(network, conf)
 
 def run_rbf_test(conf):
@@ -35,8 +39,8 @@ def run_rbf_test(conf):
 
 if __name__ == '__main__':
     conf = configuration.get_conf()
-    run_rbf_test(conf)
-    #run_network(conf)
+    #run_rbf_test(conf)
+    run_network(conf)
 
 
 

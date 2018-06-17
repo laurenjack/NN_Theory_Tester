@@ -57,7 +57,7 @@ def _z_grad(unused_op, grad):
     new_grad = float(d) ** 0.5 * y_hot_mask * grad
     global z_grad
     z_grad = new_grad
-    return new_grad
+    return new_grad # * 0.1 # TODO refactor hack, differentials in learning rate pre and post rbf
 
 
 @tf.RegisterGradient("z_bar_grad")
