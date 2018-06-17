@@ -39,7 +39,9 @@ def train(network, conf):
         train_accs.append(train_acc)
         val_accs.append(val_acc)
 
-    return train_accs, val_accs
+    #Final z_bar and tau
+    z_bar, tau = sess.run((network.z_bar, network.tau))
+    return z_bar, tau
 
 
 def _feed_and_run(batch, X, Y, op, network, sess):

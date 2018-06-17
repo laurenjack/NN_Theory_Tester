@@ -13,7 +13,12 @@ def run_network(conf):
     tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
     rbf_end = rbf.RBF(z_bar_init, tau_init)
     network = Network(rbf_end, conf)
-    train_mnist.train(network, conf)
+    z_bar, tau = train_mnist.train(network, conf)
+    sp_z_list, Cs, rbfs, z_bar_pair, tau_pair = find_shortest_point(conf, z_bar, tau)
+    print 'Shortest Point Distance:'
+    print Cs
+    print rbfs
+
 
 def run_rbf_test(conf):
     total_correct = 0

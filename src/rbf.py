@@ -54,10 +54,10 @@ def _z_grad(unused_op, grad):
     global y_hot
     y_hot_mask = y_hot * xe_sm_grad
     y_hot_mask = tf.reshape(y_hot_mask, [-1, 1, K])
-    new_grad = float(d) ** 0.5 * y_hot_mask * grad
+    new_grad =  y_hot_mask * grad # TODO quick test here  float(d) ** 0.5 * # / tf.cast(batch_size, tf.float32) ** 0.5
     global z_grad
     z_grad = new_grad
-    return new_grad # * 0.1 # TODO refactor hack, differentials in learning rate pre and post rbf
+    return new_grad
 
 
 @tf.RegisterGradient("z_bar_grad")

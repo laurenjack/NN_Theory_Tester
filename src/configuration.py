@@ -23,13 +23,13 @@ conf.d = 100
 conf.rbf_c = 4.0
 conf.z_bar_init_sd = 3.0
 conf.z_sd = 6.0
-conf.lr = 0.002
+conf.lr = 0.003
 conf.show_details = False
 conf.train_centres_taus = True
-conf.epochs = 50
+conf.epochs = 10
 conf.classified_as_thresh = 0.5
 conf.optimizer = tf.train.GradientDescentOptimizer
-conf.target_variance = 0.5
+conf.target_variance = 1.0
 
 #Network params
 conf.num_inputs = 784

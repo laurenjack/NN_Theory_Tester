@@ -23,6 +23,8 @@ class Network:
 
         core_ops = self.rbf.create_ops(self.z).core_ops()
         self.train_op = core_ops[0]
+        self.z_bar = core_ops[2]
+        self.tau = core_ops[3]
         self.a = core_ops[4]
 
 
