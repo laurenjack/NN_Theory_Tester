@@ -36,7 +36,7 @@ def run_rbf_test(conf):
 if __name__ == '__main__':
     conf = configuration.get_conf()
     run_rbf_test(conf)
-    # run_network(conf)
+    #run_network(conf)
 
 
 

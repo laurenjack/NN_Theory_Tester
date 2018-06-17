@@ -10,11 +10,12 @@ def train(conf):
         m = conf.m
         z_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
         batch_inds_ph = tf.placeholder(tf.int32, shape=[None], name="batch_inds")
-        z = tf.get_variable("z", shape=[conf.n, conf.d], initializer=z_init)
+        z_var = tf.get_variable("z", shape=[conf.n, conf.d], initializer=z_init)
         z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
         tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
-        net = rb.RBF(z, z_bar_init, tau_init, batch_inds_ph)
-        all_ops = net.all_ops()
+        net = rb.RBF(z_bar_init, tau_init, batch_inds_ph)
+        rbf_ops = net.create_ops(z_var)
+        core_ops = rbf_ops.core_ops()
 
         # Summaries for variables
         if conf.num_runs == 1:
@@ -22,7 +23,7 @@ def train(conf):
                 zeros = tf.zeros(shape=var.shape)
                 tf.summary.histogram(var.op.name, tf.where(tf.is_nan(var), zeros, var))
             summary_op = tf.summary.merge_all()
-            all_ops.append(summary_op)
+            core_ops.append(summary_op)
 
         sess = tf.InteractiveSession()
         tf.global_variables_initializer().run()
@@ -49,9 +50,8 @@ def train(conf):
                     batch = batch_indicies[k:k + m]
                     batch_size = batch.shape[0]
                     feed_dict = {net.y: y[batch], rb.batch_size: batch_size, batch_inds_ph: batch}
-                    zz = sess.run(net.zz, feed_dict=feed_dict)
-                    _, _, z_bar, tau, a, summ_str = sess.run(all_ops, feed_dict=feed_dict)
-                z = sess.run(net.z)
+                    _, _, z_bar, tau, a, summ_str = sess.run(core_ops, feed_dict=feed_dict)
+                z = sess.run(core_ops[1])
                 for k in xrange(conf.num_class):
                     ind_of_class = np.argwhere(y == k)[:, 0]
                     class_wise_z_list[k].append(z[ind_of_class])
@@ -63,20 +63,15 @@ def train(conf):
                     batch = batch_indicies[k:k + m]
                     batch_size = batch.shape[0]
                     feed_dict = {net.y: y[batch], rb.batch_size: batch_size, batch_inds_ph: batch}
-                _, z, z_bar, tau, a = sess.run(all_ops, feed_dict=feed_dict)
+                _, z, z_bar, tau, a = sess.run(core_ops, feed_dict=feed_dict)
 
 
         feed_dict = {net.y: y, rb.batch_size: conf.n, batch_inds_ph: np.arange(n)}
-        a = sess.run(all_ops[4], feed_dict=feed_dict)
+        a = sess.run(core_ops[4], feed_dict=feed_dict)
         max_a = np.amax(a, axis=1)
         arg_max_a = np.argmax(a, axis=1)
         correct_indicator = np.where(np.logical_and(y == arg_max_a, max_a > conf.classified_as_thresh), 1, 0)
         incorrect_indicator= np.ones(shape=correct_indicator.shape, dtype=np.int32) - correct_indicator
-        ## Don't report the duds, don't expect them to be classified correctly
-        #ones = np.ones(shape=conf.n - conf.num_duds * conf.num_class, dtype=np.int32)
-        #zeros = np.zeros(shape=conf.num_duds * conf.num_class, dtype=np.int32)
-        #duds_mask = np.concatenate([ones, zeros], axis=0)
-        #ind_of_incorrect = np.argwhere(duds_mask * incorrect_indicator)
         ind_of_incorrect = np.argwhere(incorrect_indicator)
         incorrect_responses = a[ind_of_incorrect]
         labels_of_inc = y[ind_of_incorrect]

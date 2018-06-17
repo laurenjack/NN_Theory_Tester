@@ -18,6 +18,9 @@ class Network:
             a = self._create_layer(a, l, [inp, out])
 
         self.logits = a
+
+
+
         #Compute the loss and apply the optimiser
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=a)
         self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)

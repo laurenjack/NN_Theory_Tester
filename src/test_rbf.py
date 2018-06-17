@@ -25,17 +25,32 @@ class TestRbf(test.TestCase):
         y = np.array([0, 0, 1])
         y_hot = np.array([[1, 0],[1, 0],[0, 1]]).reshape(3,1,2)
         z_var = tf.get_variable("z", shape=[conf.m, conf.d], initializer=z_init)
-        net = rb.RBF(z_var, z_bar_init, tau_init)
-        test_ops = net.test_ops()
-        variable_ops = net.variable_ops()
+        net = rb.RBF(z_bar_init, tau_init)
+        rbf_ops = net.create_ops(z_var)
+
+        # Get ops for testing
+        train_op = rbf_ops.train_op
+        z_bar_op = rbf_ops.z_bar
+        tau_op = rbf_ops.tau
+        z_diff_sq_op = rbf_ops.z_diff_sq
+        tau_sq_op = rbf_ops.tau_sq
+        wzds_op = rbf_ops.wzds
+        wzdso_op = rbf_ops.wzds
+        tau_grad_op = rbf_ops.tau_grad
+        z_grad_op = rbf_ops.z_grad
+        z_bar_grad_op = rbf_ops.z_bar_grad
+        test_ops = [train_op, z_diff_sq_op, tau_sq_op, wzds_op, wzdso_op, tau_grad_op,
+                    z_grad_op, z_bar_grad_op]
+        var_ops = [z_var, z_bar_op, tau_op]
 
         #init session
         sess = tf.InteractiveSession()
         tf.global_variables_initializer().run()
 
         feed_dict = {net.y: y, rb.batch_size: conf.m}
-        _, z_diff_sq, tau_sq, wxds, wxdso, norm_tau, tau, tau_grad, variance_grad, probs, z_grad, z_bar_grad = sess.run(test_ops, feed_dict=feed_dict)
-        final_z, final_z_bar, final_tau = sess.run(variable_ops, feed_dict=feed_dict)
+        _, z_diff_sq, tau_sq, wzds, wzdso, tau_grad, z_grad,\
+        z_bar_grad = sess.run(test_ops, feed_dict=feed_dict)
+        z, z_bar, tau = sess.run(var_ops, feed_dict=feed_dict)
 
         #Expectations
         exp_z_diff_sq = np.array([[[0.25, 6.25], [4.0, 1.0]], [[4.0, 0.0], [0.25, 12.25]], [[12.25, 2.25], [25.0, 4.0]]], dtype=np.float32)
@@ -47,7 +62,7 @@ class TestRbf(test.TestCase):
         dwzds_dtau = 2.0 * tau_start * y_hot * exp_z_diff_sq / ss
         dC_dtau = dC_dwzds * dwzds_dtau
         exp_tau_grad = np.sign(dC_dtau) * abs(dC_dtau / 3.0) ** 0.5 * 0.5
-        exp_final_tau = abs(tau_start - np.sum(exp_tau_grad, axis=0))
+        exp_tau = abs(tau_start - np.sum(exp_tau_grad, axis=0))
 
         #exp_probs = np.array([[ 0.49521008, 0.50478989], [0.58135545, 0.41864461], [0.5, 0.5]])
 
@@ -68,10 +83,10 @@ class TestRbf(test.TestCase):
 
         self.assertTrue(np.allclose(exp_z_diff_sq, z_diff_sq))
         self.assertTrue(np.allclose(exp_tau_sq, tau_sq))
-        self.assertTrue(np.allclose(exp_wzds, wxds))
-        self.assertTrue(np.allclose(exp_wzds, wxdso))
+        self.assertTrue(np.allclose(exp_wzds, wzds))
+        self.assertTrue(np.allclose(exp_wzds, wzdso))
         self.assertTrue(np.allclose(exp_tau_grad, tau_grad))
-        self.assertTrue(np.allclose(exp_final_tau, final_tau))
+        self.assertTrue(np.allclose(exp_tau, tau))
 
         self.assertTrue(np.allclose(exp_z_grad, z_grad))
 
