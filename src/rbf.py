@@ -196,6 +196,3 @@ class RBF:
         return RbfOps(train_op, z, z_bar, tau, sm, z_diff_sq, tau_square, weighted_z_diff_sq,
                 weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
                 z_grad, z_bar_grad)
-
-
-

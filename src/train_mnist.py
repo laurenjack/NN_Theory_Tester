@@ -1,7 +1,9 @@
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
-import rbf
+#import rbf
 import tensorflow as tf
+from network_runner import NetworkRunner
+from prediction_output_writer import *
 
 def train(network, conf):
     #Load data
@@ -17,6 +19,7 @@ def train(network, conf):
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
     train_op = network.train_op
+    network_runner = NetworkRunner(network, sess)
 
     #Train
     train_accs = []
@@ -31,44 +34,20 @@ def train(network, conf):
         np.random.shuffle(batch_indicies)
         for k in xrange(0, n, m):
             batch = batch_indicies[k:k + m]
-            _feed_and_run(batch, X, Y, train_op, network, sess)
+            network_runner.feed_and_run(X, Y, train_op, batch)
         print 'Epoch: '+str(e)
-        train_acc = _report_accuracy('Train', batch_indicies, accuracy_ss, X, Y, network, sess)
-        val_acc = _report_accuracy('Validation', val_batch_indicies, accuracy_ss, X_val, Y_val, network, sess)
+        train_acc = network_runner.report_accuracy('Train', batch_indicies, accuracy_ss, X, Y)
+        val_acc = network_runner.report_accuracy('Validation', val_batch_indicies, accuracy_ss, X_val, Y_val)
         print ''
         train_accs.append(train_acc)
         val_accs.append(val_acc)
 
-    #Final z_bar and tau
+    # Report on a sample of correct and incorrect results
+    corr, incorr = network_runner.sample_correct_incorrect(10, X_val, Y_val)
+    corr.show()
+    incorr.show()
+
+    # Final z_bar and tau
+    write_csv(X_val, Y_val, network_runner)
     z_bar, tau = sess.run((network.z_bar, network.tau))
     return z_bar, tau
-
-
-def _feed_and_run(batch, X, Y, op, network, sess):
-    x = X[batch]
-    y = Y[batch]
-    batch_size = batch.shape[0]
-    feed_dict = {network.x: x, network.rbf.y: y, rbf.batch_size: batch_size}
-    z, result = sess.run((network.z, op), feed_dict=feed_dict)
-    #print z
-    return result
-
-
-def _report_accuracy(set_name, batch_indicies, accuracy_ss, X, Y, network, sess):
-    acc_batch = _random_batch(batch_indicies, accuracy_ss)
-    a = _feed_and_run(acc_batch, X, Y, network.a, network, sess)
-    y = Y[acc_batch]
-    acc = _compute_accuracy(a, y)
-    print set_name+" Accuracy: "+str(acc)
-    return acc
-
-
-def _random_batch(batch_indicies, m):
-    return np.random.choice(batch_indicies, size=m, replace=False)
-
-
-def _compute_accuracy(a, y):
-    ss = y.shape[0]
-    prediction = np.argmax(a, axis=1)
-    correct_indicator = np.equal(prediction, y).astype(np.int32)
-    return float(np.sum(correct_indicator)) / float(ss)

@@ -1,4 +1,5 @@
 import tensorflow as tf
+import rbf as rb
 
 class Network:
 
@@ -23,6 +24,7 @@ class Network:
 
         core_ops = self.rbf.create_ops(self.z).core_ops()
         self.train_op = core_ops[0]
+        self.z = core_ops[1]
         self.z_bar = core_ops[2]
         self.tau = core_ops[3]
         self.a = core_ops[4]
@@ -33,6 +35,18 @@ class Network:
         # self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
         # #Produce probabilities for accuracy
         # self.a = tf.nn.softmax(a)
+
+    def get_x(self):
+        return self.x
+
+    def get_y(self):
+        return self.rbf.y
+
+    def get_batch_size(self):
+        return rb.batch_size
+
+    def rbf_params(self):
+        return self.z, self.z_bar, self.tau
 
     def _create_layer(self, a, l, shape, activation_func=None):
         weights_init = tf.contrib.layers.variance_scaling_initializer()

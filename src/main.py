@@ -14,6 +14,7 @@ def run_network(conf):
     rbf_end = rbf.RBF(z_bar_init, tau_init)
     network = Network(rbf_end, conf)
     z_bar, tau = train_mnist.train(network, conf)
+
     sp_z_list, Cs, rbfs, z_bar_pair, tau_pair = find_shortest_point(conf, z_bar, tau)
     print 'Shortest Point Distance:'
     print Cs
