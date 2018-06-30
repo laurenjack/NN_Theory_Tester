@@ -21,11 +21,14 @@ class TestPredictionOutputWriter(test.TestCase):
         tau = np.array([[111, 222], [333, 444], [555, 666]], np.float32).transpose()
 
         #Mocks
+        mock_indicies = 'mock indicies'
         X = Mock()
+        Y = Mock()
         X.shape.__getitem__ = Mock(return_value=5)
-        Y = 'mock Y'
+        X.__getitem__ = Mock(return_value='mock X')
+        Y.__getitem__ = Mock(return_value='mock Y')
         network_runner = Mock()
-        network_runner.all_correct_incorrect = Mock(return_value=(correct, incorrect))
+        network_runner.all_correct_incorrect = Mock(return_value=(correct, incorrect, mock_indicies))
         network_runner.report_rbf_params = Mock(return_value=((z, z_bar, tau)))
 
         #Run the code
@@ -34,7 +37,7 @@ class TestPredictionOutputWriter(test.TestCase):
         #mock assertions
         X.shape.__getitem__.assert_called_once_with(0)
         network_runner.all_correct_incorrect.assert_called_once_with(X, Y)
-        network_runner.report_rbf_params.assert_called_once_with(X, Y)
+        network_runner.report_rbf_params.assert_called_once_with('mock X', 'mock Y')
 
         #Data assertions
         exp_point_stat = np.array([[0, 1, 2, 3, 4],
@@ -45,7 +48,9 @@ class TestPredictionOutputWriter(test.TestCase):
         exp_dimension_stat = np.array([[0, 0, 1, 1, 2, 2, 3, 3, 4, 4],
                                        [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
                                       [-12, -8, -9, -5, -12, -8, -11, -7, -8, -4],
-                                      [333, 444, 111, 222, 555, 666, 555, 666, 333, 444]], dtype=object)
+                                      [333, 444, 111, 222, 555, 666, 555, 666, 333, 444],
+                                       [1, 6, 2, 7, 3, 8, 4, 9, 5, 10],
+                                       [13, 14, 11, 12, 15, 16, 15, 16, 13, 14]], dtype=object)
 
         self.assertTrue(np.array_equal(exp_point_stat, point_stat))
         self.assertTrue(np.array_equal(exp_dimension_stat, dimension_stat))

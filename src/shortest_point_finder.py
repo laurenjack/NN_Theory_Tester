@@ -54,7 +54,7 @@ def find_shortest_point(conf, z_bar, tau):
             z_list.append(np.array([z_a, z_b]))
 
 
-    return z_list, [C_a, C_b], [rbf_a, rbf_b], (z_bar_i, z_bar_j), (tau_i, tau_j)
+    return z_list, [C_a, C_b], [rbf_a, rbf_b], (z_bar_i, z_bar_j), (tau_i, tau_j), (i, j)
 
 def report_costs(z, z_bar_i, tau_sq_i, z_bar_j, tau_sq_j):
     C1 = np.sum(tau_sq_i * (z - z_bar_i) ** 2.0)

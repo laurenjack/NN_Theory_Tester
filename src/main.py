@@ -15,10 +15,11 @@ def run_network(conf):
     network = Network(rbf_end, conf)
     z_bar, tau = train_mnist.train(network, conf)
 
-    sp_z_list, Cs, rbfs, z_bar_pair, tau_pair = find_shortest_point(conf, z_bar, tau)
+    sp_z_list, Cs, rbfs, z_bar_pair, tau_pair, closest_classes = find_shortest_point(conf, z_bar, tau)
     print 'Shortest Point Distance:'
     print Cs
     print rbfs
+    print closest_classes
 
 
 def run_rbf_test(conf):

@@ -26,7 +26,9 @@ def extract_and_transform(X, Y, network_runner):
     selected_z_diff = z_diff_k_first[point_ids, predicted]
     selected_z_diff = selected_z_diff.flatten()
     selected_tau = tau.transpose()[predicted].flatten()
-    dimension_stat = np.array([point_ids_nd, dim_ids, selected_z_diff, selected_tau], dtype=object)
+    selected_z = z.flatten()
+    selected_z_bar = z_bar.transpose()[predicted].flatten()
+    dimension_stat = np.array([point_ids_nd, dim_ids, selected_z_diff, selected_tau, selected_z, selected_z_bar], dtype=object)
     return point_stat, dimension_stat
 
 def write_csv(X, Y, network_runner):
