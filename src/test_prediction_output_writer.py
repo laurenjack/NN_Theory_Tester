@@ -10,10 +10,10 @@ class TestPredictionOutputWriter(test.TestCase):
         #Test data
         a_correct = np.array([[0.1, 0.8, 0.1], [0.8, 0.1, 0.1], [0.15, 0.15, 0.7]])
         y_correct = np.array([1, 0, 2])
-        correct = PredictionReport("Correct", a_correct, y_correct)
+        correct = PredictionReport("Correct", a_correct, None, y_correct)
         a_incorrect = np.array([[0.16, 0.34, 0.5], [0.2, 0.6, 0.2]])
         y_incorrect = np.array([0, 2])
-        incorrect = PredictionReport("Incorrect", a_incorrect, y_incorrect)
+        incorrect = PredictionReport("Incorrect", a_incorrect, None, y_incorrect)
 
         z = np.array([[1, 2, 3, 4, 5],
                       [6, 7, 8, 9, 10]], np.float32).transpose()
@@ -21,14 +21,16 @@ class TestPredictionOutputWriter(test.TestCase):
         tau = np.array([[111, 222], [333, 444], [555, 666]], np.float32).transpose()
 
         #Mocks
-        mock_indicies = 'mock indicies'
+        corr_inds = np.array([99, 88, 77])
+        incorr_inds = np.array([66, 55])
+        all_inds = np.array([99, 88, 77, 66, 55])
         X = Mock()
         Y = Mock()
         X.shape.__getitem__ = Mock(return_value=5)
         X.__getitem__ = Mock(return_value='mock X')
         Y.__getitem__ = Mock(return_value='mock Y')
         network_runner = Mock()
-        network_runner.all_correct_incorrect = Mock(return_value=(correct, incorrect, mock_indicies))
+        network_runner.all_correct_incorrect = Mock(return_value=(correct, incorrect, corr_inds, incorr_inds))
         network_runner.report_rbf_params = Mock(return_value=((z, z_bar, tau)))
 
         #Run the code

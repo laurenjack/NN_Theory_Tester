@@ -1,19 +1,12 @@
 import numpy as np
-from tensorflow.examples.tutorials.mnist import input_data
-#import rbf
 import tensorflow as tf
 from network_runner import NetworkRunner
-from prediction_output_writer import *
 
-def train(network, conf):
-    #Load data
-    mnist = input_data.read_data_sets('MNIST_data', one_hot=False)
-    train_set = mnist.train
-    val_set = mnist.validation
-    X = train_set.images
-    Y = train_set.labels
-    X_val = val_set.images
-    Y_val = val_set.labels
+def train(network, data_set, conf):
+    X = data_set.X_train
+    Y = data_set.Y_train
+    X_val = data_set.X_val
+    Y_val = data_set.Y_val
 
     #Load the session and ops
     sess = tf.InteractiveSession()
@@ -42,12 +35,6 @@ def train(network, conf):
         train_accs.append(train_acc)
         val_accs.append(val_acc)
 
-    # Report on a sample of correct and incorrect results
-    corr, incorr = network_runner.sample_correct_incorrect(10, X_val, Y_val)
-    corr.show()
-    incorr.show()
-
     # Final z_bar and tau
-    write_csv(X_val, Y_val, network_runner)
     z_bar, tau = sess.run((network.z_bar, network.tau))
-    return z_bar, tau
+    return network_runner, z_bar, tau

@@ -88,7 +88,7 @@ class RbfOps:
 
     def __init__(self, train_op, z, z_bar, tau, sm, z_diff_sq, tau_square, weighted_z_diff_sq,
                weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
-               z_grad, z_bar_grad):
+               z_grad, z_bar_grad, loss):
         self.train_op = train_op
         self.z = z
         self.z_bar = z_bar
@@ -103,6 +103,7 @@ class RbfOps:
         self.variance_grad = variance_grad
         self.z_grad = z_grad
         self.z_bar_grad = z_bar_grad
+        self.loss = loss
 
     def core_ops(self):
         return [self.train_op, self.z, self.z_bar, self.tau, self.sm]
@@ -189,10 +190,10 @@ class RBF:
         sm = tf.nn.softmax(rbf_identity)
 
         # loss = -tf.reduce_mean(tf.reduce_sum(y_hot*tf.log(sm), axis=1))
-        main_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
-        loss = tf.reduce_sum(main_loss) + tau_loss
+        image_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
+        loss = tf.reduce_sum(image_loss) + tau_loss
         train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
 
         return RbfOps(train_op, z, z_bar, tau, sm, z_diff_sq, tau_square, weighted_z_diff_sq,
                 weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
-                z_grad, z_bar_grad)
+                z_grad, z_bar_grad, loss)

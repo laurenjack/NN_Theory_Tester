@@ -6,6 +6,7 @@ class Network:
     def __init__(self, rbf, conf):
         self.rbf = rbf
         d = conf.d
+        self.adverserial_epsilon = conf.adverserial_epsilon
         #Set up placeholders for inputs and putputs
         num_inputs = conf.num_inputs
         num_class = conf.num_class
@@ -22,13 +23,14 @@ class Network:
 
         self.z = self._create_layer(a, l+1, [ins[-1], outs[-1]])
 
-        core_ops = self.rbf.create_ops(self.z).core_ops()
+        rbf_ops = self.rbf.create_ops(self.z)
+        core_ops = rbf_ops.core_ops()
         self.train_op = core_ops[0]
         self.z = core_ops[1]
         self.z_bar = core_ops[2]
         self.tau = core_ops[3]
         self.a = core_ops[4]
-
+        self.loss = rbf_ops.loss
 
         #Compute the loss and apply the optimiser
         # loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=a)
@@ -47,6 +49,25 @@ class Network:
 
     def rbf_params(self):
         return self.z, self.z_bar, self.tau
+
+    def fgsm_adverserial_with_target(self):
+        """Generate an adverserial example using the fast gradient sign method.
+        See doc for adverserial_gradient for more info """
+        image_grad = self.adverserial_gradient()
+        grad_sign = tf.sign(image_grad)
+        pertubation = tf.multiply(self.adverserial_epsilon, grad_sign)
+        return self.x - pertubation
+
+    def adverserial_gradient(self):
+        """ Given an image and a deliberately faulty label, return the gradient
+        with respect to that image which minimises the loss function, using that
+        faulty label.
+
+        As the z grads ignore off target points, simply trying to
+        maximise the loss function will just run the example down into a low
+        rbf region. Therefore, rather than maximising the loss, we minimise
+        the loss with respect to a different target. Ideally the nearest z_bar"""
+        return tf.gradients(self.loss, self.x)[0]
 
     def _create_layer(self, a, l, shape, activation_func=None):
         weights_init = tf.contrib.layers.variance_scaling_initializer()

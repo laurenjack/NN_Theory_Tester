@@ -44,14 +44,13 @@ class NetworkRunner:
         is_correct = np.equal(Y, preds)
         correct_inds = np.argwhere(is_correct)[:, 0]
         incorr_inds = np.argwhere(np.logical_not(is_correct))[:, 0]
-        corr = PredictionReport("Correct", a[correct_inds], Y[correct_inds])
-        incorr = PredictionReport("Incorrect", a[incorr_inds], Y[incorr_inds])
-        new_ordering = np.concatenate([correct_inds, incorr_inds])
-        return corr, incorr, new_ordering
+        corr = PredictionReport("Correct", a[correct_inds], X[correct_inds], Y[correct_inds])
+        incorr = PredictionReport("Incorrect", a[incorr_inds], X[incorr_inds], Y[incorr_inds])
+        return corr, incorr, correct_inds, incorr_inds
 
     def sample_correct_incorrect(self, ss, X, Y):
-        corr, incorr, _ = self.all_correct_incorrect(X, Y)
-        return corr._sample(ss), incorr._sample(ss)
+        corr, incorr, _, _ = self.all_correct_incorrect(X, Y)
+        return corr.sample(ss), incorr.sample(ss)
 
     def _compute_accuracy(self, a, y):
         ss = y.shape[0]
@@ -62,9 +61,10 @@ class NetworkRunner:
 
 class PredictionReport:
 
-    def __init__(self, name, a, y):
+    def __init__(self, name, a, x, y):
         self.name = name
         self.a = a
+        self.x = x
         self.y = y
         self.prediction = np.argmax(self.a, axis=1)
 
@@ -80,13 +80,21 @@ class PredictionReport:
     def prediction_prob(self):
         return self.a[np.arange(self.a.shape[0]), self.prediction]
 
-    def _sample(self, sample_size):
+    def get_sample_of_class(self, k, ss):
+        inds_of_class = np.argwhere(self.y == k)[:, 0]
+        num_k = inds_of_class.shape[0]
+        ss = min(ss, num_k)
+        inds_of_sample = _random_batch(inds_of_class, ss)
+        return PredictionReport(self.name, self.a[inds_of_sample], self.x[inds_of_sample], self.y[inds_of_sample])
+
+
+    def sample(self, sample_size):
         """Return a new prediction report, based on a random sample of this prediction report"""
         m = self.a.shape[0]
         ss = min(m, sample_size)
         inds = np.arange(m)
         r_inds = _random_batch(inds, ss)
-        return PredictionReport(self.name, self.a[r_inds], self.y[r_inds])
+        return PredictionReport(self.name, self.a[r_inds], self.x[r_inds], self.y[r_inds])
 
 
 def _random_batch(batch_indicies, m):

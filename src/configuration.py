@@ -19,7 +19,7 @@ conf.accuracy_ss = 1000
 conf.n = 55000
 conf.m = 128
 conf.num_class = 10
-conf.d = 50
+conf.d = 10
 conf.rbf_c = 4.0
 conf.z_bar_init_sd = 3.0
 conf.z_sd = 6.0
@@ -45,7 +45,11 @@ conf.spf_lmda = math.pi / 1440
 conf.spf_epochs = 500
 conf.spf_animation_interval = 50
 
+conf.adverserial_epsilon = 0.01
+conf.adverserial_ss = 5
+conf.adverserial_epochs = 100
 
+conf.show_really_incorrect = False
 
 def get_conf():
     return conf

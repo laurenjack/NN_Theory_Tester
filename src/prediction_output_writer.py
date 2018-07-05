@@ -1,11 +1,11 @@
 import numpy as np
 
-
 def extract_and_transform(X, Y, network_runner):
     """Extract and transform the data regarding an rbf networks predictions, to a relational model"""
     # Load the network data
     n = X.shape[0]
-    correct, incorrect, new_ordering = network_runner.all_correct_incorrect(X, Y)
+    correct, incorrect, correct_inds, incorr_inds = network_runner.all_correct_incorrect(X, Y)
+    new_ordering = np.concatenate([correct_inds, incorr_inds])
     z, z_bar, tau = network_runner.report_rbf_params(X[new_ordering], Y[new_ordering])
 
     #Transform, n level
@@ -37,4 +37,7 @@ def write_csv(X, Y, network_runner):
     point_stat, dimension_stat = extract_and_transform(X, Y, network_runner)
     np.savetxt("prediction_output/point_stat.csv", point_stat.transpose(), fmt="%.2f", delimiter=",")
     np.savetxt("prediction_output/dimension_stat.csv", dimension_stat.transpose(), fmt="%.2f", delimiter=",")
+
+
+
 

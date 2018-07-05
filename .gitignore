@@ -1,2 +1,3 @@
 *.pyc
 src/MNIST_data/
+src/prediction_output

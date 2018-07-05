@@ -5,7 +5,7 @@ mock_mnist = mock.Mock()
 sys.modules['tensorflow.examples.tutorials.mnist'] = mock_mnist
 mock_mnist.input_data = mock.Mock()
 from feed_forward_network import Network
-from train_mnist import *
+from train_network import *
 
 class TestTrainMnist(test.TestCase):
 
