@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from network_runner import NetworkRunner
 
-def train(network, data_set, conf):
+def train(graph, network, data_set, conf):
     X = data_set.X_train
     Y = data_set.Y_train
     X_val = data_set.X_val
@@ -12,7 +12,7 @@ def train(network, data_set, conf):
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
     train_op = network.train_op
-    network_runner = NetworkRunner(network, sess)
+    network_runner = NetworkRunner(graph, network, sess, conf)
 
     #Train
     train_accs = []
@@ -24,6 +24,8 @@ def train(network, data_set, conf):
     epochs = conf.epochs
     accuracy_ss = conf.accuracy_ss
     for e in xrange(epochs):
+        if e+1 in conf.decrease_lr_points:
+            conf.lr *= conf.decrease_lr_factor
         np.random.shuffle(batch_indicies)
         for k in xrange(0, n, m):
             batch = batch_indicies[k:k + m]

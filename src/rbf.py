@@ -111,14 +111,15 @@ class RbfOps:
 
 class RBF:
 
-    def __init__(self, z_bar_init, tau_init, batch_inds=None):
+    def __init__(self, z_bar_init, tau_init, lr_tensor, batch_inds=None):
         self.z_bar_init = z_bar_init
         self.tau_init = tau_init
         self.batch_inds = batch_inds
+        self.lr = lr_tensor
         self.y = tf.placeholder(tf.int32, shape=[None], name="y")
-
+        self.batch_size = tf.placeholder(tf.int32, shape=[], name="batch_size")
         global batch_size
-        batch_size = tf.placeholder(tf.int32, shape=[], name="batch_size")
+        batch_size = self.batch_size
 
     def create_ops(self, z):
         num_class = conf.num_class
@@ -135,8 +136,9 @@ class RBF:
                                           initializer=self.tau_init))
         tau_square = tau ** 2.0
 
+        self.y_hot = tf.one_hot(self.y, num_class)
         global y_hot
-        y_hot = tf.one_hot(self.y, num_class)
+        y_hot = self.y_hot
 
         g = tf.get_default_graph()
         z_re = tf.reshape(z_batch, [-1, d, 1])
@@ -145,7 +147,7 @@ class RBF:
             z_identity = tf.identity(z_tile, name='Identity')
 
         z_bar_re = tf.reshape(z_bar, [1, d, -1])
-        tile_shape = tf.concat([[batch_size], [1, 1]], axis=0)
+        tile_shape = tf.concat([[self.batch_size], [1, 1]], axis=0)
         z_bar_tile = tf.tile(z_bar_re, tile_shape)
         with g.gradient_override_map({'Identity': "z_bar_grad"}):
             z_bar_identity = tf.identity(z_bar_tile, name='Identity')
@@ -162,9 +164,9 @@ class RBF:
         with g.gradient_override_map({'Identity': "zero_the_grad"}):
             z_diff_sq_id = tf.identity(z_diff_sq, name='Identity')
             weighted_z_diff_sq_other = tf.multiply(tau_square_tile, z_diff_sq_id, name="wzds_other")
-            fs_shape = tf.concat([[batch_size], [1, num_class]], axis=0)
-            filtered_sum = tf.reshape(y_hot, fs_shape) * weighted_z_diff_sq_other
-            class_wise_batch_size = tf.reduce_sum(y_hot, axis=0)
+            fs_shape = tf.concat([[self.batch_size], [1, num_class]], axis=0)
+            filtered_sum = tf.reshape(self.y_hot, fs_shape) * weighted_z_diff_sq_other
+            class_wise_batch_size = tf.reduce_sum(self.y_hot, axis=0)
             is_greater_than_zero = tf.greater(class_wise_batch_size, 0.01)
             ones = tf.ones([num_class])
             safe_class_wise_batch_size = tf.where(is_greater_than_zero, class_wise_batch_size, ones)
@@ -189,10 +191,10 @@ class RBF:
             rbf_identity = tf.identity(rbf, name='Identity')
         sm = tf.nn.softmax(rbf_identity)
 
-        # loss = -tf.reduce_mean(tf.reduce_sum(y_hot*tf.log(sm), axis=1))
+        # loss = -tf.reduce_mean(tf.reduce_sum(self.y_hot*tf.log(sm), axis=1))
         image_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
         loss = tf.reduce_sum(image_loss) + tau_loss
-        train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
+        train_op = conf.optimizer(learning_rate=self.lr).minimize(loss)
 
         return RbfOps(train_op, z, z_bar, tau, sm, z_diff_sq, tau_square, weighted_z_diff_sq,
                 weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,

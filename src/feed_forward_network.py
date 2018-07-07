@@ -44,8 +44,14 @@ class Network:
     def get_y(self):
         return self.rbf.y
 
+    def get_y_hot(self):
+        return self.rbf.y_hot
+
     def get_batch_size(self):
-        return rb.batch_size
+        return self.rbf.batch_size
+
+    def get_lr(self):
+        return self.rbf.lr
 
     def rbf_params(self):
         return self.z, self.z_bar, self.tau

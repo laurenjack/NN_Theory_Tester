@@ -1,4 +1,5 @@
 import numpy as np
+import rbf
 
 class NetworkRunner:
     """Within the context of a tensorflow session, responsible
@@ -7,16 +8,22 @@ class NetworkRunner:
     These include most of the networks tensorflow ops, but also additional
     operations such as reporting on accuracy"""
 
-    def __init__(self, network, session):
+    def __init__(self, graph, network, session, conf):
+        self.graph = graph
         self.network = network
         self.sess = session
+        self.conf = conf
 
     def feed_and_run(self, x, y, op, batch=None):
         if batch is not None:
             x = x[batch]
             y = y[batch]
         batch_size = x.shape[0]
-        feed_dict = {self.network.get_x(): x, self.network.get_y(): y, self.network.get_batch_size(): batch_size}
+        #Neccessary evil, replace the globals in rbf with this networks tensors
+        rbf.batch_size = self.network.get_batch_size()
+        rbf.y_hot = self.network.get_y_hot()
+        feed_dict = {self.network.get_x(): x, self.network.get_y(): y, self.network.get_batch_size(): batch_size,
+                     self.network.get_lr(): self.conf.lr}
         result = self.sess.run(op, feed_dict=feed_dict)
         return result
 

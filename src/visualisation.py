@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 def plot_all(X, predicted, actual):
     n = X.shape[0]

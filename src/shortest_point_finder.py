@@ -37,8 +37,8 @@ def find_shortest_point(conf, z_bar, tau):
     if num_positive == 0:
         raise RuntimeError("Mathematically impossible, must be a bug")
 
-    g_2 = tf.Graph()
-    with g_2.as_default():
+    g_spf = tf.Graph()
+    with g_spf.as_default():
         init_theta_a = np.random.uniform(0.0, math.pi / 2.0 - 0.1, d)
         init_theta_b = np.random.uniform(math.pi / 2.0 + 0.1, 3.0 * math.pi / 2.0 - 0.1, d)
         spf_finder = SpfFinder(d, spf_lr, z_bar_i, tau_sq_i, k, scaling_factors, num_positive,

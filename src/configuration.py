@@ -24,9 +24,11 @@ conf.rbf_c = 4.0
 conf.z_bar_init_sd = 3.0
 conf.z_sd = 6.0
 conf.lr = 0.003
+conf.decrease_lr_points = [25, 40]
+conf.decrease_lr_factor = 0.3
 conf.show_details = False
 conf.train_centres_taus = True
-conf.epochs = 30
+conf.epochs = 50
 conf.classified_as_thresh = 0.5
 conf.optimizer = tf.train.GradientDescentOptimizer
 conf.target_variance = 1.0
@@ -46,7 +48,7 @@ conf.spf_epochs = 500
 conf.spf_animation_interval = 50
 
 conf.adverserial_epsilon = 0.01
-conf.adverserial_ss = 5
+conf.adverserial_ss = 10
 conf.adverserial_epochs = 100
 
 conf.show_really_incorrect = False

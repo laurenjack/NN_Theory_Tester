@@ -6,7 +6,7 @@ import train_network
 from data_set import load_mnist
 from feed_forward_network import Network
 from shortest_point_finder import find_shortest_point
-from reporter import report
+from reporter import *
 import rbf
 import configuration
 
@@ -15,14 +15,23 @@ def run_network(conf):
     data_set = load_mnist()
 
     #Train the network
-    z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
-    tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
-    rbf_end = rbf.RBF(z_bar_init, tau_init)
-    network = Network(rbf_end, conf)
-    network_runner, _, _ = train_network.train(network, data_set, conf)
+    network_runner1 = create_and_train_network(data_set)
+    #network_runner2 = create_and_train_network(data_set)
 
     #Report on the results
-    report(network_runner, data_set, conf)
+    report_single_network(network_runner1, data_set, conf)
+    # report_with_adverseries_from_second(network_runner1, network_runner2, data_set, conf)
+
+def create_and_train_network(data_set):
+    graph = tf.Graph()
+    with graph.as_default():
+        z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
+        tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
+        lr_tensor = tf.placeholder(tf.float32, shape=[], name='lr')
+        rbf_end = rbf.RBF(z_bar_init, tau_init, lr_tensor)
+        network = Network(rbf_end, conf)
+        network_runner, _, _ = train_network.train(graph, network, data_set, conf)
+    return network_runner
 
 
 def run_rbf_test(conf):
