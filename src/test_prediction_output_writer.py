@@ -2,7 +2,7 @@ import unittest as test
 from mock import *
 from network_runner import PredictionReport
 import numpy as np
-from prediction_output_writer import *
+from prediction_analytics import *
 
 class TestPredictionOutputWriter(test.TestCase):
 

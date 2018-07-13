@@ -1,7 +1,7 @@
 from visualisation import *
 import numpy as np
 from shortest_point_finder import find_shortest_point
-from prediction_output_writer import *
+from prediction_analytics import *
 from adverserial import *
 
 def report_single_network(network_runner, data_set, conf):
@@ -14,12 +14,16 @@ def report_single_network(network_runner, data_set, conf):
     correct, incorrect, closest_classes = _report(network_runner, data_set, conf)
 
     # show adversaries
-    x_adv, y_actual, x_actual = adverserial_gd(network_runner, correct, closest_classes, conf)
-    adverse_prediction, _ = _get_probabilities_for(network_runner, x_adv, y_actual, report=True)
-    plot_all_with_originals(x_adv, adverse_prediction, y_actual, x_actual)
+    if conf.show_adversaries:
+        x_adv, y_actual, x_actual = adverserial_gd(network_runner, correct, closest_classes, conf)
+        adverse_prediction, _ = _get_probabilities_for(network_runner, x_adv, y_actual, report=True)
+        plot_all_with_originals(x_adv, adverse_prediction, y_actual, x_actual)
 
     # Write structured data to a csv file
     write_csv(X_val, Y_val, network_runner)
+
+    if conf.show_roc:
+        roc_curve(X_val, Y_val, network_runner)
 
     # Show incorrect above the threshold
     if conf.show_really_incorrect:

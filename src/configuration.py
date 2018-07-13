@@ -51,6 +51,8 @@ conf.adverserial_epsilon = 0.01
 conf.adverserial_ss = 10
 conf.adverserial_epochs = 100
 
+conf.show_adversaries = False
+conf.show_roc = True
 conf.show_really_incorrect = False
 
 def get_conf():

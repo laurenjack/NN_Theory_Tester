@@ -1,4 +1,5 @@
 import numpy as np
+import visualisation
 
 def extract_and_transform(X, Y, network_runner):
     """Extract and transform the data regarding an rbf networks predictions, to a relational model"""
@@ -30,6 +31,31 @@ def extract_and_transform(X, Y, network_runner):
     selected_z_bar = z_bar.transpose()[predicted].flatten()
     dimension_stat = np.array([point_ids_nd, dim_ids, selected_z_diff, selected_tau, selected_z, selected_z_bar], dtype=object)
     return point_stat, dimension_stat
+
+def roc_curve(X, Y, network_runner):
+    # TODO | This is a lazy and technically incorrect implementation, would need to go class wise to get the true false
+    # TODO | positive rates.
+    n = X.shape[0]
+    point_stat, _ = extract_and_transform(X, Y, network_runner)
+    point_stat = point_stat.transpose()
+    thresh_variant = np.arange(0, 1.0, 0.01)
+    tps = []
+    fps = []
+    tps.append(1.0)
+    fps.append(1.0)
+    for i in xrange(thresh_variant.shape[0]):
+        t = thresh_variant[i]
+        tp_condition = np.logical_and(point_stat[:, 3].astype(np.bool), point_stat[:, 2] > t)
+        tp = point_stat[tp_condition].shape[0] / float(n)
+        fp_condition = np.logical_and(np.logical_not(point_stat[:, 3].astype(np.bool)), point_stat[:, 2] > t)
+        fp = point_stat[fp_condition].shape[0] / float(n)
+        tps.append(tp)
+        fps.append(fp)
+    visualisation.plot('ROC curve', fps, tps)
+
+
+
+
 
 def write_csv(X, Y, network_runner):
     """ETL pipline taking the data regarding an rbf networks predictions
