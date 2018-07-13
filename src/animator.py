@@ -104,9 +104,7 @@ def animate(train_result, conf):
     if show_animation:
         ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init,
                             interval=conf.animation_interval, repeat=False)
-    #plt.show()
-    if show_details:
-        _show_details_1_culster(zs[0], z_bars[0], taus[0])
+
     plt.show()
 
 def _prep_z_bars(z_bars, taus, num_class, d):
