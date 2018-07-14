@@ -18,23 +18,20 @@ def load_mnist():
     val_set = mnist.validation
     return DataSet(train_set.images, train_set.labels, val_set.images, val_set.labels)
 
-def load_cifar():
-    pass
-
-
 
 def load_cifar(conf):
-    #TODO change test to val
-    x, y = _load_data(conf.train_files)
-    x_test, y_test = _load_data([conf.test_file])
+    # TODO change test to val
+    x, y = _load_data(conf, conf.train_files)
+    x_test, y_test = _load_data(conf, [conf.test_file])
     pixel_mean = _compute_per_pixel_mean(x)
     x -= pixel_mean
     x /= 128.0
     x_test -= pixel_mean
     x_test /= 128.0
-    return (x, y), (x_test, y_test)
+    return DataSet(x, y, x_test, y_test)
 
-def _load_data(self, filenames):
+
+def _load_data(conf, filenames):
     xs = []
     for file_name in filenames:
         x = np.fromfile(file_name, np.uint8)
@@ -46,11 +43,11 @@ def _load_data(self, filenames):
     y = x[:, 0]
     x = x[:, 1:]
     # Reshape
-    x = x.reshape(n, 3, IMAGE_SIZE, IMAGE_SIZE)
+    x = x.reshape(n, 3, conf.image_width, conf.image_width)
     x = x.transpose(0, 2, 3, 1)
     x = x.astype(dtype=np.float32)
     return x, y
 
-def _compute_per_pixel_mean(self, x_train):
+def _compute_per_pixel_mean(x_train):
     pixel_mean = np.mean(x_train[0:50000], axis=0)
     return pixel_mean

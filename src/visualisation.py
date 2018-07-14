@@ -3,8 +3,8 @@ import numpy as np
 
 def plot(title, x, y):
     ax = plt.gca()
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
+    # ax.set_xlim(0, 1)
+    # ax.set_ylim(0, 1)
     plt.title(title)
     plt.plot(x, y)
     plt.show()

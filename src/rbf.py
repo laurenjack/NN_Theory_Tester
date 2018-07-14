@@ -111,11 +111,11 @@ class RbfOps:
 
 class RBF:
 
-    def __init__(self, z_bar_init, tau_init, lr_tensor, batch_inds=None):
+    def __init__(self, z_bar_init, tau_init, batch_inds=None):
         self.z_bar_init = z_bar_init
         self.tau_init = tau_init
         self.batch_inds = batch_inds
-        self.lr = lr_tensor
+        self.lr = tf.placeholder(tf.float32, shape=[], name='lr')
         self.y = tf.placeholder(tf.int32, shape=[None], name="y")
         self.batch_size = tf.placeholder(tf.int32, shape=[], name="batch_size")
         global batch_size

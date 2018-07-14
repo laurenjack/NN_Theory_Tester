@@ -11,16 +11,22 @@ def report_single_network(network_runner, data_set, conf):
     properties of correct, incorrect and adverserial examples etc."""
     X_val = data_set.X_val
     Y_val = data_set.Y_val
-    correct, incorrect, closest_classes = _report(network_runner, data_set, conf)
+    correct, incorrect = _report(network_runner, data_set, conf)
+
+    class_to_adversary = conf.class_to_adversary_class
+    if class_to_adversary is None:
+        z, z_bar, tau = network_runner.report_rbf_params(X_val, Y_val)
+        class_to_adversary = _report_shortest_point(conf, z_bar, tau)
 
     # show adversaries
     if conf.show_adversaries:
-        x_adv, y_actual, x_actual = adverserial_gd(network_runner, correct, closest_classes, conf)
+        x_adv, y_actual, x_actual = adverserial_gd(network_runner, correct, class_to_adversary, conf)
         adverse_prediction, _ = _get_probabilities_for(network_runner, x_adv, y_actual, report=True)
         plot_all_with_originals(x_adv, adverse_prediction, y_actual, x_actual)
 
     # Write structured data to a csv file
-    write_csv(X_val, Y_val, network_runner)
+    if conf.write_csv:
+        write_csv(X_val, Y_val, network_runner)
 
     if conf.show_roc:
         roc_curve(X_val, Y_val, network_runner)
@@ -36,9 +42,13 @@ def report_single_network(network_runner, data_set, conf):
 def report_with_adverseries_from_second(nr1, nr2, data_set, conf):
     """Reporting function focused on generating adverser"""
     with nr1.graph.as_default():
-        correct, incorrect, closest_classes = _report(nr1, data_set, conf)
+        correct, incorrect, = _report(nr1, data_set, conf)
+        class_to_adversary = conf.class_to_adversary_class
+        if class_to_adversary is None:
+            z, z_bar, tau = nr1.report_rbf_params(data_set.X_val, data_set.Y_val)
+            class_to_adversary = _report_shortest_point(conf, z_bar, tau)
 
-        x_adv, y_actual, x_actual = adverserial_gd(nr1, correct, closest_classes, conf)
+        x_adv, y_actual, x_actual = adverserial_gd(nr1, correct, class_to_adversary, conf)
         predictions1, probs1 = _get_probabilities_for(nr1, x_actual, y_actual)
         adv_predictions1, adv_probs1 = _get_probabilities_for(nr1, x_adv, y_actual)
 
@@ -47,7 +57,7 @@ def report_with_adverseries_from_second(nr1, nr2, data_set, conf):
         adv_predictions2, adv_probs2 = _get_probabilities_for(nr2, x_adv, y_actual)
         adv_ss = x_adv.shape[0]
 
-    actual_class, adv_class = closest_classes
+    actual_class, adv_class = class_to_adversary
     _convincing_adverseries(adv_predictions1, adv_probs1, adv_class)
     _convincing_adverseries(adv_predictions2, adv_probs2, adv_class)
 
@@ -73,7 +83,6 @@ def _convincing_adverseries(adv_predictions, adv_probs, adv_class):
 def _report(network_runner, data_set, conf):
     X_val = data_set.X_val
     Y_val = data_set.Y_val
-    z, z_bar, tau = network_runner.report_rbf_params(X_val, Y_val)
     correct, incorrect, _, _ = network_runner.all_correct_incorrect(X_val, Y_val)
 
     # Report on a sample of correct and incorrect results
@@ -82,8 +91,7 @@ def _report(network_runner, data_set, conf):
     correct_sample.show()
     incorrect_sample.show()
 
-    closest_classes = _report_shortest_point(conf, z_bar, tau)
-    return correct, incorrect, closest_classes
+    return correct, incorrect
 
 def _report_shortest_point(conf, z_bar, tau):
     # Apply the shortest point finder

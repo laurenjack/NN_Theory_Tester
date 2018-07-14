@@ -41,8 +41,8 @@ def roc_curve(X, Y, network_runner):
     thresh_variant = np.arange(0, 1.0, 0.01)
     tps = []
     fps = []
-    tps.append(1.0)
-    fps.append(1.0)
+    # tps.append(1.0)
+    # fps.append(1.0)
     for i in xrange(thresh_variant.shape[0]):
         t = thresh_variant[i]
         tp_condition = np.logical_and(point_stat[:, 3].astype(np.bool), point_stat[:, 2] > t)

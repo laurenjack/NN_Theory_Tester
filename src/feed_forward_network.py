@@ -11,7 +11,7 @@ class Network:
         num_inputs = conf.num_inputs
         num_class = conf.num_class
         self.x = tf.placeholder(tf.float32, shape=[None, num_inputs], name="inputs")
-        # self.y = tf.placeholder(tf.int32, shape=[None], name="target_outputs")
+        self.is_training = tf.placeholder(dtype=tf.bool, shape=[], name='is_training')
 
         #Create the feedforward component
         hidden_sizes = conf.hidden_sizes
@@ -55,6 +55,9 @@ class Network:
 
     def rbf_params(self):
         return self.z, self.z_bar, self.tau
+
+    def has_rbf(self):
+        return self.rbf is not None
 
     def fgsm_adverserial_with_target(self):
         """Generate an adverserial example using the fast gradient sign method.
