@@ -19,13 +19,12 @@ class NetworkRunner:
             x = x[batch]
             y = y[batch]
         batch_size = x.shape[0]
-        feed_dict = {self.network.get_x(): x, self.network.get_y(): y,
+        feed_dict = {self.network.get_x(): x, self.network.get_y(): y, self.network.get_batch_size(): batch_size,
                      self.network.get_lr(): self.conf.lr, self.network.is_training: is_training}
         # Necessary evil, replace the globals in rbf with this networks tensors
         if self.network.has_rbf():
             rbf.batch_size = self.network.get_batch_size()
             rbf.y_hot = self.network.get_y_hot()
-            feed_dict[self.network.get_batch_size()] = batch_size
         result = self.sess.run(op, feed_dict=feed_dict)
         return result
 
@@ -64,7 +63,7 @@ class NetworkRunner:
     def _compute_accuracy(self, a, y):
         ss = y.shape[0]
         prediction = np.argmax(a, axis=1)
-        correct_indicator = np.equal(prediction, y).astype(np.int32)
+        correct_indicator = np.equal(prediction, y.astype(np.int32)).astype(np.int32)
         return float(np.sum(correct_indicator)) / float(ss)
 
 
