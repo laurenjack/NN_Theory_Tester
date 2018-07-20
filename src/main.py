@@ -33,7 +33,10 @@ def create_and_train_network(data_set):
         tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
         rbf_end = rbf.RBF(z_bar_init, tau_init)
         network = Network(rbf_end, conf)
-        network_runner = train_network.train(graph, network, data_set, conf)
+        if conf.do_train:
+            network_runner = train_network.train(graph, network, data_set, conf)
+        else:
+            network_runner = train_network.load_pre_trained(graph, network, conf)
     return network_runner
 
 
@@ -41,7 +44,10 @@ def create_and_train_resnet(data_set):
     graph = tf.Graph()
     with graph.as_default():
         resnet = Resnet(conf)
-        network_runner = train_network.train(graph, resnet, data_set, conf)
+        if conf.do_train:
+            network_runner = train_network.train(graph, resnet, data_set, conf)
+        else:
+            network_runner = train_network.load_pre_trained(graph, resnet, conf)
     return network_runner
 
 
