@@ -29,7 +29,8 @@ def report_single_network(network_runner, data_set, conf):
         write_csv(X_val, Y_val, network_runner)
 
     if conf.show_roc:
-        roc_curve(X_val, Y_val, network_runner)
+        tprs, fprs = roc_curve(X_val, Y_val, network_runner, conf)
+        visualisation.plot('ROC curve', fprs, tprs)
 
     # Show incorrect above the threshold
     if conf.show_really_incorrect:

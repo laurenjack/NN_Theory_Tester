@@ -33,7 +33,8 @@ class NetworkRunner:
         z, z_bar, tau = self.feed_and_run(X, Y, self.network.rbf_params())
         return z, z_bar, tau
 
-
+    def probabilities(self, X, Y):
+        return self.feed_and_run(X, Y, self.network.a)
 
     def report_accuracy(self, set_name, batch_indicies, accuracy_ss, X, Y):
         acc_batch = _random_batch(batch_indicies, accuracy_ss)

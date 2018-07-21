@@ -23,7 +23,7 @@ class Network:
 
         self.z = self._create_layer(a, l+1, [ins[-1], outs[-1]])
 
-        rbf_ops = self.rbf.create_ops(self.z)
+        rbf_ops = self.rbf.create_all_ops(self.z)
         core_ops = rbf_ops.core_ops()
         self.train_op = core_ops[0]
         self.z = core_ops[1]

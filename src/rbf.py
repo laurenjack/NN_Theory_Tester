@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import operation
 import configuration
 
 conf = configuration.get_conf()
@@ -121,7 +122,7 @@ class RBF:
         global batch_size
         batch_size = self.batch_size
 
-    def create_ops(self, z):
+    def create_all_ops(self, z):
         num_class = conf.num_class
         d = conf.d
 
@@ -199,3 +200,8 @@ class RBF:
         return RbfOps(train_op, z, z_bar, tau, sm, z_diff_sq, tau_square, weighted_z_diff_sq,
                 weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
                 z_grad, z_bar_grad, loss)
+
+    def create_ops(self, pre_z):
+        z = operation.fc(pre_z, pre_z.get_shape()[1])
+        rbf_ops = self.create_all_ops(z)
+        return rbf_ops.sm, rbf_ops.loss

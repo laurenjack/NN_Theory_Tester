@@ -7,7 +7,8 @@ BATCH_NORM_OPS_KEY = 'batch_norm_ops'
 
 class Resnet:
 
-    def __init__(self, conf):
+    def __init__(self, conf, end):
+        self.end = end
         self.kernel_stride = conf.kernel_stride
         self.stack_entry_kernel_stride = conf.stack_entry_kernel_stride
         self.kernel_width = conf.kernel_width
@@ -18,7 +19,6 @@ class Resnet:
 
         self.x = tf.placeholder(tf.float32, shape=[None, conf.image_width, conf.image_width, conf.image_depth],
                                 name="x")
-        self.y = tf.placeholder(tf.int32, shape=[None], name="y")
         self.lr = tf.placeholder(tf.float32, shape=[], name='lr')
         self.is_training = tf.placeholder(dtype=tf.bool, shape=[], name='is_training')
         self.batch_size = tf.placeholder(tf.int32, shape=[], name="batch_size")
@@ -36,10 +36,7 @@ class Resnet:
             a = self._stack(a, num_filter, num_block, i)
 
         a = tf.reduce_mean(a, axis=[1, 2], name="avg_pool")
-        a = self._fc(a)
-        self.a = tf.nn.softmax(a)
-        xe = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=a)
-        self.main_loss = tf.reduce_mean(xe)
+        self.a, main_loss = end.create_ops(a)
 
         # Regularisation (still tied to the lr of the main update)
         reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -49,7 +46,7 @@ class Resnet:
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         # batch_norm_updates = tf.get_collection(BATCH_NORM_OPS_KEY)
         # batch_norm_updates_op = tf.group(*batch_norm_updates)
-        self.loss = self.main_loss + reg_loss
+        self.loss = main_loss + reg_loss
         self.optimzer = conf.optimizer(learning_rate=self.lr, momentum=0.9).minimize(self.loss)
         with tf.control_dependencies(update_ops):
             self.train_op = tf.group(self.optimzer, increment_epochs_trained)
@@ -61,7 +58,7 @@ class Resnet:
         return self.x
 
     def get_y(self):
-        return self.y
+        return self.end.y
 
     def get_lr(self):
         return self.lr
@@ -121,18 +118,6 @@ class Resnet:
         flipped = tf.where(do_flip, tf.image.flip_left_right(cropped), cropped)
         return control_flow_ops.cond(self.is_training, lambda: flipped, lambda: x)
 
-
-    def _fc(self, a):
-        num_units_in = a.get_shape()[1]
-        num_units_out = self.num_class
-        weights_initializer = tf.contrib.layers.variance_scaling_initializer(2.0)
-
-        weights = self._get_variable('weights', shape=[num_units_in, num_units_out], initializer=weights_initializer)
-        biases = self._get_variable('biases', shape=[num_units_out], initializer=tf.zeros_initializer)
-        a = tf.nn.xw_plus_b(a, weights, biases)
-        weight_reg = tf.nn.l2_loss(weights)
-        tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, weight_reg)
-        return a
 
     def _get_variable(self, name, shape, initializer, dtype=tf.float32, trainable=True):
         """A little wrapper around tf.get_variable to do weight decay and add to resnet collection"""

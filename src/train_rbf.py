@@ -14,7 +14,7 @@ def train(conf):
         z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
         tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
         net = rb.RBF(z_bar_init, tau_init, batch_inds_ph)
-        rbf_ops = net.create_ops(z_var)
+        rbf_ops = net.create_all_ops(z_var)
         core_ops = rbf_ops.core_ops()
 
         # Summaries for variables

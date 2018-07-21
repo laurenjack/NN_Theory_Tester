@@ -9,7 +9,7 @@ class Conf:
 conf = Conf()
 
 conf.is_resnet = True
-conf.do_train = True
+conf.do_train = False
 
 # Data set params
 conf.n = 50000
@@ -65,7 +65,7 @@ conf.adverserial_epochs = 100
 # Reporting params
 conf.accuracy_ss = 10000
 conf.show_adversaries = False
-conf.show_roc = False
+conf.show_roc = True
 conf.show_really_incorrect = False
 conf.write_csv = False
 conf.class_to_adversary_class = (3, 5)  # Binary tuple used to express that the class at index 0 should be turned into

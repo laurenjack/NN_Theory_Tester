@@ -57,6 +57,35 @@ class TestPredictionOutputWriter(test.TestCase):
         self.assertTrue(np.array_equal(exp_point_stat, point_stat))
         self.assertTrue(np.array_equal(exp_dimension_stat, dimension_stat))
 
+    def test_roc_curve(self):
+        X ='mock'
+        Y = np.array([1, 2, 1, 0, 0, 2, 2, 1, 0])
+        probabilities = np.array([[0.7, 0.2, 0.1],
+                               [0.1, 0.3, 0.6],
+                               [0.05, 0.8, 0.15],
+                               [0.8, 0.1, 0.1],
+                               [0.25, 0.5, 0.25],
+                               [0.1, 0.8, 0.1],
+                               [0.5, 0.25, 0.25],
+                                 [0.25, 0.5, 0.25],
+                                 [0.49, 0.21, 0.3]])
+        class Conf:
+            pass
+        conf= Conf()
+        conf.num_class = 3
+
+        # mocks
+        network_runner = Mock()
+        network_runner.probabilities = Mock(return_value=probabilities)
+
+        tprs, fprs = roc_curve(X, Y, network_runner, conf)
+
+        #Expectations
+        exp_tprs = np.array([1.0, 2.0, 3.0]) / 3.0
+        exp_fprs = np.array([1.0 / 18.0, 7.0 / 18.0, 14.0 / 18.0])
+        self.assertTrue(np.allclose(exp_tprs, tprs))
+        self.assertTrue(np.allclose(exp_fprs, fprs))
+
 
 
 

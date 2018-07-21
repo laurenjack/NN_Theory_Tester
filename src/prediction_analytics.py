@@ -1,5 +1,6 @@
 import numpy as np
 import visualisation
+import configuration
 
 def extract_and_transform(X, Y, network_runner):
     """Extract and transform the data regarding an rbf networks predictions, to a relational model"""
@@ -32,29 +33,50 @@ def extract_and_transform(X, Y, network_runner):
     dimension_stat = np.array([point_ids_nd, dim_ids, selected_z_diff, selected_tau, selected_z, selected_z_bar], dtype=object)
     return point_stat, dimension_stat
 
-def roc_curve(X, Y, network_runner):
-    # TODO | This is a lazy and technically incorrect implementation, would need to go class wise to get the true false
-    # TODO | positive rates.
-    n = X.shape[0]
-    point_stat, _ = extract_and_transform(X, Y, network_runner)
-    point_stat = point_stat.transpose()
-    thresh_variant = np.arange(0, 1.0, 0.01)
-    tps = []
-    fps = []
-    # tps.append(1.0)
-    # fps.append(1.0)
-    for i in xrange(thresh_variant.shape[0]):
-        t = thresh_variant[i]
-        tp_condition = np.logical_and(point_stat[:, 3].astype(np.bool), point_stat[:, 2] > t)
-        tp = point_stat[tp_condition].shape[0] / float(n)
-        fp_condition = np.logical_and(np.logical_not(point_stat[:, 3].astype(np.bool)), point_stat[:, 2] > t)
-        fp = point_stat[fp_condition].shape[0] / float(n)
-        tps.append(tp)
-        fps.append(fp)
-    visualisation.plot('ROC curve', fps, tps)
+
+def roc_curve(X, Y, network_runner, conf):
+    # TODO Current function assumes perfectly balanced classes
+    Y = Y.astype(np.int32)
+    probabilities = network_runner.probabilities(X, Y)
+    n = probabilities.shape[0]
+    class_wise_tprs = []
+    class_wise_fprs = []
+    for k in xrange(conf.num_class):
+        actual_k_indicies = np.argwhere(Y == k)[:, 0]
+        not_k_indicies = np.argwhere(Y != k)[:, 0]
+        probability_of_k = probabilities[:, k]
+        prob_of_k_for_actual_ks = probability_of_k[actual_k_indicies]
+        ranked_prob_of_k_for_actual_ks = -np.sort(-prob_of_k_for_actual_ks)
+        not_k_probabilities = probability_of_k[not_k_indicies]
+
+        samples_per_k = actual_k_indicies.shape[0]
+        tprs = []
+        fprs = []
+        for i in xrange(0, samples_per_k):
+            k_recalled = i+1
+            thresh = ranked_prob_of_k_for_actual_ks[i]
+            falsely_recalled = np.sum(np.greater_equal(not_k_probabilities, thresh).astype(np.int32))
+            tpr = float(k_recalled) / float(samples_per_k)
+            fpr = float(falsely_recalled) / float(n - samples_per_k)
+            tprs.append(tpr)
+            fprs.append(fpr)
+        # Weight the tprs and fprs accordingly
+        weight = float(samples_per_k) / float(n)
+        tprs = np.array(tprs) * weight
+        fprs = np.array(fprs) * weight
+        class_wise_tprs.append(tprs)
+        class_wise_fprs.append(fprs)
+
+    final_tprs = _sum_arrays(class_wise_tprs)
+    final_fprs = _sum_arrays(class_wise_fprs)
+    return final_tprs, final_fprs
 
 
-
+def _sum_arrays(arrays):
+    base = np.zeros(arrays[0].shape, dtype=np.float32)
+    for a in arrays:
+        base += a
+    return base
 
 
 def write_csv(X, Y, network_runner):

@@ -26,7 +26,7 @@ class TestRbf(test.TestCase):
         y_hot = np.array([[1, 0],[1, 0],[0, 1]]).reshape(3,1,2)
         z_var = tf.get_variable("z", shape=[conf.m, conf.d], initializer=z_init)
         net = rb.RBF(z_bar_init, tau_init)
-        rbf_ops = net.create_ops(z_var)
+        rbf_ops = net.create_all_ops(z_var)
 
         # Get ops for testing
         train_op = rbf_ops.train_op
