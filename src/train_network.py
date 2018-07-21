@@ -36,8 +36,8 @@ def train(graph, network, data_set, conf):
         network_runner.report_accuracy('Validation', val_batch_indicies, accuracy_ss, X_val, Y_val)
         print ''
 
-    if conf.model_save_dir is not None:
-        saver.save(sess, conf.model_save_dir+'/model.ckpt')
+    if network.model_save_dir is not None:
+        saver.save(sess, network.model_save_dir+'/model.ckpt')
     return network_runner
 
 
@@ -46,9 +46,9 @@ def load_pre_trained(graph, network, conf):
     tf.global_variables_initializer().run()
     saver = tf.train.Saver(tf.global_variables())
 
-    latest = tf.train.latest_checkpoint(conf.model_save_dir)
+    latest = tf.train.latest_checkpoint(network.model_save_dir)
     if not latest:
-        print "No checkpoint to continue from in", conf.model_save_dir
+        print "No checkpoint to continue from in", network.model_save_dir
         sys.exit(1)
     print "resume", latest
     saver.restore(sess, latest)

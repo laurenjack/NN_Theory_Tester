@@ -9,6 +9,7 @@ class Conf:
 conf = Conf()
 
 conf.is_resnet = True
+conf.is_rbf = False
 conf.do_train = False
 
 # Data set params
@@ -17,7 +18,6 @@ conf.num_class = 10
 #conf.num_inputs = 784
 conf.image_width = 32
 conf.image_depth = 3
-conf.model_save_dir = '/home/laurenjack/models/resnet_plain'
 data_dir = '/home/laurenjack/models/cifar-data/cifar-10-batches-bin'
 conf.train_files = [data_dir + '/data_batch_' + str(i+1) + '.bin' for i in xrange(5)]
 conf.test_file = data_dir + '/test_batch.bin'

@@ -14,15 +14,23 @@ from vanilla_softmax import VanillaSoftmax
 def create_and_train_network():
     graph = tf.Graph()
     with graph.as_default():
-        if conf.is_resnet:
-            data_set = load_cifar(conf)
-            network = Resnet(conf, VanillaSoftmax())
-        else:
+        if conf.is_rbf:
             z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
             tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
-            rbf_end = rbf.RBF(z_bar_init, tau_init)
+            end = rbf.RBF(z_bar_init, tau_init)
+        else:
+            end = VanillaSoftmax()
+        if conf.is_resnet:
+            if conf.is_rbf:
+                model_save_dir = '/home/laurenjack/models/resnet_rbf'
+            else:
+                model_save_dir = '/home/laurenjack/models/resnet_plain'
+            data_set = load_cifar(conf)
+            network = Resnet(conf, end, model_save_dir)
+        else:
+
             data_set = load_mnist(conf)
-            network = Network(rbf_end, conf)
+            network = Network(end, conf)
         if conf.do_train:
             network_runner = train_network.train(graph, network, data_set, conf)
         else:

@@ -7,8 +7,9 @@ BATCH_NORM_OPS_KEY = 'batch_norm_ops'
 
 class Resnet:
 
-    def __init__(self, conf, end):
+    def __init__(self, conf, end, model_save_dir):
         self.end = end
+        self.model_save_dir = model_save_dir
         self.kernel_stride = conf.kernel_stride
         self.stack_entry_kernel_stride = conf.stack_entry_kernel_stride
         self.kernel_width = conf.kernel_width
