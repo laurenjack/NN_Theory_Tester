@@ -22,7 +22,6 @@ class Resnet:
                                 name="x")
         self.lr = tf.placeholder(tf.float32, shape=[], name='lr')
         self.is_training = tf.placeholder(dtype=tf.bool, shape=[], name='is_training')
-        self.batch_size = tf.placeholder(tf.int32, shape=[], name="batch_size")
         epochs_trained = tf.Variable(0, trainable=False, name='epochs_trained', dtype=tf.int32)
         increment_epochs_trained = tf.assign(epochs_trained, epochs_trained+1)
         self.weight_decay = tf.train.exponential_decay(conf.weight_decay, epochs_trained,
@@ -36,8 +35,9 @@ class Resnet:
         for num_filter, num_block, i in zip(conf.num_filter_for_stack, conf.num_blocks_per_stack, xrange(num_stack)):
             a = self._stack(a, num_filter, num_block, i)
 
-        a = tf.reduce_mean(a, axis=[1, 2], name="avg_pool")
-        self.a, main_loss = end.create_ops(a)
+        #a = tf.reduce_mean(a, axis=[1, 2], name="avg_pool")
+        #a = tf.reshape(a, shape=[-1, conf.d])
+        self.a, main_loss, self.z, self.z_bar, self.tau = end.create_ops(a)
 
         # Regularisation (still tied to the lr of the main update)
         reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -65,7 +65,10 @@ class Resnet:
         return self.lr
 
     def get_batch_size(self):
-        return self.batch_size
+        return self.end.batch_size
+
+    def rbf_params(self):
+        return self.z, self.z_bar, self.tau
 
     def _stack(self, a, num_filter, num_block, stack_index):
         scope_name = 'stack'+str(stack_index)
@@ -114,8 +117,8 @@ class Resnet:
 
     def _augment(self, x):
         padded = tf.pad(x, [[0, 0], [4, 4], [4, 4], [0, 0]])
-        cropped = tf.random_crop(padded, [self.batch_size, self.image_width, self.image_width, 3])
-        do_flip = tf.greater(tf.random_uniform(shape=[self.batch_size]), 0.5)
+        cropped = tf.random_crop(padded, [self.end.batch_size, self.image_width, self.image_width, 3])
+        do_flip = tf.greater(tf.random_uniform(shape=[self.end.batch_size]), 0.5)
         flipped = tf.where(do_flip, tf.image.flip_left_right(cropped), cropped)
         return control_flow_ops.cond(self.is_training, lambda: flipped, lambda: x)
 

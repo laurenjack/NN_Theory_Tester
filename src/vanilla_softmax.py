@@ -7,6 +7,7 @@ class VanillaSoftmax:
     """Standard end of a nueral network"""
 
     def __init__(self):
+        self.batch_size = tf.placeholder(tf.int32, shape=[], name="batch_size")
         self.y = tf.placeholder(tf.int32, shape=[None], name="y")
 
     def create_ops(self, pre_z):

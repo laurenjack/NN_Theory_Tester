@@ -70,7 +70,7 @@ def _z_bar_grad(unused_op, grad):
     grad = xe_sm_grad_reshaped * grad
     global z_bar_grad
     z_bar_grad = grad / tf.cast(batch_size, tf.float32) ** 0.5
-    return z_bar_grad
+    return z_bar_grad #* 10000.0
 
 
 @tf.RegisterGradient("tau_grad")
@@ -82,7 +82,7 @@ def _tau_grad(unused_op, grad):
     global tau_grad
     grad = tf.reshape(variance_grad, shape=[1, d, K]) * grad
     tau_grad = tf.sign(grad) * tf.abs(grad / tf.cast(batch_size, tf.float32)) ** 0.5 * 0.5
-    return tau_grad
+    return tau_grad * 500.0
 
 
 class RbfOps:
@@ -164,7 +164,7 @@ class RBF:
 
         with g.gradient_override_map({'Identity': "zero_the_grad"}):
             z_diff_sq_id = tf.identity(z_diff_sq, name='Identity')
-            weighted_z_diff_sq_other = tf.multiply(tau_square_tile, z_diff_sq_id, name="wzds_other")
+            weighted_z_diff_sq_other = tf.multiply(tau_square_tile, z_diff_sq_id, name="wzds_other") / float(conf.d)
             fs_shape = tf.concat([[self.batch_size], [1, num_class]], axis=0)
             filtered_sum = tf.reshape(self.y_hot, fs_shape) * weighted_z_diff_sq_other
             class_wise_batch_size = tf.reduce_sum(self.y_hot, axis=0)
@@ -195,13 +195,15 @@ class RBF:
         # loss = -tf.reduce_mean(tf.reduce_sum(self.y_hot*tf.log(sm), axis=1))
         image_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
         loss = tf.reduce_sum(image_loss) + tau_loss
-        train_op = conf.optimizer(learning_rate=self.lr).minimize(loss)
+        #train_op = conf.optimizer(learning_rate=self.lr).minimize(loss)
+        train_op = None # TODO needs proper refactor ASAP
 
         return RbfOps(train_op, z, z_bar, tau, sm, z_diff_sq, tau_square, weighted_z_diff_sq,
                 weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
                 z_grad, z_bar_grad, loss)
 
     def create_ops(self, pre_z):
-        z = operation.fc(pre_z, pre_z.get_shape()[1])
+        z = operation.per_filter_fc(pre_z)
+        #z = operation.fc(pre_z, pre_z.get_shape()[1])
         rbf_ops = self.create_all_ops(z)
-        return rbf_ops.sm, rbf_ops.loss
+        return rbf_ops.sm, rbf_ops.loss, rbf_ops.z, rbf_ops.z_bar, rbf_ops.tau

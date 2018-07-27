@@ -14,6 +14,7 @@ from vanilla_softmax import VanillaSoftmax
 def create_and_train_network():
     graph = tf.Graph()
     with graph.as_default():
+        tf.placeholder(tf.int32, shape=[], name="batch_size")
         if conf.is_rbf:
             z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
             tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))

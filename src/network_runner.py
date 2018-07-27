@@ -28,13 +28,27 @@ class NetworkRunner:
         result = self.sess.run(op, feed_dict=feed_dict)
         return result
 
-    def report_rbf_params(self, X, Y):
-        """Report the rbf parameters (z, z_bar and tau) for the data set X, Y"""
+    def report_rbf_params(self, X, Y, ss=None):
+        """Report the rbf parameters (z, z_bar and tau) for the data set X, Y
+        Optional sample size for choosing random sample of data set"""
+        if ss is not None:
+            batch = _random_batch(np.arange(X.shape[0]), ss)
+            X = X[batch]
+            Y = Y[batch]
         z, z_bar, tau = self.feed_and_run(X, Y, self.network.rbf_params())
         return z, z_bar, tau
 
     def probabilities(self, X, Y):
-        return self.feed_and_run(X, Y, self.network.a)
+        n = X.shape[0]
+        m = 128
+        probs = []
+        batch_inds = np.arange(n)
+        for k in xrange(0, n, m):
+            batch = batch_inds[k:k + m]
+            a = self.feed_and_run(X[batch], Y[batch], self.network.a)
+            probs.append(a)
+        a = np.concatenate(probs)
+        return a
 
     def report_accuracy(self, set_name, batch_indicies, accuracy_ss, X, Y):
         acc_batch = _random_batch(batch_indicies, accuracy_ss)
@@ -47,7 +61,14 @@ class NetworkRunner:
     def all_correct_incorrect(self, X, Y):
         """Get The prediction report for all the correct, and all the incorrect predictions"""
         n = X.shape[0]
-        a = self.feed_and_run(X, Y, self.network.a)
+        m = 128
+        probs = []
+        batch_inds = np.arange(n)
+        for k in xrange(0, n, m):
+            batch = batch_inds[k:k+m]
+            a = self.feed_and_run(X[batch], Y[batch], self.network.a)
+            probs.append(a)
+        a = np.concatenate(probs)
         preds = np.argmax(a, axis=1)
         # Find the correct predictions
         is_correct = np.equal(Y, preds)

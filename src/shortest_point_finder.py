@@ -49,6 +49,7 @@ def find_shortest_point(conf, z_bar, tau):
         tf.global_variables_initializer().run()
         z_list = []
         for e in xrange(spf_epochs):
+            print 'Spf epoch: '+str(e)
             _, theta_a, z_a, C_a, rbf_a =sess.run(ops_a)
             _, theta_b, z_b, C_b, rbf_b = sess.run(ops_b)
             z_list.append(np.array([z_a, z_b]))

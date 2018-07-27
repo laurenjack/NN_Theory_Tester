@@ -13,6 +13,9 @@ def report_single_network(network_runner, data_set, conf):
     Y_val = data_set.Y_val
     correct, incorrect = _report(network_runner, data_set, conf)
 
+    if conf.print_rbf_batch:
+        _print_rbf_bacth(X_val, Y_val, network_runner, conf)
+
     class_to_adversary = conf.class_to_adversary_class
     if class_to_adversary is None:
         z, z_bar, tau = network_runner.report_rbf_params(X_val, Y_val)
@@ -34,10 +37,13 @@ def report_single_network(network_runner, data_set, conf):
 
     # Show incorrect above the threshold
     if conf.show_really_incorrect:
-        really_incorr_inds = np.argwhere(incorrect.prediction_prob() > 0.5)[:, 0]
+        really_incorr_inds = np.argwhere(incorrect.prediction_prob() > conf.classified_as_thresh)[:, 0]
         really_incorrect_prediction = incorrect.prediction[really_incorr_inds]
         really_incorrect_x = incorrect.x[really_incorr_inds]
         really_incorrect_actual = incorrect.y[really_incorr_inds]
+        print "Really Incorrect Actuals vs Predictions:"
+        print 'A: '+str(really_incorrect_actual)
+        print 'P: '+str(really_incorrect_prediction)
         plot_all(really_incorrect_x, really_incorrect_prediction, really_incorrect_actual)
 
 def report_with_adverseries_from_second(nr1, nr2, data_set, conf):
@@ -119,3 +125,10 @@ def _get_probabilities_for(network_runner, x, y, report=False):
             print probabilities[i]
             print ''
     return prediction, probabilities
+
+def _print_rbf_bacth(X, Y, network_runner, conf):
+    """Print the rbf parameters from a random batch of the data set"""
+    z, z_bar, tau = network_runner.report_rbf_params(X, Y, conf.m)
+    print str(z)+'\n'
+    print str(z_bar) + '\n'
+    print str(tau) + '\n'

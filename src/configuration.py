@@ -9,7 +9,7 @@ class Conf:
 conf = Conf()
 
 conf.is_resnet = True
-conf.is_rbf = False
+conf.is_rbf = True
 conf.do_train = False
 
 # Data set params
@@ -24,7 +24,7 @@ conf.test_file = data_dir + '/test_batch.bin'
 
 # Network and rbf params
 conf.hidden_sizes = [100]
-conf.d = 10
+conf.d = 4096
 conf.rbf_c = 4.0
 conf.z_bar_init_sd = 3.0
 conf.norm_epsilon = 10 ** (-70)
@@ -44,17 +44,17 @@ conf.decay_epochs = 100
 
 # Training params
 conf.m = 128
-conf.lr = 0.01
-conf.decrease_lr_points = [60, 90]
-conf.decrease_lr_factor = 0.1
-conf.epochs = 120
+conf.lr = 0.00001
+conf.decrease_lr_points = [80, 120]
+conf.decrease_lr_factor = 0.01
+conf.epochs = 160
 conf.optimizer = tf.train.MomentumOptimizer
 conf.target_variance = 1.0
 
 # Shortest point finder params
 conf.spf_lr = 0.01
 conf.spf_lmda = math.pi / 1440
-conf.spf_epochs = 500
+conf.spf_epochs = 100
 conf.spf_animation_interval = 50
 
 # Adversarial params
@@ -63,15 +63,16 @@ conf.adverserial_ss = 10
 conf.adverserial_epochs = 100
 
 # Reporting params
-conf.accuracy_ss = 10000
+conf.accuracy_ss = 1000
+conf.print_rbf_batch = True
 conf.show_adversaries = False
 conf.show_roc = True
-conf.show_really_incorrect = False
+conf.show_really_incorrect = True
 conf.write_csv = False
 conf.class_to_adversary_class = (3, 5)  # Binary tuple used to express that the class at index 0 should be turned into
 # ad adversary of the class at index 1. Make it None if you would like to use the two closest classes instead,
 # in terms of the distance between their z_bar centres. (This will only work for rbf networks).
-conf.classified_as_thresh = 0.5
+conf.classified_as_thresh = 0.75
 
 # rbf only params ( i.e. no network actually trained)
 conf.num_runs = 1

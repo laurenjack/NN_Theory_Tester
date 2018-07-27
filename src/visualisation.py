@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.misc
+
 
 def plot(title, x, y):
     ax = plt.gca()
@@ -31,7 +33,11 @@ def _plot_image(im_vector, predicted, actual, i):
     ax.xaxis.set_visible(False)
     plt.title('Predicted: ' + str(predicted), loc='left')
     plt.title('Actual: ' + str(actual), loc='right')
-    plt.imshow(im_vector.reshape(28, 28), cmap='gray', interpolation='nearest')
+    shape = im_vector.shape
+    if len(shape) > 2:
+        scipy.misc.imshow(im_vector)
+    else:
+        plt.imshow(im_vector.reshape(28, 28), cmap='gray', interpolation='nearest')
 
 def _plot_sub_image(im_vector, sub_num):
     sub_plot = plt.subplot(1, 2, sub_num)
