@@ -8,6 +8,7 @@ class Conf:
 
 conf = Conf()
 
+conf.debug = False
 conf.is_resnet = True
 conf.is_rbf = True
 conf.do_train = False
@@ -50,6 +51,8 @@ conf.decrease_lr_factor = 0.01
 conf.epochs = 160
 conf.optimizer = tf.train.MomentumOptimizer
 conf.target_variance = 1.0
+conf.z_bar_lr_increase_factor = 1.0
+conf.tau_lr_increase_factor = 500.0
 
 # Shortest point finder params
 conf.spf_lr = 0.01

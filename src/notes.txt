@@ -1,0 +1,29 @@
+1) Using an rbf-softmax at the end of a neural net, you know you have issues with z gradients being too large and z_bar
+gradients being too small. Yet you scale the z_bar gradient by the root of the batch size and don't scale the z gradient
+at all. I think it would be best to scale the z gradients down by the batch size
+
+2) Tau gradients are scaled by the batch size, this could be an artifact of how you used to train tau, pretty sure
+scaling is now built in to tau training so could remove. UPDATE On further inspection the class-wise batch size is
+removed, the only gradient is the first which simply uses the delta between the weighted distance and target distance.
+First thing to note is that a sum is used rather than the mean on the tau loss (so no dividing by batch size)
+What is important to note here is that if we were to scale down the weighted variance by d, then ceteris paribus
+the lr for tau would have to be scaled up by d. Not because the gradients on tau would be larger in an abosulte sense
+but because tau would effectively be diminished by a factor of d.
+
+3) Consider a proper covariance matrix rather than just a vector
+
+4) The batch_inds framework in the rbf cosntructor is fine but can be replaced once you do your single layer simple
+problem as an rbf test, rather than raw z variables
+
+5) Make the conf object a proper singleton once you have confirmed nothing interacts with it
+
+6) Event the pure rbf needs a psuedo net
+
+7) The whole ops returning part of the rbf could be streamlined
+
+8) What needs more immediate work over 7 is the proper debug setup, rather than bastardizing what is supposed to be
+a generic create_ops interface. Should have at the very least another function, but ideally summary writers to track
+z and z_bar rather than viewing them in the debuger. Although a debug option would have it benefits, consider this
+in conjunction with training.
+
+

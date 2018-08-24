@@ -3,8 +3,8 @@ import rbf as rb
 
 class Network:
 
-    def __init__(self, rbf, conf):
-        self.rbf = rbf
+    def __init__(self, end, conf):
+        self.end = end
         d = conf.d
         self.adverserial_epsilon = conf.adverserial_epsilon
         #Set up placeholders for inputs and putputs
@@ -23,20 +23,10 @@ class Network:
 
         self.z = self._create_layer(a, l+1, [ins[-1], outs[-1]])
 
-        rbf_ops = self.rbf.create_all_ops(self.z)
-        core_ops = rbf_ops.core_ops()
-        self.train_op = core_ops[0]
-        self.z = core_ops[1]
-        self.z_bar = core_ops[2]
-        self.tau = core_ops[3]
-        self.a = core_ops[4]
-        self.loss = rbf_ops.loss
-
-        #Compute the loss and apply the optimiser
-        # loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=a)
-        # self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(loss)
-        # #Produce probabilities for accuracy
-        # self.a = tf.nn.softmax(a)
+        self.all_end_ops = self.end.create_ops(self.z)
+        self.a = self.all_end_ops[0]
+        self.loss = self.all_end_ops[1]
+        self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(self.loss)
 
     def get_x(self):
         return self.x
@@ -53,8 +43,13 @@ class Network:
     def get_lr(self):
         return self.rbf.lr
 
+    def debug_ops(self):
+        return self.all_end_ops
+
     def rbf_params(self):
-        return self.z, self.z_bar, self.tau
+        if not isinstance(self.end, RBF):
+            raise NotImplementedError('This network does not have an rbf end')
+        return self.all_end_ops[2], self.all_end_ops[3], self.all_end_ops[4]
 
     def has_rbf(self):
         return self.rbf is not None

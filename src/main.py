@@ -2,14 +2,14 @@ import tensorflow as tf
 from animator import *
 import train_rbf
 from reporter import *
-from network_factory import *
+import network_factory
 import rbf
 import configuration
 conf = configuration.get_conf()
 
 
 def run_network(conf):
-    network_runner,data_set = create_and_train_network()
+    network_runner,data_set = network_factory.create_and_train_network()
 
     # Report on the results
     report_single_network(network_runner, data_set, conf)

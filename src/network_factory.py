@@ -29,7 +29,6 @@ def create_and_train_network():
             data_set = load_cifar(conf)
             network = Resnet(conf, end, model_save_dir)
         else:
-
             data_set = load_mnist(conf)
             network = Network(end, conf)
         if conf.do_train:

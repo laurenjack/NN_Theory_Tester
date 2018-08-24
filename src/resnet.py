@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
+from rbf import RBF
 from tensorflow.python.training import moving_averages
 
 BATCH_NORM_OPS_KEY = 'batch_norm_ops'
@@ -37,7 +38,9 @@ class Resnet:
 
         #a = tf.reduce_mean(a, axis=[1, 2], name="avg_pool")
         #a = tf.reshape(a, shape=[-1, conf.d])
-        self.a, main_loss, self.z, self.z_bar, self.tau = end.create_ops(a)
+        self.all_end_ops = end.create_ops(a)
+        self.a = self.all_end_ops[0]
+        main_loss = self.all_end_ops[1]
 
         # Regularisation (still tied to the lr of the main update)
         reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -53,9 +56,9 @@ class Resnet:
             self.train_op = tf.group(self.optimzer, increment_epochs_trained)
 
     def has_rbf(self):
-        return False
+        return False #TODO replace with is_type
 
-    def get_x(self):
+    def get_x(self): #TODO consolidate with the similar functions on feedforward
         return self.x
 
     def get_y(self):
@@ -67,8 +70,13 @@ class Resnet:
     def get_batch_size(self):
         return self.end.batch_size
 
+    def debug_ops(self):
+        return self.all_end_ops
+
     def rbf_params(self):
-        return self.z, self.z_bar, self.tau
+        if not isinstance(self.end, RBF):
+            raise NotImplementedError('This network does not have an rbf end')
+        return self.all_end_ops[2], self.all_end_ops[3], self.all_end_ops[4]
 
     def _stack(self, a, num_filter, num_block, stack_index):
         scope_name = 'stack'+str(stack_index)

@@ -70,7 +70,7 @@ def _z_bar_grad(unused_op, grad):
     grad = xe_sm_grad_reshaped * grad
     global z_bar_grad
     z_bar_grad = grad / tf.cast(batch_size, tf.float32) ** 0.5
-    return z_bar_grad #* 10000.0
+    return z_bar_grad * conf.z_bar_lr_increase_factor
 
 
 @tf.RegisterGradient("tau_grad")
@@ -81,20 +81,20 @@ def _tau_grad(unused_op, grad):
     K = K.value
     global tau_grad
     grad = tf.reshape(variance_grad, shape=[1, d, K]) * grad
-    tau_grad = tf.sign(grad) * tf.abs(grad / tf.cast(batch_size, tf.float32)) ** 0.5 * 0.5
-    return tau_grad * 500.0
+    tau_grad = tf.sign(grad) * tf.abs(grad / tf.cast(batch_size, tf.float32)) ** 0.5
+    return tau_grad * conf.tau_lr_increase_factor
 
 
 class RbfOps:
 
-    def __init__(self, train_op, z, z_bar, tau, sm, z_diff_sq, tau_square, weighted_z_diff_sq,
+    def __init__(self, train_op, z, z_bar, tau, a, z_diff_sq, tau_square, weighted_z_diff_sq,
                weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
                z_grad, z_bar_grad, loss):
         self.train_op = train_op
         self.z = z
         self.z_bar = z_bar
         self.tau = tau
-        self.sm = sm
+        self.a = a
         self.z_diff_sq = z_diff_sq
         self.tau_sq = tau_square
         self.wzds = weighted_z_diff_sq
@@ -107,7 +107,7 @@ class RbfOps:
         self.loss = loss
 
     def core_ops(self):
-        return [self.train_op, self.z, self.z_bar, self.tau, self.sm]
+        return [self.train_op, self.z, self.z_bar, self.tau, self.a]
 
 
 class RBF:
@@ -173,7 +173,6 @@ class RBF:
             safe_class_wise_batch_size = tf.where(is_greater_than_zero, class_wise_batch_size, ones)
             safe_class_wise_batch_size = tf.reshape(safe_class_wise_batch_size, [1, num_class])
             weighted_variance = tf.reduce_sum(filtered_sum, axis=0) / safe_class_wise_batch_size
-            # TODO there will be an issue here when a class is not present in the batch
         with g.gradient_override_map({'Identity': "stub_and_save_variance_grad"}):
             weighted_variance_id = tf.identity(weighted_variance, name='Identity')
             target_tau_diff = (conf.target_variance - weighted_variance_id) ** 2.0

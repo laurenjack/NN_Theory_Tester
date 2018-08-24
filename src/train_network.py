@@ -30,8 +30,10 @@ def train(graph, network, data_set, conf):
         np.random.shuffle(batch_indicies)
         for k in xrange(0, n, m):
             batch = batch_indicies[k:k + m]
-            _, a, z, z_bar, tau = network_runner.feed_and_run(X, Y, [train_op, network.a, network.z, network.z_bar, network.tau], batch, is_training=True)
-            # network_runner.feed_and_run(X, Y, train_op, batch, is_training=True)
+            if conf.debug:
+                debug_outputs = network_runner.feed_and_run(X, Y, network.debug_ops(), batch, is_training=True)
+            else:
+                network_runner.feed_and_run(X, Y, train_op, batch, is_training=True)
         print 'Epoch: '+str(e)
         network_runner.report_accuracy('Train', batch_indicies, accuracy_ss, X, Y)
         network_runner.report_accuracy('Validation', val_batch_indicies, accuracy_ss, X_val, Y_val)
