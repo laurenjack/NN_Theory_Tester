@@ -4,9 +4,10 @@ import matplotlib.cm as cmx
 import matplotlib.colors as colors
 import numpy as np
 from matplotlib.patches import Ellipse
+from configuration import conf
 
 
-def animate_spf(z_bar_pair, tau_pair, z_over_time, conf):
+def animate_spf(z_bar_pair, tau_pair, z_over_time):
     fig, ax = plt.subplots()
     epochs = len(z_over_time)
     ax.set_xlim(-10.0, 10.0)
@@ -36,7 +37,7 @@ def animate_spf(z_bar_pair, tau_pair, z_over_time, conf):
     plt.show()
 
 
-def animate(train_result, conf):
+def animate(train_result):
     zs, z_bars, taus = train_result.get()
     show_details = conf.show_details
     show_animation = conf.show_animation
@@ -171,12 +172,3 @@ def _get_cmap(N):
     def map_index_to_rgb_color(index):
         return scalar_map.to_rgba(index)
     return map_index_to_rgb_color
-
-
-class Conf:
-    pass
-
-# conf = Conf()
-# conf.animation_interval = 500
-# z_test = [np.array([i * np.ones(2), -i * np.ones(2)]) for i in xrange(-10, 10)]
-# animate_spf(np.array([3.0, -3.0]), np.array([1.0, 2.0]), np.array([-3.0, 3.0]), np.array([3.0, 0.5]), z_test, conf)

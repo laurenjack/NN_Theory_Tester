@@ -1,6 +1,6 @@
 import numpy as np
 import visualisation
-import configuration
+from configuration import conf
 
 def extract_and_transform(X, Y, network_runner):
     """Extract and transform the data regarding an rbf networks predictions, to a relational model"""
@@ -34,7 +34,8 @@ def extract_and_transform(X, Y, network_runner):
     return point_stat, dimension_stat
 
 
-def roc_curve(X, Y, network_runner, conf):
+
+def roc_curve(X, Y, network_runner):
     # TODO Current function assumes perfectly balanced classes
     Y = Y.astype(np.int32)
     probabilities = network_runner.probabilities(X, Y)
@@ -60,23 +61,81 @@ def roc_curve(X, Y, network_runner, conf):
             fpr = float(falsely_recalled) / float(n - samples_per_k)
             tprs.append(tpr)
             fprs.append(fpr)
-        # Weight the tprs and fprs accordingly
-        weight = float(samples_per_k) / float(n)
-        tprs = np.array(tprs) * weight
-        fprs = np.array(fprs) * weight
+        tprs = np.array(tprs)
+        fprs = np.array(fprs)
         class_wise_tprs.append(tprs)
         class_wise_fprs.append(fprs)
 
-    final_tprs = _sum_arrays(class_wise_tprs)
-    final_fprs = _sum_arrays(class_wise_fprs)
+
+    final_tprs = combine(class_wise_tprs)
+    final_fprs = combine(class_wise_fprs)
     return final_tprs, final_fprs
 
 
-def _sum_arrays(arrays):
-    base = np.zeros(arrays[0].shape, dtype=np.float32)
-    for a in arrays:
-        base += a
-    return base
+def combine(prs):
+    k = len(prs)
+    min_ss = _find_min_length(prs)
+    mean_pr = np.zeros(min_ss)
+    for i in xrange(min_ss):
+        proportion_included = float(min_ss) / float(i+1)
+        for pr in prs:
+            floor = int(pr.shape[0] / proportion_included) - 1
+            mean_pr[i] += pr[floor]
+    return mean_pr / k
+
+
+
+
+
+def _find_min_length(arrays):
+    return min([arr.shape[0] for arr in arrays])
+
+def not_roc_curve(X, Y, network_runner):
+    """It would be incorrect to call this an ROC curve, as this is not for n-ary classification and is not computed
+    in the same way. Instead we look at the number of correct guesses relative to the set size, agaisnt the number
+    of incorrect guesses relative to the sample size. That is, there is no weighting according to class like their
+    would be with tpr or fpr."""
+    # TODO Figure out what this curve is really called or give it a new name if it's a new thing
+    n = X.shape[0]
+    corr, incorr, correct_inds, incorr_inds = network_runner.all_correct_incorrect(X, Y)
+    probs_corr = corr.a
+    probs_incorr = incorr.a
+
+    # Rank the correct predictions by their probability
+    ranked_prob_correct = -np.sort(-probs_corr)
+
+    correct_at_each_recall = np.zeros(n)
+    incorrect_at_each_recall = np.zeros(n)
+    for i in xrange(0, n):
+        num_recalled = i+1
+        thresh = probs_corr[i]
+        falsely_recalled = np.sum(np.greater_equal(probs_incorr, thresh).astype(np.int32))
+        correct_at_each_recall[i] = float(num_recalled)
+        incorrect_at_each_recall[i] = float(falsely_recalled)
+
+    Y = Y.astype(np.int32)
+    probabilities = network_runner.probabilities(X, Y)
+
+    class_wise_tprs = []
+    class_wise_fprs = []
+    prob_of_ks_for_actual_ks = []
+    not_ks_probabilities = []
+    for k in xrange(conf.num_class):
+        actual_k_indicies = np.argwhere(Y == k)[:, 0]
+        not_k_indicies = np.argwhere(Y != k)[:, 0]
+        probability_of_k = probabilities[:, k]
+        prob_of_k_for_actual_k = probability_of_k[actual_k_indicies]
+        prob_of_ks_for_actual_ks.append(prob_of_k_for_actual_k)
+        not_ks_probabilities.append(probability_of_k[not_k_indicies])
+
+    prob_of_ks_for_actual_ks = np.concatenate(prob_of_ks_for_actual_ks)
+    not_ks_probabilities = np.concatenate(not_ks_probabilities)
+    # Rank the actually correct k's by the size of their probabilities, highest first
+    ranked_prob_of_k_for_actual_k = -np.sort(-prob_of_ks_for_actual_ks)
+
+
+
+    return correct_at_each_recall / float(n), incorrect_at_each_recall / float(n)
 
 
 def write_csv(X, Y, network_runner):

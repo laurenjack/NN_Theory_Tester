@@ -1,15 +1,17 @@
 import tensorflow as tf
-import rbf as rb
+from rbf import RBF
+from configuration import conf
 
 class Network:
 
-    def __init__(self, end, conf):
+    def __init__(self, num_inputs, end):
+        self.model_save_dir = None
         self.end = end
         d = conf.d
         self.adverserial_epsilon = conf.adverserial_epsilon
         #Set up placeholders for inputs and putputs
-        num_inputs = conf.num_inputs
         num_class = conf.num_class
+        self.lr = tf.placeholder(tf.float32, shape=[], name='lr')
         self.x = tf.placeholder(tf.float32, shape=[None, num_inputs], name="inputs")
         self.is_training = tf.placeholder(dtype=tf.bool, shape=[], name='is_training')
 
@@ -26,33 +28,33 @@ class Network:
         self.all_end_ops = self.end.create_ops(self.z)
         self.a = self.all_end_ops[0]
         self.loss = self.all_end_ops[1]
-        self.train_op = conf.optimizer(learning_rate=conf.lr).minimize(self.loss)
+        self.train_op = conf.optimizer(learning_rate=conf.lr, momentum=0.9).minimize(self.loss)
 
     def get_x(self):
         return self.x
 
     def get_y(self):
-        return self.rbf.y
+        return self.end.y
 
     def get_y_hot(self):
-        return self.rbf.y_hot
+        return self.end.y_hot
 
     def get_batch_size(self):
-        return self.rbf.batch_size
+        return self.end.batch_size
 
     def get_lr(self):
-        return self.rbf.lr
+        return self.lr
 
     def debug_ops(self):
         return self.all_end_ops
 
     def rbf_params(self):
-        if not isinstance(self.end, RBF):
+        if not self.has_rbf():
             raise NotImplementedError('This network does not have an rbf end')
         return self.all_end_ops[2], self.all_end_ops[3], self.all_end_ops[4]
 
     def has_rbf(self):
-        return self.rbf is not None
+        return isinstance(self.end, RBF)
 
     def fgsm_adverserial_with_target(self):
         """Generate an adverserial example using the fast gradient sign method.

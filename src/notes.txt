@@ -26,4 +26,6 @@ a generic create_ops interface. Should have at the very least another function, 
 z and z_bar rather than viewing them in the debuger. Although a debug option would have it benefits, consider this
 in conjunction with training.
 
+9) Constant tau sizes on init probabbly not appropriate
+
 

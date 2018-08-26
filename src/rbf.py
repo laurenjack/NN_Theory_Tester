@@ -1,9 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import operation
-import configuration
-
-conf = configuration.get_conf()
+from configuration import conf
 xe_sm_grad = None
 variance_grad = None
 rbf_grad = None
@@ -87,10 +85,9 @@ def _tau_grad(unused_op, grad):
 
 class RbfOps:
 
-    def __init__(self, train_op, z, z_bar, tau, a, z_diff_sq, tau_square, weighted_z_diff_sq,
+    def __init__(self, z, z_bar, tau, a, z_diff_sq, tau_square, weighted_z_diff_sq,
                weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
                z_grad, z_bar_grad, loss):
-        self.train_op = train_op
         self.z = z
         self.z_bar = z_bar
         self.tau = tau
@@ -116,7 +113,6 @@ class RBF:
         self.z_bar_init = z_bar_init
         self.tau_init = tau_init
         self.batch_inds = batch_inds
-        self.lr = tf.placeholder(tf.float32, shape=[], name='lr')
         self.y = tf.placeholder(tf.int32, shape=[None], name="y")
         self.batch_size = tf.placeholder(tf.int32, shape=[], name="batch_size")
         global batch_size
@@ -194,15 +190,11 @@ class RBF:
         # loss = -tf.reduce_mean(tf.reduce_sum(self.y_hot*tf.log(sm), axis=1))
         image_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
         loss = tf.reduce_sum(image_loss) + tau_loss
-        #train_op = conf.optimizer(learning_rate=self.lr).minimize(loss)
-        train_op = None # TODO needs proper refactor ASAP
 
-        return RbfOps(train_op, z, z_bar, tau, sm, z_diff_sq, tau_square, weighted_z_diff_sq,
+        return RbfOps(z, z_bar, tau, sm, z_diff_sq, tau_square, weighted_z_diff_sq,
                 weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
                 z_grad, z_bar_grad, loss)
 
-    def create_ops(self, pre_z):
-        z = operation.per_filter_fc(pre_z)
-        #z = operation.fc(pre_z, pre_z.get_shape()[1])
+    def create_ops(self, z):
         rbf_ops = self.create_all_ops(z)
-        return rbf_ops.sm, rbf_ops.loss, rbf_ops.z, rbf_ops.z_bar, rbf_ops.tau
+        return rbf_ops.a, rbf_ops.loss, rbf_ops.z, rbf_ops.z_bar, rbf_ops.tau

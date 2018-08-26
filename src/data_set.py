@@ -1,5 +1,6 @@
 from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
+from configuration import conf
 
 class DataSet:
     """Class represents a data set for a neural network to be trained/tested/validated on"""
@@ -19,10 +20,10 @@ def load_mnist():
     return DataSet(train_set.images, train_set.labels, val_set.images, val_set.labels)
 
 
-def load_cifar(conf):
+def load_cifar():
     # TODO change test to val
-    x, y = _load_data(conf, conf.train_files)
-    x_test, y_test = _load_data(conf, [conf.test_file])
+    x, y = _load_data(conf.train_files)
+    x_test, y_test = _load_data([conf.test_file])
     pixel_mean = _compute_per_pixel_mean(x)
     x -= pixel_mean
     x /= 128.0
@@ -31,7 +32,7 @@ def load_cifar(conf):
     return DataSet(x, y, x_test, y_test)
 
 
-def _load_data(conf, filenames):
+def _load_data(filenames):
     xs = []
     for file_name in filenames:
         x = np.fromfile(file_name, np.uint8)

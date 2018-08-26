@@ -2,9 +2,10 @@ import numpy as np
 import tensorflow as tf
 from network_runner import NetworkRunner
 import sys
+from configuration import conf
 
 
-def train(graph, network, data_set, conf):
+def train(graph, network, data_set):
     X = data_set.X_train
     Y = data_set.Y_train
     X_val = data_set.X_val
@@ -15,7 +16,7 @@ def train(graph, network, data_set, conf):
     tf.global_variables_initializer().run()
     train_op = network.train_op
     saver = tf.train.Saver(tf.global_variables())
-    network_runner = NetworkRunner(graph, network, sess, conf)
+    network_runner = NetworkRunner(graph, network, sess)
 
     # Train
     n = conf.n
@@ -44,7 +45,7 @@ def train(graph, network, data_set, conf):
     return network_runner
 
 
-def load_pre_trained(graph, network, conf):
+def load_pre_trained(graph, network):
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
     saver = tf.train.Saver(tf.global_variables())
@@ -55,4 +56,4 @@ def load_pre_trained(graph, network, conf):
         sys.exit(1)
     print "resume", latest
     saver.restore(sess, latest)
-    return NetworkRunner(graph, network, sess, conf)
+    return NetworkRunner(graph, network, sess)

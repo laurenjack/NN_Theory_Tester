@@ -2,13 +2,15 @@ import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
 from rbf import RBF
 from tensorflow.python.training import moving_averages
+from configuration import conf
+import operation
 
 BATCH_NORM_OPS_KEY = 'batch_norm_ops'
 
 
 class Resnet:
 
-    def __init__(self, conf, end, model_save_dir):
+    def __init__(self, end, model_save_dir):
         self.end = end
         self.model_save_dir = model_save_dir
         self.kernel_stride = conf.kernel_stride
@@ -38,7 +40,9 @@ class Resnet:
 
         #a = tf.reduce_mean(a, axis=[1, 2], name="avg_pool")
         #a = tf.reshape(a, shape=[-1, conf.d])
-        self.all_end_ops = end.create_ops(a)
+        z = operation.per_filter_fc(a)
+        # z = operation.fc(pre_z, pre_z.get_shape()[1])
+        self.all_end_ops = end.create_ops(z)
         self.a = self.all_end_ops[0]
         main_loss = self.all_end_ops[1]
 
@@ -56,7 +60,7 @@ class Resnet:
             self.train_op = tf.group(self.optimzer, increment_epochs_trained)
 
     def has_rbf(self):
-        return False #TODO replace with is_type
+        return isinstance(self.end, RBF)
 
     def get_x(self): #TODO consolidate with the similar functions on feedforward
         return self.x
@@ -73,8 +77,11 @@ class Resnet:
     def debug_ops(self):
         return self.all_end_ops
 
+    def get_y_hot(self):
+        return self.end.y_hot
+
     def rbf_params(self):
-        if not isinstance(self.end, RBF):
+        if not self.has_rbf():
             raise NotImplementedError('This network does not have an rbf end')
         return self.all_end_ops[2], self.all_end_ops[3], self.all_end_ops[4]
 

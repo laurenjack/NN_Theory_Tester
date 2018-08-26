@@ -3,27 +3,28 @@ import numpy as np
 from shortest_point_finder import find_shortest_point
 from prediction_analytics import *
 from adverserial import *
+from configuration import conf
 
-def report_single_network(network_runner, data_set, conf):
+def report_single_network(network_runner, data_set):
     """Module responsible for reporting on the results of a trained network.
 
     This includes analysis of the rbf parameters, an examination of the
     properties of correct, incorrect and adverserial examples etc."""
     X_val = data_set.X_val
     Y_val = data_set.Y_val
-    correct, incorrect = _report(network_runner, data_set, conf)
+    correct, incorrect = _report(network_runner, data_set)
 
-    if conf.print_rbf_batch:
-        _print_rbf_bacth(X_val, Y_val, network_runner, conf)
+    if conf.print_rbf_batch and conf.is_rbf:
+        _print_rbf_bacth(X_val, Y_val, network_runner)
 
     class_to_adversary = conf.class_to_adversary_class
     if class_to_adversary is None:
         z, z_bar, tau = network_runner.report_rbf_params(X_val, Y_val)
-        class_to_adversary = _report_shortest_point(conf, z_bar, tau)
+        class_to_adversary = _report_shortest_point(z_bar, tau)
 
     # show adversaries
     if conf.show_adversaries:
-        x_adv, y_actual, x_actual = adverserial_gd(network_runner, correct, class_to_adversary, conf)
+        x_adv, y_actual, x_actual = adverserial_gd(network_runner, correct, class_to_adversary)
         adverse_prediction, _ = _get_probabilities_for(network_runner, x_adv, y_actual, report=True)
         plot_all_with_originals(x_adv, adverse_prediction, y_actual, x_actual)
 
@@ -32,7 +33,7 @@ def report_single_network(network_runner, data_set, conf):
         write_csv(X_val, Y_val, network_runner)
 
     if conf.show_roc:
-        tprs, fprs = roc_curve(X_val, Y_val, network_runner, conf)
+        tprs, fprs = roc_curve(X_val, Y_val, network_runner)
         visualisation.plot('ROC curve', fprs, tprs)
 
     # Show incorrect above the threshold
@@ -46,16 +47,16 @@ def report_single_network(network_runner, data_set, conf):
         print 'P: '+str(really_incorrect_prediction)
         plot_all(really_incorrect_x, really_incorrect_prediction, really_incorrect_actual)
 
-def report_with_adverseries_from_second(nr1, nr2, data_set, conf):
+def report_with_adverseries_from_second(nr1, nr2, data_set):
     """Reporting function focused on generating adverser"""
     with nr1.graph.as_default():
-        correct, incorrect, = _report(nr1, data_set, conf)
+        correct, incorrect, = _report(nr1, data_set)
         class_to_adversary = conf.class_to_adversary_class
         if class_to_adversary is None:
             z, z_bar, tau = nr1.report_rbf_params(data_set.X_val, data_set.Y_val)
-            class_to_adversary = _report_shortest_point(conf, z_bar, tau)
+            class_to_adversary = _report_shortest_point(z_bar, tau)
 
-        x_adv, y_actual, x_actual = adverserial_gd(nr1, correct, class_to_adversary, conf)
+        x_adv, y_actual, x_actual = adverserial_gd(nr1, correct, class_to_adversary)
         predictions1, probs1 = _get_probabilities_for(nr1, x_actual, y_actual)
         adv_predictions1, adv_probs1 = _get_probabilities_for(nr1, x_adv, y_actual)
 
@@ -87,7 +88,7 @@ def _convincing_adverseries(adv_predictions, adv_probs, adv_class):
 
 
 
-def _report(network_runner, data_set, conf):
+def _report(network_runner, data_set):
     X_val = data_set.X_val
     Y_val = data_set.Y_val
     correct, incorrect, _, _ = network_runner.all_correct_incorrect(X_val, Y_val)
@@ -100,9 +101,9 @@ def _report(network_runner, data_set, conf):
 
     return correct, incorrect
 
-def _report_shortest_point(conf, z_bar, tau):
+def _report_shortest_point(z_bar, tau):
     # Apply the shortest point finder
-    sp_z_list, Cs, rbfs, z_bar_pair, tau_pair, closest_classes = find_shortest_point(conf, z_bar, tau)
+    sp_z_list, Cs, rbfs, z_bar_pair, tau_pair, closest_classes = find_shortest_point(z_bar, tau)
     print 'Shortest Point Distance:'
     print Cs
     print rbfs
@@ -126,7 +127,7 @@ def _get_probabilities_for(network_runner, x, y, report=False):
             print ''
     return prediction, probabilities
 
-def _print_rbf_bacth(X, Y, network_runner, conf):
+def _print_rbf_bacth(X, Y, network_runner):
     """Print the rbf parameters from a random batch of the data set"""
     z, z_bar, tau = network_runner.report_rbf_params(X, Y, conf.m)
     print str(z)+'\n'

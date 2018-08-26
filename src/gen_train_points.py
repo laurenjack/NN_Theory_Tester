@@ -1,6 +1,7 @@
 import numpy as np
+from configuration import conf
 
-def gen_train_labels(conf):
+def gen_train_labels():
     n = conf.n
     d = conf.d
     num_class = conf.num_class

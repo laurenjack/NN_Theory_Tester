@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
-import configuration
-conf = configuration.get_conf()
+from configuration import conf
 from feed_forward_network import Network
 from resnet import Resnet
 from data_set import load_mnist
@@ -14,7 +13,6 @@ from vanilla_softmax import VanillaSoftmax
 def create_and_train_network():
     graph = tf.Graph()
     with graph.as_default():
-        tf.placeholder(tf.int32, shape=[], name="batch_size")
         if conf.is_rbf:
             z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
             tau_init = tf.constant_initializer(0.5 / float(conf.d) ** 0.5 * np.ones(shape=[conf.d, conf.num_class]))
@@ -26,13 +24,14 @@ def create_and_train_network():
                 model_save_dir = '/home/laurenjack/models/resnet_rbf'
             else:
                 model_save_dir = '/home/laurenjack/models/resnet_plain'
-            data_set = load_cifar(conf)
-            network = Resnet(conf, end, model_save_dir)
+            data_set = load_cifar()
+            network = Resnet(end, model_save_dir)
         else:
-            data_set = load_mnist(conf)
-            network = Network(end, conf)
+            data_set = load_mnist()
+            num_inputs = data_set.X_train.shape[1]
+            network = Network(num_inputs, end)
         if conf.do_train:
-            network_runner = train_network.train(graph, network, data_set, conf)
+            network_runner = train_network.train(graph, network, data_set)
         else:
-            network_runner = train_network.load_pre_trained(graph, network, conf)
+            network_runner = train_network.load_pre_trained(graph, network)
     return network_runner, data_set

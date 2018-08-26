@@ -10,13 +10,12 @@ conf = Conf()
 
 conf.debug = False
 conf.is_resnet = True
-conf.is_rbf = True
-conf.do_train = False
+conf.is_rbf = False
+conf.do_train = True
 
 # Data set params
 conf.n = 50000
 conf.num_class = 10
-#conf.num_inputs = 784
 conf.image_width = 32
 conf.image_depth = 3
 data_dir = '/home/laurenjack/models/cifar-data/cifar-10-batches-bin'
@@ -25,7 +24,7 @@ conf.test_file = data_dir + '/test_batch.bin'
 
 # Network and rbf params
 conf.hidden_sizes = [100]
-conf.d = 4096
+conf.d = 4096 # 10
 conf.rbf_c = 4.0
 conf.z_bar_init_sd = 3.0
 conf.norm_epsilon = 10 ** (-70)
@@ -45,10 +44,10 @@ conf.decay_epochs = 100
 
 # Training params
 conf.m = 128
-conf.lr = 0.00001
+conf.lr = 0.001 # 0.00001
 conf.decrease_lr_points = [80, 120]
 conf.decrease_lr_factor = 0.01
-conf.epochs = 160
+conf.epochs = 100 #160
 conf.optimizer = tf.train.MomentumOptimizer
 conf.target_variance = 1.0
 conf.z_bar_lr_increase_factor = 1.0

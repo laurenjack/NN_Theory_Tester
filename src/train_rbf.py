@@ -2,8 +2,9 @@ import tensorflow as tf
 import numpy as np
 import rbf as rb
 from gen_train_points import *
+from configuration import conf
 
-def train(conf):
+def train():
     g_1 = tf.Graph()
     with g_1.as_default():
         n = conf.n
@@ -27,7 +28,7 @@ def train(conf):
 
         sess = tf.InteractiveSession()
         tf.global_variables_initializer().run()
-        y = gen_train_labels(conf)
+        y = gen_train_labels()
 
         if conf.num_runs == 1:
             summary_writer = tf.summary.FileWriter(conf.out_dir, sess.graph)
@@ -82,13 +83,13 @@ def train(conf):
         #tf.reset_default_graph()
 
     return TrainResult(num_correct, incorrect_responses, labels_of_inc, pos_of_inc,
-                       conf, z_bar, tau, class_wise_z_list, z_bar_list, tau_list)
+                       z_bar, tau, class_wise_z_list, z_bar_list, tau_list)
 
 
 class TrainResult:
 
     def __init__(self, num_correct, incorrect_responses, labels_of_inc, pos_of_inc,
-                 conf, final_z_bar, final_tau, class_wise_z_list=None, z_bar_list=None, tau_list=None):
+                 final_z_bar, final_tau, class_wise_z_list=None, z_bar_list=None, tau_list=None):
         self.num_correct = num_correct
         self.incorrect_responses = incorrect_responses
         self.labels_of_inc = labels_of_inc
