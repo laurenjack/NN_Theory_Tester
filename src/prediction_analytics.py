@@ -69,6 +69,7 @@ def roc_curve(X, Y, network_runner):
 
     final_tprs = combine(class_wise_tprs)
     final_fprs = combine(class_wise_fprs)
+
     return final_tprs, final_fprs
 
 

@@ -38,7 +38,7 @@ def report_single_network(network_runner, data_set):
 
     # Show incorrect above the threshold
     if conf.show_really_incorrect:
-        really_incorr_inds = np.argwhere(incorrect.prediction_prob() > conf.classified_as_thresh)[:, 0]
+        really_incorr_inds = np.argsort(-incorrect.prediction_prob())[:conf.top_k_incorrect]
         really_incorrect_prediction = incorrect.prediction[really_incorr_inds]
         really_incorrect_x = incorrect.x[really_incorr_inds]
         really_incorrect_actual = incorrect.y[really_incorr_inds]
