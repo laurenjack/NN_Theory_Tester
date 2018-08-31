@@ -26,6 +26,10 @@ def plot_all_with_originals(X, predicted, actual, originals):
         _plot_sub_image(adv, 2)
     plt.show()
 
+def plot_histogram(x, bins=100):
+    plt.hist(x, bins=bins)
+    plt.show()
+
 def _plot_image(im_vector, predicted, actual, i):
     fig = plt.figure(i+1)
     ax = fig.gca()

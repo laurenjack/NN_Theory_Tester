@@ -9,9 +9,9 @@ class Conf:
 conf = Conf()
 
 conf.debug = False
-conf.is_resnet = False
-conf.is_rbf = False
-conf.do_train = True
+conf.is_resnet = True
+conf.is_rbf = True
+conf.do_train = False
 
 # Data set params
 conf.n = 50000
@@ -68,9 +68,10 @@ conf.adverserial_epochs = 100
 conf.accuracy_ss = 1000
 conf.print_rbf_batch = True
 conf.show_adversaries = False
-conf.show_roc = True
-conf.show_really_incorrect = True
+conf.show_roc = False
+conf.show_really_incorrect = False
 conf.write_csv = False
+conf.show_z_stats = True
 conf.class_to_adversary_class = (3, 5)  # Binary tuple used to express that the class at index 0 should be turned into
 # ad adversary of the class at index 1. Make it None if you would like to use the two closest classes instead,
 # in terms of the distance between their z_bar centres. (This will only work for rbf networks).

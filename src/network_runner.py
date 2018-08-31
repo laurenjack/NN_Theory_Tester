@@ -31,11 +31,20 @@ class NetworkRunner:
     def report_rbf_params(self, X, Y, ss=None):
         """Report the rbf parameters (z, z_bar and tau) for the data set X, Y
         Optional sample size for choosing random sample of data set"""
+        n = X.shape[0]
         if ss is not None:
             batch = _random_batch(np.arange(X.shape[0]), ss)
             X = X[batch]
             Y = Y[batch]
-        z, z_bar, tau = self.feed_and_run(X, Y, self.network.rbf_params())
+            n = ss
+        m = conf.m
+        batch_inds = np.arange(n)
+        z_list = []
+        for k in xrange(0, n, m):
+            batch = batch_inds[k:k+m]
+            z, z_bar, tau = self.feed_and_run(X[batch], Y[batch], self.network.rbf_params())
+            z_list.append(z)
+        z = np.concatenate(z_list)
         return z, z_bar, tau
 
     def probabilities(self, X, Y):

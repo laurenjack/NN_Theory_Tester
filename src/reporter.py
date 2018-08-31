@@ -32,20 +32,63 @@ def report_single_network(network_runner, data_set):
     if conf.write_csv:
         write_csv(X_val, Y_val, network_runner)
 
+    if conf.show_z_stats and conf.is_rbf:
+        X_train = data_set.X_train
+        Y_train = data_set.Y_train
+        #correct, incorrect, _, _ = network_runner.all_correct_incorrect(X_train, Y_train)
+        x_val_corr = correct.x
+        y_val_corr = correct.y
+        prediction_prob_corr = correct.prediction_prob()
+        x_val_inc = incorrect.x
+        y_val_inc = incorrect.y
+        prediction_prob_inc = incorrect.prediction_prob()
+
+        num_class = conf.num_class
+        z, z_bar, tau = network_runner.report_rbf_params(x_val_corr, y_val_corr)
+        z_inc, _, _ = network_runner.report_rbf_params(x_val_inc, y_val_inc)
+        for k in xrange(num_class):
+            inds_of_k = np.argwhere(np.logical_and(y_val_corr == k, True))[:, 0] # prediction_prob_corr > 0.6
+            # length = inds_of_k.shape[0] // 2
+            # s1 = inds_of_k[:length]
+            # s2 = inds_of_k[length:]
+            z_of_k = z[inds_of_k]
+            z_mean = np.mean(z_of_k, axis=0)
+
+            inds_of_k_inc = np.argwhere(np.logical_and(incorrect.prediction == k, True))[:, 0] #prediction_prob_inc > 0.6
+            z_of_k_inc = z_inc[inds_of_k_inc]
+            z_mean_inc = np.mean(z_of_k_inc, axis=0)
+            z_bar_k = z_bar[:, k].reshape(1, 4096)
+            mean_diff = z_mean - z_mean_inc
+            #mean_diff = np.mean(tau[:, k]**2.0 * (z_of_k_inc - z_bar_k)**2.0, axis=1) **0.5 #z_mean - prev_corr
+            #sd = np.mean((z_of_k - z_mean.reshape(1, d)) ** 2.0, axis=0) ** 0.5
+            #sd_tau_diff = sd - 1.0 / abs(tau[:, k]) * float(d)
+            #mean_bar_diff = abs(tau[:, k]) * (z_bar[:, k] - z_mean)  #(abs(tau[:, k])*(z_bar[:, k] - z_mean)) ** 2.0
+            if inds_of_k_inc.shape[0] > 0:
+                plot_histogram(mean_diff)
+            #plot_histogram(sd_tau_diff)
+            #inds_of_k = np.argwhere(y == k)[:, 0]
+            #plot_histogram(prediction_prob[inds_of_k])
+
+
+
     if conf.show_roc:
         tprs, fprs = roc_curve(X_val, Y_val, network_runner)
         visualisation.plot('ROC curve', fprs, tprs)
 
     # Show incorrect above the threshold
     if conf.show_really_incorrect:
-        really_incorr_inds = np.argsort(-incorrect.prediction_prob())[:conf.top_k_incorrect]
+        prediction_prob = incorrect.prediction_prob()
+        really_incorr_inds = np.argsort(-prediction_prob)[:conf.top_k_incorrect]
         really_incorrect_prediction = incorrect.prediction[really_incorr_inds]
+        really_incorrect_prediction_probs = prediction_prob[really_incorr_inds]
         really_incorrect_x = incorrect.x[really_incorr_inds]
         really_incorrect_actual = incorrect.y[really_incorr_inds]
         print "Really Incorrect Actuals vs Predictions:"
         print 'A: '+str(really_incorrect_actual)
         print 'P: '+str(really_incorrect_prediction)
+        print 'Prediction Probs: '+str(really_incorrect_prediction_probs)
         plot_all(really_incorrect_x, really_incorrect_prediction, really_incorrect_actual)
+
 
 def report_with_adverseries_from_second(nr1, nr2, data_set):
     """Reporting function focused on generating adverser"""
