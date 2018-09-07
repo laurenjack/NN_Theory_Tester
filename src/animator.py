@@ -39,7 +39,7 @@ def animate_spf(z_bar_pair, tau_pair, z_over_time):
 
 def animate(train_result):
     zs, z_bars, taus = train_result.get()
-    show_details = conf.show_details
+    zs, z_bars, taus = _prep_for_animation_if_not_2D(zs, z_bars, taus)
     show_animation = conf.show_animation
     fig, ax = plt.subplots()
     #_draw(clusters)
@@ -122,6 +122,22 @@ def _prep_z_bars(z_bars, taus, num_class, d):
 
     return z_bar_new, tau_new
 
+
+def _prep_for_animation_if_not_2D(zs, z_bars, taus):
+    zs_2D = []
+    z_bars_2D = []
+    taus_2D = []
+
+    for z_list_k in zs:
+        zs_2D.append([])
+        for z in z_list_k:
+            z_2D = z[:, :2]
+            zs_2D[-1].append(z_2D)
+
+    for z_bar, tau in zip(z_bars, taus):
+        z_bars_2D.append(z_bar[:2])
+        taus_2D.append(tau[:2])
+    return zs_2D, z_bars_2D, taus_2D
 
 
 # def _draw(clusters):

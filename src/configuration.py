@@ -9,12 +9,13 @@ class Conf:
 conf = Conf()
 
 conf.debug = False
+conf.is_net = False
 conf.is_resnet = True
 conf.is_rbf = True
 conf.do_train = False
 
 # Data set params
-conf.n = 50000
+conf.n = 100 #50000
 conf.num_class = 10
 conf.image_width = 32
 conf.image_depth = 3
@@ -24,7 +25,7 @@ conf.test_file = data_dir + '/test_batch.bin'
 
 # Network and rbf params
 conf.hidden_sizes = [100]
-conf.d = 4096 # 10
+conf.d = 100 #4096 # 10
 conf.rbf_c = 4.0
 conf.z_bar_init_sd = 3.0
 conf.norm_epsilon = 10 ** (-70)
@@ -43,20 +44,20 @@ conf.wd_decay_rate = 0.2
 conf.decay_epochs = 100
 
 # Training params
-conf.m = 128
-conf.lr = 0.001 # 0.00001
+conf.m = 100 #128
+conf.lr = 0.1 * float(conf.d) ** 0.5 #0.001 # 0.00001
 conf.decrease_lr_points = [80, 120]
 conf.decrease_lr_factor = 0.01
 conf.epochs = 100 #160
 conf.optimizer = tf.train.MomentumOptimizer
 conf.target_variance = 1.0
 conf.z_bar_lr_increase_factor = 1.0
-conf.tau_lr_increase_factor = 500.0
+conf.tau_lr_increase_factor = 1.0 / (conf.lr + float(conf.d) ** 0.5) #500.0
 
 # Shortest point finder params
 conf.spf_lr = 0.01
 conf.spf_lmda = math.pi / 1440
-conf.spf_epochs = 100
+conf.spf_epochs = 200
 conf.spf_animation_interval = 50
 
 # Adversarial params
@@ -79,7 +80,7 @@ conf.top_k_incorrect = 5 #conf.classified_as_thresh = 0.75
 
 # rbf only params ( i.e. no network actually trained)
 conf.num_runs = 1
-conf.out_dir = '/Users/jack/tf_runs/test_rbf5'  # '/home/laurenjack/test_rbf1' #'/Users/jack/tf_runs/test_rbf5'
+conf.rbf_only_out_dir = '/home/laurenjack/test_rbf'+str(conf.d) #'/Users/jack/tf_runs/test_rbf5'
 conf.show_animation = True
 conf.animation_interval = 100
 conf.incorr_report_limit = 3

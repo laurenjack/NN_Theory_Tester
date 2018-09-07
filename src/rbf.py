@@ -11,6 +11,7 @@ batch_size = None
 z_grad = None
 z_bar_grad = None
 tau_grad = None
+zds = None
 
 @tf.RegisterGradient("stub_and_save")
 def _stub_and_save(unused_op, grad):
@@ -73,25 +74,29 @@ def _z_bar_grad(unused_op, grad):
 
 @tf.RegisterGradient("tau_grad")
 def _tau_grad(unused_op, grad):
-    _, d, K = grad.shape
-    # m = m.value
-    d = d.value
-    K = K.value
-    global tau_grad
-    grad = tf.reshape(variance_grad, shape=[1, d, K]) * grad
-    tau_grad = tf.sign(grad) * tf.abs(grad / tf.cast(batch_size, tf.float32)) ** 0.5
-    return tau_grad * conf.tau_lr_increase_factor
+    return tf.sign(variance_grad) * tf.abs(variance_grad) ** 0.5 / (tf.reduce_max(zds, axis=0) + 10.0 ** -5.0) * conf.tau_lr_increase_factor
+
+    # _, d, K = grad.shape
+    # # m = m.value
+    # d = d.value
+    # K = K.value
+    # global tau_grad
+    # #grad = tf.reshape(variance_grad, shape=[1, d, K]) * grad
+    # grad = tf.tile(variance_grad, shape=[batch_size, 1, 1])
+    # tau_grad = tf.sign(grad) * tf.abs(grad / tf.cast(batch_size, tf.float32)) ** 0.5
+    # return tau_grad * conf.tau_lr_increase_factor
 
 
 class RbfOps:
 
-    def __init__(self, z, z_bar, tau, a, z_diff_sq, tau_square, weighted_z_diff_sq,
+    def __init__(self, z, z_bar, tau, a, z_diff, z_diff_sq, tau_square, weighted_z_diff_sq,
                weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
-               z_grad, z_bar_grad, loss):
+               z_grad, z_bar_grad, loss, rbf, weighted_variance, neg_dist):
         self.z = z
         self.z_bar = z_bar
         self.tau = tau
         self.a = a
+        self.z_diff = z_diff
         self.z_diff_sq = z_diff_sq
         self.tau_sq = tau_square
         self.wzds = weighted_z_diff_sq
@@ -102,9 +107,13 @@ class RbfOps:
         self.z_grad = z_grad
         self.z_bar_grad = z_bar_grad
         self.loss = loss
+        self.rbf = rbf
+        self.weighted_variance = weighted_variance
+        self.neg_dist = neg_dist
 
     def core_ops(self):
-        return [self.train_op, self.z, self.z_bar, self.tau, self.a]
+        return [self.loss, self.z, self.z_bar, self.tau, self.a, self.rbf, self.weighted_variance, self.z_diff,
+                self.neg_dist, self.wzds]
 
 
 class RBF:
@@ -127,17 +136,19 @@ class RBF:
             z_batch = tf.gather(z, self.batch_inds)
 
         rbf_c = conf.rbf_c
+        g = tf.get_default_graph()
         z_bar = tf.get_variable("z_bar", shape=[d, num_class],
                                      initializer=self.z_bar_init)
         tau = tf.abs(tf.get_variable("tau", shape=[d, num_class],
                                           initializer=self.tau_init))
-        tau_square = tau ** 2.0
+        with g.gradient_override_map({'Identity': "tau_grad"}):
+            tau_identity = tf.identity(tau, name='Identity')
+        tau_square = tau_identity ** 2.0
 
         self.y_hot = tf.one_hot(self.y, num_class)
         global y_hot
         y_hot = self.y_hot
 
-        g = tf.get_default_graph()
         z_re = tf.reshape(z_batch, [-1, d, 1])
         z_tile = tf.tile(z_re, [1, 1, num_class])
         with g.gradient_override_map({'Identity': "z_grad"}):
@@ -149,18 +160,19 @@ class RBF:
         with g.gradient_override_map({'Identity': "z_bar_grad"}):
             z_bar_identity = tf.identity(z_bar_tile, name='Identity')
 
-        tau_re = tf.reshape(tau, [1, d, -1])
+        tau_re = tf.reshape(tau_identity, [1, d, -1])
         tau_tile = tf.tile(tau_re, tile_shape)
-        with g.gradient_override_map({'Identity': "tau_grad"}):
-            tau_identity = tf.identity(tau_tile, name='Identity')
+        tau_tile_identity = tf.identity(tau_tile, name='Identity')
 
         z_diff = tf.subtract(z_identity, z_bar_identity, name='Sub')
         z_diff_sq = z_diff ** 2.0
-        tau_square_tile = tau_identity ** 2.0
+        global zds
+        zds = z_diff_sq
+        tau_square_tile = tau_tile_identity ** 2.0
 
         with g.gradient_override_map({'Identity': "zero_the_grad"}):
             z_diff_sq_id = tf.identity(z_diff_sq, name='Identity')
-            weighted_z_diff_sq_other = tf.multiply(tau_square_tile, z_diff_sq_id, name="wzds_other") / float(conf.d)
+            weighted_z_diff_sq_other = tf.multiply(tau_square_tile, z_diff_sq_id, name="wzds_other") # / float(conf.d)
             fs_shape = tf.concat([[self.batch_size], [1, num_class]], axis=0)
             filtered_sum = tf.reshape(self.y_hot, fs_shape) * weighted_z_diff_sq_other
             class_wise_batch_size = tf.reduce_sum(self.y_hot, axis=0)
@@ -191,9 +203,9 @@ class RBF:
         image_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf_identity)
         loss = tf.reduce_sum(image_loss) + tau_loss
 
-        return RbfOps(z, z_bar, tau, sm, z_diff_sq, tau_square, weighted_z_diff_sq,
+        return RbfOps(z, z_bar, tau, sm, z_diff, z_diff_sq, tau_square, weighted_z_diff_sq,
                 weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
-                z_grad, z_bar_grad, loss)
+                z_grad, z_bar_grad, loss, rbf, weighted_variance, neg_dist)
 
     def create_ops(self, z):
         rbf_ops = self.create_all_ops(z)
