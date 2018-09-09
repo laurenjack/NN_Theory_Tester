@@ -11,7 +11,16 @@ def plot(title, x, y):
     plt.plot(x, y)
     plt.show()
 
-def plot_all(X, predicted, actual):
+def scatter_all(title, x, y):
+    ax = plt.gca()
+    ax.set_xlim(-7, 7)
+    ax.set_ylim(-7, 7)
+    plt.title(title)
+    for i in xrange(x.shape[0]):
+        plt.scatter(x[i], y[i])
+    plt.show()
+
+def plot_all_image(X, predicted, actual):
     n = X.shape[0]
     for i in xrange(n):
         _plot_image(X[i], predicted[i], actual[i], i)

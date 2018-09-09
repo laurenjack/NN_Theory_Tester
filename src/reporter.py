@@ -87,7 +87,7 @@ def report_single_network(network_runner, data_set):
         print 'A: '+str(really_incorrect_actual)
         print 'P: '+str(really_incorrect_prediction)
         print 'Prediction Probs: '+str(really_incorrect_prediction_probs)
-        plot_all(really_incorrect_x, really_incorrect_prediction, really_incorrect_actual)
+        plot_all_image(really_incorrect_x, really_incorrect_prediction, really_incorrect_actual)
 
 
 def report_with_adverseries_from_second(nr1, nr2, data_set):
