@@ -4,6 +4,7 @@ from shortest_point_finder import find_shortest_point
 from prediction_analytics import *
 from adverserial import *
 from configuration import conf
+from animator import animate
 
 def report_single_network(network_runner, data_set):
     """Module responsible for reporting on the results of a trained network.
@@ -31,6 +32,9 @@ def report_single_network(network_runner, data_set):
     # Write structured data to a csv file
     if conf.write_csv:
         write_csv(X_val, Y_val, network_runner)
+
+    if conf.show_animation and conf.is_rbf:
+        animate(*network_runner.ops_over_time)
 
     if conf.show_z_stats and conf.is_rbf:
         X_train = data_set.X_train

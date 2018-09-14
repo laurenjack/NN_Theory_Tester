@@ -33,7 +33,7 @@ def run_rbf_test():
 
     # Take the last a and evaluate the percentage of correctly classified points
     if conf.num_runs == 1: # and conf.d == 2:
-        animate(train_result)
+        animate(train_result.get())
         #animate_spf(z_bar_pair, tau_pair, sp_z_list)
 
 if __name__ == '__main__':

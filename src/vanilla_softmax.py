@@ -15,4 +15,4 @@ class VanillaSoftmax:
         a = tf.nn.softmax(z)
         xe = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=z)
         main_loss = tf.reduce_mean(xe)
-        return a, main_loss
+        return [a, main_loss]

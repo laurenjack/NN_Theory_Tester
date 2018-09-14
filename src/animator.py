@@ -37,15 +37,14 @@ def animate_spf(z_bar_pair, tau_pair, z_over_time):
     plt.show()
 
 
-def animate(train_result):
-    zs, z_bars, taus = train_result.get()
+def animate(zs, z_bars, taus):
     zs, z_bars, taus = _prep_for_animation_if_not_2D(zs, z_bars, taus)
     show_animation = conf.show_animation
     fig, ax = plt.subplots()
     #_draw(clusters)
     epochs = len(zs[0])
-    ax.set_xlim(-10.0, 10.0)
-    ax.set_ylim(-10.0, 10.0)
+    ax.set_xlim(-50.0, 50.0)
+    ax.set_ylim(-50.0, 50.0)
 
     #Reshape the z bars for drawing
     d, num_classes = z_bars[0].shape

@@ -8,6 +8,7 @@ from data_set import load_cifar
 import train_network
 import rbf
 from vanilla_softmax import VanillaSoftmax
+from artificial_problem import simple_identical_plane
 
 
 def create_and_train_network():
@@ -27,7 +28,10 @@ def create_and_train_network():
             data_set = load_cifar()
             network = Resnet(end, model_save_dir)
         else:
-            data_set = load_mnist()
+            if conf.is_artificial_data:
+                data_set = simple_identical_plane(conf.n // conf.num_class, conf.artificial_in_dim, conf.num_class)
+            else:
+                data_set = load_mnist()
             num_inputs = data_set.X_train.shape[1]
             network = Network(num_inputs, end)
         if conf.do_train:

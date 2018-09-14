@@ -40,7 +40,7 @@ def _zero_the_grad(unused_op, grad):
 def _normalise(grad):
     m, d, K = grad.shape
     K = K.value
-    grad_mag = tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
+    grad_mag = tf.reduce_sum(tf.abs(grad), axis=1) # tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
     normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + conf.norm_epsilon)
     return normalised
 
@@ -209,4 +209,4 @@ class RBF:
 
     def create_ops(self, z):
         rbf_ops = self.create_all_ops(z)
-        return rbf_ops.a, rbf_ops.loss, rbf_ops.z, rbf_ops.z_bar, rbf_ops.tau
+        return [rbf_ops.a, rbf_ops.loss, rbf_ops.z, rbf_ops.z_bar, rbf_ops.tau, rbf_ops.rbf]

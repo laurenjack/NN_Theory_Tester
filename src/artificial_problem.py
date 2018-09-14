@@ -1,4 +1,6 @@
 import numpy as np
+from data_set import DataSet
+from configuration import conf
 
 DATA_START = -3.0
 DATA_END = 3.0
@@ -6,6 +8,8 @@ DATA_WIDTH = DATA_END - DATA_START
 
 def simple_identical_plane(n_per_class, d, K): # , keep_individual_dims_constant=False
     """Generate K classes each seperated by an identical plane with biases"""
+    if conf.n != n_per_class * K:
+        raise ValueError('n must factorise to n_per_class * K')
     dir = np.random.randn(d)
     dir /= np.sum(dir ** 2.0) ** 0.5
 
@@ -27,16 +31,23 @@ def simple_identical_plane(n_per_class, d, K): # , keep_individual_dims_constant
     rotated_uniform_variation = rotated_uniform_variation.reshape((n_per_class, K, d))
     rotated_uniform_variation = rotated_uniform_variation.transpose((0, 2, 1))
     X = dir.reshape(1, d, 1) * biases.reshape(1, 1, K) + rotated_uniform_variation
+    X = X.transpose(0, 2, 1)
+    X = X.reshape(n_per_class * K, d)
 
     y = np.arange(K)
     y = np.tile(y, [n_per_class, 1])
     y = y.transpose()
     y = y.flatten()
-    return X, y
+    return DataSet(X, y, X, y)
 
 if __name__ == '__main__':
-    X, y = simple_identical_plane(50, 1000, 4)
-    Xt = X.transpose()
+    n_per_class = 50
+    d = 50
+    K = 4
+    conf.n = n_per_class * K
+    data_set = simple_identical_plane(n_per_class, d, K)
+    X = data_set.X_train
+    Xt = X.reshape(n_per_class, K, d).transpose(1, 2, 0)
     d0 = Xt[:, 0]
     d1 = Xt[:, 1]
     import visualisation

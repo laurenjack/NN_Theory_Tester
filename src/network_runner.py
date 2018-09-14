@@ -13,6 +13,7 @@ class NetworkRunner:
         self.graph = graph
         self.network = network
         self.sess = session
+        self.ops_over_time = None
 
     def feed_and_run(self, x, y, op, batch=None, is_training=False):
         if batch is not None:
@@ -90,6 +91,9 @@ class NetworkRunner:
     def sample_correct_incorrect(self, ss, X, Y):
         corr, incorr, _, _ = self.all_correct_incorrect(X, Y)
         return corr.sample(ss), incorr.sample(ss)
+
+    def set_ops_over_time(self, ops_over_time):
+        self.ops_over_time = ops_over_time
 
     def _compute_accuracy(self, a, y):
         ss = y.shape[0]

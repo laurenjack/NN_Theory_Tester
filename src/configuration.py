@@ -8,14 +8,15 @@ class Conf:
 
 conf = Conf()
 
-conf.debug = False
-conf.is_net = False
-conf.is_resnet = True
+conf.debug_ops = True
+conf.is_net = True
+conf.is_resnet = False
 conf.is_rbf = True
-conf.do_train = False
+conf.do_train = True
+conf.is_artificial_data = False
 
 # Data set params
-conf.n = 100 #50000
+conf.n = 55000
 conf.num_class = 10
 conf.image_width = 32
 conf.image_depth = 3
@@ -24,8 +25,8 @@ conf.train_files = [data_dir + '/data_batch_' + str(i+1) + '.bin' for i in xrang
 conf.test_file = data_dir + '/test_batch.bin'
 
 # Network and rbf params
-conf.hidden_sizes = [100]
-conf.d = 100 #4096 # 10
+conf.hidden_sizes = [800]
+conf.d = 800 #4096 # 10
 conf.rbf_c = 4.0
 conf.z_bar_init_sd = 3.0
 conf.norm_epsilon = 10 ** (-70)
@@ -44,15 +45,15 @@ conf.wd_decay_rate = 0.2
 conf.decay_epochs = 100
 
 # Training params
-conf.m = 100 #128
-conf.lr = 0.1 * float(conf.d) ** 0.5 #0.001 # 0.00001
-conf.decrease_lr_points = [80, 120]
+conf.m = 128 #128
+conf.lr = 0.001 #* float(conf.d) ** 0.5 #0.001 # 0.00001
+conf.decrease_lr_points = [40, 60]
 conf.decrease_lr_factor = 0.01
-conf.epochs = 100 #160
+conf.epochs = 60 #160
 conf.optimizer = tf.train.MomentumOptimizer
 conf.target_variance = 1.0
-conf.z_bar_lr_increase_factor = 1.0
-conf.tau_lr_increase_factor = 1.0 / (conf.lr + float(conf.d) ** 0.5) #500.0
+conf.z_bar_lr_increase_factor = 2.0 * float(conf.d)  #** 0.5
+conf.tau_lr_increase_factor = 1.0 / conf.lr  #* 3.0 #500.0 # + float(conf.d) ** 0.5
 
 # Shortest point finder params
 conf.spf_lr = 0.01
@@ -67,12 +68,13 @@ conf.adverserial_epochs = 100
 
 # Reporting params
 conf.accuracy_ss = 1000
-conf.print_rbf_batch = True
+conf.print_rbf_batch = False
 conf.show_adversaries = False
 conf.show_roc = False
-conf.show_really_incorrect = False
+conf.show_really_incorrect = True
 conf.write_csv = False
-conf.show_z_stats = True
+conf.show_z_stats = False
+conf.artificial_in_dim = 2
 conf.class_to_adversary_class = (3, 5)  # Binary tuple used to express that the class at index 0 should be turned into
 # ad adversary of the class at index 1. Make it None if you would like to use the two closest classes instead,
 # in terms of the distance between their z_bar centres. (This will only work for rbf networks).
@@ -82,7 +84,8 @@ conf.top_k_incorrect = 5 #conf.classified_as_thresh = 0.75
 conf.num_runs = 1
 conf.rbf_only_out_dir = '/home/laurenjack/test_rbf'+str(conf.d) #'/Users/jack/tf_runs/test_rbf5'
 conf.show_animation = True
-conf.animation_interval = 100
+conf.animation_ss = 500
+conf.animation_interval = 500
 conf.incorr_report_limit = 3
 conf.num_duds = 0
 conf.do_useless_dimensions = False

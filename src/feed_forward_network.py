@@ -45,8 +45,8 @@ class Network:
     def get_lr(self):
         return self.lr
 
-    def debug_ops(self):
-        return self.all_end_ops
+    def get_ops(self):
+        return [self.train_op] + self.all_end_ops
 
     def rbf_params(self):
         if not self.has_rbf():
