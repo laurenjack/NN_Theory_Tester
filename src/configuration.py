@@ -46,14 +46,14 @@ conf.decay_epochs = 100
 
 # Training params
 conf.m = 128 #128
-conf.lr = 0.0003 #* float(conf.d) ** 0.5 #0.001 # 0.00001
+conf.lr = 0.001 #* float(conf.d) ** 0.5 #0.001 # 0.00001
 conf.decrease_lr_points = [40, 60]
 conf.decrease_lr_factor = 0.01
-conf.epochs = 20 #160
+conf.epochs = 30 #160
 conf.optimizer = tf.train.MomentumOptimizer
 conf.target_variance = 1.0
-conf.z_bar_lr_increase_factor = 0.1 * float(conf.d)  #** 0.5
-conf.tau_lr_increase_factor = 0.0#0.1 / conf.lr  #* 3.0 #500.0 # + float(conf.d) ** 0.5
+conf.z_bar_lr_increase_factor =  float(conf.d)  #** 0.5
+conf.tau_lr_increase_factor = 0.0 #0.01 / conf.lr  #* 3.0 #500.0 # + float(conf.d) ** 0.5
 
 # Shortest point finder params
 conf.spf_lr = 0.01
