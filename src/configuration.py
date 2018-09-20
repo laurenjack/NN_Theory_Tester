@@ -10,13 +10,13 @@ conf = Conf()
 
 conf.debug_ops = True
 conf.is_net = True
-conf.is_resnet = False
+conf.is_resnet = True
 conf.is_rbf = True
 conf.do_train = True
 conf.is_artificial_data = False
 
 # Data set params
-conf.n = 55000
+conf.n = 50000
 conf.num_class = 10
 conf.image_width = 32
 conf.image_depth = 3
@@ -25,7 +25,7 @@ conf.train_files = [data_dir + '/data_batch_' + str(i+1) + '.bin' for i in xrang
 conf.test_file = data_dir + '/test_batch.bin'
 
 # Network and rbf params
-conf.hidden_sizes = [800]
+conf.hidden_sizes = [64]
 conf.d = 800 #4096 # 10
 conf.rbf_c = 4.0
 conf.z_bar_init_sd = 3.0
@@ -46,14 +46,14 @@ conf.decay_epochs = 100
 
 # Training params
 conf.m = 128 #128
-conf.lr = 0.001 #* float(conf.d) ** 0.5 #0.001 # 0.00001
+conf.lr = 0.0003 #* float(conf.d) ** 0.5 #0.001 # 0.00001
 conf.decrease_lr_points = [40, 60]
 conf.decrease_lr_factor = 0.01
-conf.epochs = 60 #160
+conf.epochs = 20 #160
 conf.optimizer = tf.train.MomentumOptimizer
 conf.target_variance = 1.0
-conf.z_bar_lr_increase_factor = 2.0 * float(conf.d)  #** 0.5
-conf.tau_lr_increase_factor = 1.0 / conf.lr  #* 3.0 #500.0 # + float(conf.d) ** 0.5
+conf.z_bar_lr_increase_factor = 0.1 * float(conf.d)  #** 0.5
+conf.tau_lr_increase_factor = 0.0#0.1 / conf.lr  #* 3.0 #500.0 # + float(conf.d) ** 0.5
 
 # Shortest point finder params
 conf.spf_lr = 0.01
@@ -86,6 +86,7 @@ conf.rbf_only_out_dir = '/home/laurenjack/test_rbf'+str(conf.d) #'/Users/jack/tf
 conf.show_animation = True
 conf.animation_ss = 500
 conf.animation_interval = 500
+conf.repeat_animation = True
 conf.incorr_report_limit = 3
 conf.num_duds = 0
 conf.do_useless_dimensions = False

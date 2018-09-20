@@ -38,10 +38,10 @@ class Resnet:
         for num_filter, num_block, i in zip(conf.num_filter_for_stack, conf.num_blocks_per_stack, xrange(num_stack)):
             a = self._stack(a, num_filter, num_block, i)
 
-        #a = tf.reduce_mean(a, axis=[1, 2], name="avg_pool")
-        #a = tf.reshape(a, shape=[-1, conf.d])
-        z = operation.per_filter_fc(a)
-        # z = operation.fc(pre_z, pre_z.get_shape()[1])
+        a = tf.reduce_mean(a, axis=[1, 2], name="avg_pool")
+        # a = tf.reshape(a, shape=[-1, conf.d])
+        z = operation.fc(a, conf.d)
+        # z = operation.per_filter_fc(a)
         self.all_end_ops = end.create_ops(z)
         self.a = self.all_end_ops[0]
         main_loss = self.all_end_ops[1]
@@ -74,8 +74,8 @@ class Resnet:
     def get_batch_size(self):
         return self.end.batch_size
 
-    def debug_ops(self):
-        return self.all_end_ops
+    def get_ops(self):
+        return [self.train_op] + self.all_end_ops
 
     def get_y_hot(self):
         return self.end.y_hot

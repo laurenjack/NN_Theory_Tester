@@ -43,8 +43,8 @@ def animate(zs, z_bars, taus):
     fig, ax = plt.subplots()
     #_draw(clusters)
     epochs = len(zs[0])
-    ax.set_xlim(-50.0, 50.0)
-    ax.set_ylim(-50.0, 50.0)
+    ax.set_xlim(-20.0, 20.0)
+    ax.set_ylim(-20.0, 20.0)
 
     #Reshape the z bars for drawing
     d, num_classes = z_bars[0].shape
@@ -103,7 +103,7 @@ def animate(zs, z_bars, taus):
     #Run the animation
     if show_animation:
         ani = FuncAnimation(fig, update, frames=epochs - 1, init_func=init,
-                            interval=conf.animation_interval, repeat=False)
+                            interval=conf.animation_interval, repeat=conf.repeat_animation)
 
     plt.show()
 
