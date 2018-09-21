@@ -10,13 +10,13 @@ conf = Conf()
 
 conf.debug_ops = True
 conf.is_net = True
-conf.is_resnet = True
+conf.is_resnet = False
 conf.is_rbf = True
 conf.do_train = True
 conf.is_artificial_data = False
 
 # Data set params
-conf.n = 50000
+conf.n = 55000
 conf.num_class = 10
 conf.image_width = 32
 conf.image_depth = 3
@@ -25,8 +25,8 @@ conf.train_files = [data_dir + '/data_batch_' + str(i+1) + '.bin' for i in xrang
 conf.test_file = data_dir + '/test_batch.bin'
 
 # Network and rbf params
-conf.hidden_sizes = [64]
-conf.d = 800 #4096 # 10
+conf.hidden_sizes = [100]
+conf.d = 54 #4096 # 10
 conf.rbf_c = 4.0
 conf.z_bar_init_sd = 3.0
 conf.norm_epsilon = 10 ** (-70)
@@ -44,12 +44,12 @@ conf.weight_decay = 0.0002
 conf.wd_decay_rate = 0.2
 conf.decay_epochs = 100
 
-# Training params
+# Training params@tf.RegisterGradient("z_bar_base_grad")
 conf.m = 128 #128
-conf.lr = 0.001 #* float(conf.d) ** 0.5 #0.001 # 0.00001
+conf.lr = 0.003 #* float(conf.d) ** 0.5 #0.001 # 0.00001
 conf.decrease_lr_points = [40, 60]
 conf.decrease_lr_factor = 0.01
-conf.epochs = 30 #160
+conf.epochs = 50 #160
 conf.optimizer = tf.train.MomentumOptimizer
 conf.target_variance = 1.0
 conf.z_bar_lr_increase_factor =  float(conf.d)  #** 0.5

@@ -7,6 +7,7 @@ variance_grad = None
 rbf_grad = None
 y_hot = None
 batch_size = None
+z_bar_sd = None
 
 z_grad = None
 z_bar_grad = None
@@ -43,6 +44,16 @@ def _normalise(grad):
     grad_mag = tf.reduce_sum(tf.abs(grad), axis=1) # tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
     normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + conf.norm_epsilon)
     return normalised
+
+@tf.RegisterGradient("z_bar_base_grad")
+def _z_bar_base_grad(unused_op, grad):
+    """
+    This gradient is scaled by the standard deviation of z_bar_base, we don't neccessarily want that scaling,
+    so all we are doing here is getting rid of it
+    """
+    global z__bar_base_grad
+    z__bar_base_grad = grad * (z_bar_sd + 10.0 ** -8)
+    return z__bar_base_grad
 
 
 @tf.RegisterGradient("z_grad")
@@ -137,8 +148,19 @@ class RBF:
 
         rbf_c = conf.rbf_c
         g = tf.get_default_graph()
-        z_bar = tf.get_variable("z_bar", shape=[d, num_class],
+
+        z_bar_base = tf.get_variable("z_bar_base", shape=[d, num_class],
                                      initializer=self.z_bar_init)
+        with g.gradient_override_map({'Identity': "z_bar_base_grad"}):
+            z_bar_base = tf.identity(z_bar_base, name='Identity')
+        z_bar_mew = tf.reduce_mean(z_bar_base, axis=1)
+        z_bar_mew = tf.reshape(z_bar_mew, shape=[d, 1])
+        z_bar_diff = z_bar_base - z_bar_mew
+        global z_bar_sd
+        z_bar_sd = tf.reduce_mean(z_bar_diff ** 2.0, axis=1) ** 0.5  # tf.reduce_mean(tf.abs(z_bar_diff), axis=1)
+        z_bar_sd = tf.reshape(z_bar_sd, [d, 1])
+        z_bar = 5.0 * z_bar_diff / (z_bar_sd + 10.0 ** -8)
+
         tau = tf.abs(tf.get_variable("tau", shape=[d, num_class],
                                           initializer=self.tau_init))
         with g.gradient_override_map({'Identity': "tau_grad"}):
