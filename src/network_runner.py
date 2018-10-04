@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 import rbf
 from configuration import conf
 
@@ -9,11 +10,14 @@ class NetworkRunner:
     These include most of the networks tensorflow ops, but also additional
     operations such as reporting on accuracy"""
 
-    def __init__(self, graph, network, session):
+    def __init__(self, network, session, graph=None):
         self.graph = graph
+        if self.graph is None:
+            self.graph = tf.get_default_graph()
         self.network = network
         self.sess = session
         self.ops_over_time = None
+
 
     def feed_and_run(self, x, y, op, batch=None, is_training=False):
         if batch is not None:
@@ -60,7 +64,10 @@ class NetworkRunner:
         a = np.concatenate(probs)
         return a
 
-    def report_accuracy(self, set_name, batch_indicies, accuracy_ss, X, Y):
+    def report_accuracy(self, set_name, batch_indicies, X, Y, accuracy_ss=None):
+
+        if accuracy_ss is None:
+            accuracy_ss = X.shape[0]
         acc_batch = _random_batch(batch_indicies, accuracy_ss)
         a = self.feed_and_run(X, Y, self.network.a, acc_batch)
         y = Y[acc_batch]

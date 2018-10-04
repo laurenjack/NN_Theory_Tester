@@ -1,9 +1,9 @@
 import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
-from rbf import RBF
-from tensorflow.python.training import moving_averages
+
 from configuration import conf
-import operation
+from rbf import RBF
+from src import operation
 
 BATCH_NORM_OPS_KEY = 'batch_norm_ops'
 
@@ -38,10 +38,10 @@ class Resnet:
         for num_filter, num_block, i in zip(conf.num_filter_for_stack, conf.num_blocks_per_stack, xrange(num_stack)):
             a = self._stack(a, num_filter, num_block, i)
 
-        a = tf.reduce_mean(a, axis=[1, 2], name="avg_pool")
+        # a = tf.reduce_mean(a, axis=[1, 2], name="avg_pool")
         # a = tf.reshape(a, shape=[-1, conf.d])
-        z = operation.fc(a, conf.d)
-        # z = operation.per_filter_fc(a)
+        # z = operation.fc(a, conf.d)
+        z = operation.per_filter_fc(a)
         self.all_end_ops = end.create_ops(z)
         self.a = self.all_end_ops[0]
         main_loss = self.all_end_ops[1]

@@ -1,7 +1,8 @@
 import tensorflow as tf
-import configuration
-from operation import fc
+
 from configuration import conf
+from src.operation import fc
+
 
 class VanillaSoftmax:
     """Standard end of a nueral network"""

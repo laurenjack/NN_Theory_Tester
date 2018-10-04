@@ -1,8 +1,11 @@
+import sys
+
 import numpy as np
 import tensorflow as tf
 from network_runner import NetworkRunner
-import sys
+
 from configuration import conf
+import rbf
 
 
 def train(graph, network, data_set):
@@ -17,7 +20,7 @@ def train(graph, network, data_set):
     train_op = network.train_op
     all_ops = network.get_ops()
     saver = tf.train.Saver(tf.global_variables())
-    network_runner = NetworkRunner(graph, network, sess)
+    network_runner = NetworkRunner(network, sess, graph)
 
     class_wise_z_list = []
     for k in xrange(conf.num_class):
@@ -41,11 +44,12 @@ def train(graph, network, data_set):
             batch = batch_indicies[k:k + m]
             if conf.debug_ops:
                 op_results = network_runner.feed_and_run(X, Y, all_ops, batch, is_training=True)
+                xe_sm_g = network_runner.feed_and_run(X, Y, rbf.xe_sm_grad, batch, is_training=True)
             else:
                 network_runner.feed_and_run(X, Y, train_op, batch, is_training=True)
         print 'Epoch: '+str(e)
-        network_runner.report_accuracy('Train', batch_indicies, accuracy_ss, X, Y)
-        network_runner.report_accuracy('Validation', val_batch_indicies, accuracy_ss, X_val, Y_val)
+        network_runner.report_accuracy('Train', batch_indicies, X, Y, accuracy_ss)
+        network_runner.report_accuracy('Validation', val_batch_indicies, X_val, Y_val, accuracy_ss)
         print ''
 
         #At the end of epoch, calculate what will be shown for animation, (if required)
@@ -76,4 +80,4 @@ def load_pre_trained(graph, network):
         sys.exit(1)
     print "resume", latest
     saver.restore(sess, latest)
-    return NetworkRunner(graph, network, sess)
+    return NetworkRunner(network, sess, graph)
