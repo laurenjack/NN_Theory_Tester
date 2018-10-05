@@ -1,20 +1,21 @@
-import tensorflow as tf
-from animator import *
+import animator
 import train_rbf
-from reporter import *
+import reporter as rep
 import network_factory
-import rbf
-from configuration import conf
+import configuration
 
 
-def run_network():
-    network_runner, data_set = network_factory.create_and_train_network()
+def run_network(conf):
+    """"Create, train and reports on a neural network architecture according to conf.
 
-    # Report on the results
-    report_single_network(network_runner, data_set)
-    # report_with_adversaries_from_second(network_runner1, network_runner2, data_set, conf)
+    Args:
+        conf: configuration.RbfSoftmaxConfiguration
+    """
+    network_runner, data_set = network_factory.create_and_train_network(conf)
+    rep.report_single_network(network_runner, data_set)
 
-def run_rbf_test():
+
+def run_rbf_test(conf): # TODO(Jack) sort this rbf only code
     total_correct = 0
     for i in xrange(conf.num_runs):
         train_result = train_rbf.train()
@@ -33,14 +34,19 @@ def run_rbf_test():
 
     # Take the last a and evaluate the percentage of correctly classified points
     if conf.num_runs == 1: # and conf.d == 2:
-        animate(train_result.get())
-        #animate_spf(z_bar_pair, tau_pair, sp_z_list)
+        animator.animate(train_result.get())
+
+
+def run():
+    conf = configuration.get_configuration()
+    if conf.is_net:
+        run_network(conf)
+    else:
+        run_rbf_test(conf)
+
 
 if __name__ == '__main__':
-    if conf.is_net:
-        run_network()
-    else:
-        run_rbf_test()
+    run()
 
 
 

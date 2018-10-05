@@ -23,13 +23,13 @@ def run_bar_experiment():
     bar_network = bn.BarNetwork(variable_creator, num_filters, lr)
     training_set = be.training_set()
     validation_set = be.all_value_validation_set()
-    adverserial_set = be.adverserial_set()
+    adversarial_set = be.adversarial_set()
 
     sess = tf.InteractiveSession()
     tf.global_variables_initializer().run()
     all_correct_flags = []
     for run_number in xrange(num_runs):
-        all_correct = trainer.train(sess, bar_network, training_set, validation_set, adverserial_set, run_number)
+        all_correct = trainer.train(sess, bar_network, training_set, validation_set, adversarial_set, run_number)
         all_correct_flags.append(all_correct)
         # Re-init training variables
         tf.global_variables_initializer().run()
@@ -39,7 +39,7 @@ def run_bar_experiment():
     train_all_correct, val_all_correct, adv_all_correct = zip(*all_correct_flags)
     _report_fraction_all_correct('Train', train_all_correct)
     _report_fraction_all_correct('Validation', val_all_correct)
-    _report_fraction_all_correct('Adverserial', adv_all_correct)
+    _report_fraction_all_correct('adversarial', adv_all_correct)
 
 def _report_fraction_all_correct(name, all_correct_flags):
     # TODO refactor into reporting framework

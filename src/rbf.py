@@ -205,7 +205,7 @@ class RBF:
             weighted_variance = tf.reduce_sum(filtered_sum, axis=0) / safe_class_wise_batch_size
         with g.gradient_override_map({'Identity': "stub_and_save_variance_grad"}):
             weighted_variance_id = tf.identity(weighted_variance, name='Identity')
-            target_tau_diff = (conf.target_variance - weighted_variance_id) ** 2.0
+            target_tau_diff = (conf.target_precision - weighted_variance_id) ** 2.0
             tau_loss = tf.reduce_sum(target_tau_diff)
 
         with g.gradient_override_map({'Identity': "zero_the_grad"}):

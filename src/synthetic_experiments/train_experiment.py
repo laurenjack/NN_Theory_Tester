@@ -12,7 +12,7 @@ class ExperimentTrainer:
         self.epochs = epochs
         self.batch_size = batch_size
 
-    def train(self, sess, network, training_set, validation_set, adverserial_set, run_number):
+    def train(self, sess, network, training_set, validation_set, adversarial_set, run_number):
         """
         Train a newly initiated network on training_set, reporting accuarcy on validation_set along the way
 
@@ -44,9 +44,9 @@ class ExperimentTrainer:
                 feed_dict = {network.x: x, network.y: y}
                 _, a1, a, bias = sess.run((network.train_op, network.a1, network.a, network.b), feed_dict=feed_dict)
             if self.num_runs == 1:
-                self._report_success(e, network, sess, training_set, validation_set, adverserial_set, 'Epoch')
+                self._report_success(e, network, sess, training_set, validation_set, adversarial_set, 'Epoch')
 
-        return self._report_success(run_number, network, sess, training_set, validation_set, adverserial_set)
+        return self._report_success(run_number, network, sess, training_set, validation_set, adversarial_set)
 
 
     def _report_success(self, when, network, sess, ts, vs, advs, period_name='Run'):

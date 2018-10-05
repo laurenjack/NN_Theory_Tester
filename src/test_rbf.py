@@ -58,7 +58,7 @@ class TestRbf(test.TestCase):
         exp_wzds = np.array([[[0.25, 1.5625], [16.0, 9]], [[4.0, 0.0], [1, 110.25]], [[12.25, 0.5625], [100, 36]]], dtype=np.float32)
 
         ss = np.array([2.0, 1.0], dtype=np.float32).reshape(1, 2)
-        dC_dwzds = - 2.0 * (conf.target_variance - np.sum(y_hot * exp_wzds, axis=0) / ss)
+        dC_dwzds = - 2.0 * (conf.target_precision - np.sum(y_hot * exp_wzds, axis=0) / ss)
         dwzds_dtau = 2.0 * tau_start * y_hot * exp_z_diff_sq / ss
         dC_dtau = dC_dwzds * dwzds_dtau
         exp_tau_grad = np.sign(dC_dtau) * abs(dC_dtau / 3.0) ** 0.5 * 0.5

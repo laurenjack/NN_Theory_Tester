@@ -44,7 +44,6 @@ def train(graph, network, data_set):
             batch = batch_indicies[k:k + m]
             if conf.debug_ops:
                 op_results = network_runner.feed_and_run(X, Y, all_ops, batch, is_training=True)
-                xe_sm_g = network_runner.feed_and_run(X, Y, rbf.xe_sm_grad, batch, is_training=True)
             else:
                 network_runner.feed_and_run(X, Y, train_op, batch, is_training=True)
         print 'Epoch: '+str(e)

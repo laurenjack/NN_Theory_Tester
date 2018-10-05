@@ -2,7 +2,7 @@ from visualisation import *
 import numpy as np
 from shortest_point_finder import find_shortest_point
 from prediction_analytics import *
-from adverserial import *
+from adversarial import *
 from configuration import conf
 from animator import animate
 
@@ -10,12 +10,12 @@ def report_single_network(network_runner, data_set):
     """Module responsible for reporting on the results of a trained network.
 
     This includes analysis of the rbf parameters, an examination of the
-    properties of correct, incorrect and adverserial examples etc."""
+    properties of correct, incorrect and adversarial examples etc."""
     X_val = data_set.X_val
     Y_val = data_set.Y_val
     correct, incorrect = _report(network_runner, data_set)
 
-    if conf.print_rbf_batch and conf.is_rbf:
+    if conf.print_rbf_params and conf.is_rbf:
         _print_rbf_bacth(X_val, Y_val, network_runner)
 
     class_to_adversary = conf.class_to_adversary_class
@@ -25,7 +25,7 @@ def report_single_network(network_runner, data_set):
 
     # show adversaries
     if conf.show_adversaries:
-        x_adv, y_actual, x_actual = adverserial_gd(network_runner, correct, class_to_adversary)
+        x_adv, y_actual, x_actual = adversarial_gd(network_runner, correct, class_to_adversary)
         adverse_prediction, _ = _get_probabilities_for(network_runner, x_adv, y_actual, report=True)
         plot_all_with_originals(x_adv, adverse_prediction, y_actual, x_actual)
 
@@ -103,7 +103,7 @@ def report_with_adverseries_from_second(nr1, nr2, data_set):
             z, z_bar, tau = nr1.report_rbf_params(data_set.X_val, data_set.Y_val)
             class_to_adversary = _report_shortest_point(z_bar, tau)
 
-        x_adv, y_actual, x_actual = adverserial_gd(nr1, correct, class_to_adversary)
+        x_adv, y_actual, x_actual = adversarial_gd(nr1, correct, class_to_adversary)
         predictions1, probs1 = _get_probabilities_for(nr1, x_actual, y_actual)
         adv_predictions1, adv_probs1 = _get_probabilities_for(nr1, x_adv, y_actual)
 
@@ -127,10 +127,10 @@ def report_with_adverseries_from_second(nr1, nr2, data_set):
     #plot_all_with_originals(x_adv, adv_predictions1, y_actual, x_actual)
 
 def _convincing_adverseries(adv_predictions, adv_probs, adv_class):
-    was_adverserial_prediction = adv_predictions == adv_class
+    was_adversarial_prediction = adv_predictions == adv_class
     ss = adv_predictions.shape[0]
     exceeded_thresh = adv_probs[np.arange(ss), adv_predictions] > 0.5
-    threating_adversary = np.logical_and(was_adverserial_prediction, exceeded_thresh).astype(np.int32)
+    threating_adversary = np.logical_and(was_adversarial_prediction, exceeded_thresh).astype(np.int32)
     print 'Number of convincing adverseries: ' + str(np.sum(threating_adversary)) + ' / ' + str(ss)
 
 

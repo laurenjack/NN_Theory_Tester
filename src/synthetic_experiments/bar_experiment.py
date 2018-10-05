@@ -25,7 +25,7 @@ def training_set():
 def all_value_validation_set():
     """
     Get the all value validation set, this is every possible permutation once with and without noise, as
-    well as adverserial examples
+    well as adversarial examples
     """
     bar = _to_data_set(_all_bar_perms(), 0, False)
     foo = _to_data_set(_all_foo_perms(), 1, False)
@@ -33,7 +33,7 @@ def all_value_validation_set():
     return combine(bar, foo) #, adv)
 
 
-def adverserial_set():
+def adversarial_set():
     x = np.array([[[0.75, 0.0], [0.75, 0.0]]])
     y = np.array([1.0])
     is_adversary = np.array([True])

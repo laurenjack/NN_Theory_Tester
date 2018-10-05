@@ -8,7 +8,7 @@ class Network:
         self.model_save_dir = None
         self.end = end
         d = conf.d
-        self.adverserial_epsilon = conf.adverserial_epsilon
+        self.adversarial_epsilon = conf.adversarial_epsilon
         #Set up placeholders for inputs and putputs
         num_class = conf.num_class
         self.lr = tf.placeholder(tf.float32, shape=[], name='lr')
@@ -56,15 +56,15 @@ class Network:
     def has_rbf(self):
         return isinstance(self.end, RBF)
 
-    def fgsm_adverserial_with_target(self):
-        """Generate an adverserial example using the fast gradient sign method.
-        See doc for adverserial_gradient for more info """
-        image_grad = self.adverserial_gradient()
+    def fgsm_adversarial_with_target(self):
+        """Generate an adversarial example using the fast gradient sign method.
+        See doc for adversarial_gradient for more info """
+        image_grad = self.adversarial_gradient()
         grad_sign = tf.sign(image_grad)
-        pertubation = tf.multiply(self.adverserial_epsilon, grad_sign)
+        pertubation = tf.multiply(self.adversarial_epsilon, grad_sign)
         return self.x - pertubation
 
-    def adverserial_gradient(self):
+    def adversarial_gradient(self):
         """ Given an image and a deliberately faulty label, return the gradient
         with respect to that image which minimises the loss function, using that
         faulty label.
