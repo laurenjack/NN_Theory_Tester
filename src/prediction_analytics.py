@@ -1,6 +1,8 @@
 import numpy as np
 import visualisation
-from configuration import conf
+import configuration
+conf = configuration.get_configuration()
+
 
 def extract_and_transform(X, Y, network_runner):
     """Extract and transform the data regarding an rbf networks predictions, to a relational model"""

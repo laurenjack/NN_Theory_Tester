@@ -1,7 +1,9 @@
 import numpy as np
 import tensorflow as tf
 import rbf
-from configuration import conf
+import configuration
+conf = configuration.get_configuration()
+
 
 class NetworkRunner:
     """Within the context of a tensorflow session, responsible

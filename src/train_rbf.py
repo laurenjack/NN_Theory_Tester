@@ -2,7 +2,8 @@ import tensorflow as tf
 import numpy as np
 import rbf as rb
 from gen_train_points import *
-from configuration import conf
+import configuration
+conf = configuration.get_configuration()
 
 def train():
     g_1 = tf.Graph()

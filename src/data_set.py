@@ -1,6 +1,7 @@
 from tensorflow.examples.tutorials.mnist import input_data
 import numpy as np
-from configuration import conf
+import configuration
+conf = configuration.get_configuration()
 
 class DataSet:
     """Class represents a data set for a neural network to be trained/tested/validated on"""

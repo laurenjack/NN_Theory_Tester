@@ -3,8 +3,9 @@ import numpy as np
 from shortest_point_finder import find_shortest_point
 from prediction_analytics import *
 from adversarial import *
-from configuration import conf
 from animator import animate
+import configuration
+conf = configuration.get_configuration()
 
 def report_single_network(network_runner, data_set):
     """Module responsible for reporting on the results of a trained network.

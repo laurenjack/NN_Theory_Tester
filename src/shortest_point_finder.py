@@ -1,7 +1,8 @@
 import numpy as np
 import tensorflow as tf
 import math
-from configuration import conf
+import configuration
+conf = configuration.get_configuration()
 
 def find_shortest_point(z_bar, tau):
     """Find the shortest point between a single pair of clusters"""

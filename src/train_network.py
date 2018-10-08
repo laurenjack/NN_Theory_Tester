@@ -4,7 +4,8 @@ import numpy as np
 import tensorflow as tf
 from network_runner import NetworkRunner
 
-from configuration import conf
+import configuration
+conf = configuration.get_configuration()
 import rbf
 
 

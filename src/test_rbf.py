@@ -1,8 +1,8 @@
 import unittest as test
 import tensorflow as tf
 import numpy as np
-import configuration
 import rbf as rb
+import configuration
 
 class TestRbf(test.TestCase):
 

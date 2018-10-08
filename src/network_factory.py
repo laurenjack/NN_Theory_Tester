@@ -6,8 +6,8 @@ import resnet
 import data_set
 import train_network
 import rbf
-from vanilla_softmax import VanillaSoftmax
-from artificial_problem import simple_identical_plane
+import vanilla_softmax
+import artificial_problem as ap
 
 
 _RBF_STORE = 'resnet_rbf'
@@ -16,6 +16,10 @@ _VANILLA_STORE = 'resnet_plain'
 
 def create_and_train_network(conf):
     """Create and train a neural network for the rbf-softmax experiment.
+
+    This method should only be used in the context of an rbf softmax experiment. It is responsible for handling the
+    complexity of an configuration.RbfSoftmaxConfiguration instance. It will use the passed in configuration to
+    construct a network, train it, and return it encapsulated in an instance of NetworkRunner
 
     Args:
         conf: see configuration.RbfSoftmaxConfiguration
@@ -26,22 +30,24 @@ def create_and_train_network(conf):
     """
     graph = tf.Graph()
     with graph.as_default():
+        # It's worth viewing the documentation/comments in configuration.RbfSoftmaxConfiguration before reading /
+        # modifying this function
         if conf.is_rbf:
             z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
-            tau_init = tf.constant_initializer(0.5 * np.ones(shape=[conf.d, conf.num_class])) # / float(conf.d) ** 0.5
+            tau_init = tf.constant_initializer(conf.tau_init * np.ones(shape=[conf.d, conf.num_class]))
             end = rbf.RBF(z_bar_init, tau_init)
         else:
-            end = VanillaSoftmax()
+            end = vanilla_softmax.VanillaSoftmax()
         if conf.is_resnet:
             if conf.is_rbf:
-                model_save_dir = _append(conf.model_save_dir)
+                model_save_dir = _append(conf.model_save_dir, _RBF_STORE)
             else:
-                model_save_dir = '/home/laurenjack/models/resnet_plain'
+                model_save_dir = _append(conf.model_save_dir, _VANILLA_STORE)
             ds = data_set.load_cifar()
             network = resnet.Resnet(end, model_save_dir)
         else:
             if conf.is_artificial_data:
-                ds = simple_identical_plane(conf.n // conf.num_class, conf.artificial_in_dim, conf.num_class)
+                ds = ap.simple_identical_plane(conf.n // conf.num_class, conf.artificial_in_dim, conf.num_class)
             else:
                 ds = data_set.load_mnist()
             num_inputs = ds.X_train.shape[1]
@@ -54,6 +60,7 @@ def create_and_train_network(conf):
 
 
 def _append(directory_name, next_dir):
+    # Tiny helper to create the directory the user saves their models
     if directory_name.endswith('/'):
         return directory_name + next_dir
     return directory_name + '/' + next_dir

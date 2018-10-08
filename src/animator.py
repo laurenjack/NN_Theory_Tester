@@ -4,7 +4,8 @@ import matplotlib.cm as cmx
 import matplotlib.colors as colors
 import numpy as np
 from matplotlib.patches import Ellipse
-from configuration import conf
+import configuration
+conf = configuration.get_configuration()
 
 
 def animate_spf(z_bar_pair, tau_pair, z_over_time):

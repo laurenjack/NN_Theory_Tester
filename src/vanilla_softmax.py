@@ -1,6 +1,7 @@
 import tensorflow as tf
 
-from configuration import conf
+import configuration
+conf = configuration.get_configuration()
 from src.operation import fc
 
 

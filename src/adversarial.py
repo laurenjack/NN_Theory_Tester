@@ -1,5 +1,6 @@
 import numpy as np
-from configuration import conf
+import configuration
+conf = configuration.get_configuration()
 
 """Responsible for adversarial operations"""
 

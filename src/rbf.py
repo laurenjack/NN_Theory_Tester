@@ -1,37 +1,38 @@
 import tensorflow as tf
+import configuration
+conf = configuration.get_configuration()
 
-from configuration import conf
-
+# Necessary evil, globals for removing and re-introducing gradients in backProp
+# The gradient of the cross entropy loss function w.r.t the inputs of the softmax
 xe_sm_grad = None
-variance_grad = None
-rbf_grad = None
+tau_quadratic_grad = None
 y_hot = None
 batch_size = None
 z_bar_sd = None
 
-z_grad = None
+z_grad = None  # TODO(Jack) more elegant debugging strategy
 z_bar_grad = None
-tau_grad = None
-zds = None
+zds = None  # z difference squared, used to scale the tau gradient (see README)
 
-@tf.RegisterGradient("stub_and_save")
+
+@tf.RegisterGradient("stub_and_save_xe_sm_grad")
 def _stub_and_save(unused_op, grad):
     global xe_sm_grad
     xe_sm_grad = grad
     return tf.ones(tf.shape(grad))
 
-@tf.RegisterGradient("stub_and_save_variance_grad")
-def _stub_and_save_variance_grad(unused_op, grad):
-    global variance_grad
-    variance_grad = grad
+
+@tf.RegisterGradient("stub_and_save_tau_quadratic_grad")
+def _stub_and_save_tau_quadratic_grad(unused_op, grad):
+    global tau_quadratic_grad
+    tau_quadratic_grad = grad
     return tf.ones(tf.shape(grad))
 
 
 @tf.RegisterGradient("stub_rbf_grad")
 def _stub_rbf_grad(unused_op, grad):
-    global rbf_grad
-    rbf_grad = grad
     return tf.ones(tf.shape(grad))
+
 
 @tf.RegisterGradient("zero_the_grad")
 def _zero_the_grad(unused_op, grad):
@@ -41,31 +42,27 @@ def _zero_the_grad(unused_op, grad):
 def _normalise(grad):
     m, d, K = grad.shape
     K = K.value
-    grad_mag = tf.reduce_sum(tf.abs(grad), axis=1) # tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
+    grad_mag = tf.reduce_sum(tf.abs(grad), axis=1)  # tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
     normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + conf.norm_epsilon)
     return normalised
 
+
 @tf.RegisterGradient("z_bar_base_grad")
 def _z_bar_base_grad(unused_op, grad):
-    """
-    This gradient is scaled by the standard deviation of z_bar_base, we don't neccessarily want that scaling,
-    so all we are doing here is getting rid of it
-    """
-    global z__bar_base_grad
-    z__bar_base_grad = grad * (z_bar_sd + 10.0 ** -8)
-    return z__bar_base_grad
+    # The gradient for z_bar_base is scaled by it's standard deviation, we don't necessarily want that scaling,
+    # so all we are doing here is getting rid of it
+    return grad * (z_bar_sd + conf.norm_epsilon)
 
 
 @tf.RegisterGradient("z_grad")
 def _z_grad(unused_op, grad):
     grad = _normalise(grad)
-    _, d, K = grad.shape
-    d = d.value
+    _, _, K = grad.shape
     K = K.value
-    global y_hot
-    y_hot_mask = xe_sm_grad - (1.0 - y_hot)*tf.maximum(xe_sm_grad, -0.1) # y_hot * xe_sm_grad
+    #
+    y_hot_mask = xe_sm_grad - (1.0 - y_hot)*tf.maximum(xe_sm_grad, -0.1)
     y_hot_mask = tf.reshape(y_hot_mask, [-1, 1, K])
-    new_grad =  y_hot_mask * grad # TODO quick test here  float(d) ** 0.5 * # / tf.cast(batch_size, tf.float32) ** 0.5
+    new_grad =  y_hot_mask * grad
     global z_grad
     z_grad = new_grad
     return new_grad
@@ -85,23 +82,14 @@ def _z_bar_grad(unused_op, grad):
 
 @tf.RegisterGradient("tau_grad")
 def _tau_grad(unused_op, grad):
-    return tf.sign(variance_grad) * tf.abs(variance_grad) ** 0.5 / (tf.reduce_max(zds, axis=0) + 10.0 ** -5.0) * conf.tau_lr_increase_factor
-
-    # _, d, K = grad.shape
-    # # m = m.value
-    # d = d.value
-    # K = K.value
-    # global tau_grad
-    # #grad = tf.reshape(variance_grad, shape=[1, d, K]) * grad
-    # grad = tf.tile(variance_grad, shape=[batch_size, 1, 1])
-    # tau_grad = tf.sign(grad) * tf.abs(grad / tf.cast(batch_size, tf.float32)) ** 0.5
-    # return tau_grad * conf.tau_lr_increase_factor
+    return tf.sign(tau_quadratic_grad) * tf.abs(tau_quadratic_grad) ** 0.5\
+           / (tf.reduce_max(zds, axis=0) + 10.0 ** -5.0) * conf.tau_lr_increase_factor
 
 
 class RbfOps:
 
     def __init__(self, z, z_bar, tau, a, z_diff, z_diff_sq, tau_square, weighted_z_diff_sq,
-               weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
+               weighted_z_diff_sq_other, target_tau_diff, tau_quadratic_grad,
                z_grad, z_bar_grad, loss, rbf, weighted_variance, neg_dist):
         self.z = z
         self.z_bar = z_bar
@@ -113,8 +101,7 @@ class RbfOps:
         self.wzds = weighted_z_diff_sq
         self.wzdso = weighted_z_diff_sq_other
         self.target_tau_diff = target_tau_diff
-        self.tau_grad = tau_grad
-        self.variance_grad = variance_grad
+        self.tau_quadratic_grad = tau_quadratic_grad
         self.z_grad = z_grad
         self.z_bar_grad = z_bar_grad
         self.loss = loss
@@ -157,7 +144,7 @@ class RBF:
         z_bar_mew = tf.reshape(z_bar_mew, shape=[d, 1])
         z_bar_diff = z_bar_base - z_bar_mew
         global z_bar_sd
-        z_bar_sd = tf.reduce_mean(z_bar_diff ** 2.0, axis=1) ** 0.5  # tf.reduce_mean(tf.abs(z_bar_diff), axis=1)
+        z_bar_sd = tf.reduce_mean(z_bar_diff ** 2.0, axis=1) ** 0.5
         z_bar_sd = tf.reshape(z_bar_sd, [d, 1])
         z_bar = 5.0 * z_bar_diff / (z_bar_sd + 10.0 ** -8)
 
@@ -203,7 +190,7 @@ class RBF:
             safe_class_wise_batch_size = tf.where(is_greater_than_zero, class_wise_batch_size, ones)
             safe_class_wise_batch_size = tf.reshape(safe_class_wise_batch_size, [1, num_class])
             weighted_variance = tf.reduce_sum(filtered_sum, axis=0) / safe_class_wise_batch_size
-        with g.gradient_override_map({'Identity': "stub_and_save_variance_grad"}):
+        with g.gradient_override_map({'Identity': "stub_and_save_tau_quadratic_grad"}):
             weighted_variance_id = tf.identity(weighted_variance, name='Identity')
             target_tau_diff = (conf.target_precision - weighted_variance_id) ** 2.0
             tau_loss = tf.reduce_sum(target_tau_diff)
@@ -217,7 +204,7 @@ class RBF:
             neg_dist_identity = tf.identity(neg_dist, name='Identity')
         exp = tf.exp(neg_dist_identity)
         rbf = rbf_c * exp
-        with g.gradient_override_map({'Identity': "stub_and_save"}):
+        with g.gradient_override_map({'Identity': "stub_and_save_xe_sm_grad"}):
             rbf_identity = tf.identity(rbf, name='Identity')
         sm = tf.nn.softmax(rbf_identity)
 
@@ -226,7 +213,7 @@ class RBF:
         loss = tf.reduce_sum(image_loss) + tau_loss
 
         return RbfOps(z, z_bar, tau, sm, z_diff, z_diff_sq, tau_square, weighted_z_diff_sq,
-                weighted_z_diff_sq_other, target_tau_diff, tau_grad, variance_grad,
+                weighted_z_diff_sq_other, target_tau_diff, tau_quadratic_grad,
                 z_grad, z_bar_grad, loss, rbf, weighted_variance, neg_dist)
 
     def create_ops(self, z):

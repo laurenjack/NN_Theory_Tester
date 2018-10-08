@@ -1,6 +1,7 @@
 import tensorflow as tf
 from rbf import RBF
-from configuration import conf
+import configuration
+conf = configuration.get_configuration()
 
 class Network:
 

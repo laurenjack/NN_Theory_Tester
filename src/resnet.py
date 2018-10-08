@@ -1,9 +1,11 @@
 import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
 
-from configuration import conf
 from rbf import RBF
 from src import operation
+
+import configuration
+conf = configuration.get_configuration()
 
 BATCH_NORM_OPS_KEY = 'batch_norm_ops'
 
