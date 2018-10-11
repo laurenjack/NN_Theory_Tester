@@ -33,8 +33,8 @@ def run_rbf_test(conf): # TODO(Jack) sort this rbf only code
     print "Total Percentage Correct: " + str(tpc)
 
     # Take the last a and evaluate the percentage of correctly classified points
-    if conf.num_runs == 1: # and conf.d == 2:
-        animator.animate(train_result.get())
+    if conf.num_runs == 1:  # and conf.d == 2:
+        animator.animate(*train_result.get())
 
 
 def run():

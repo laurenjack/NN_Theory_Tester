@@ -16,8 +16,8 @@ def train():
             z_var = tf.get_variable("z", shape=[conf.n, conf.d], initializer=z_init)
             z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
             tau_init = tf.constant_initializer(0.5 / 1.0 ** 0.5 * np.ones(shape=[conf.d, conf.num_class])) # float(conf.d)
-            net = rb.RBF(z_bar_init, tau_init, batch_inds_ph)
-            rbf_ops = net.create_all_ops(z_var)
+            net = rb.RBF(z_bar_init, tau_init)
+            rbf_ops = net.create_all_ops(z_var, batch_inds_ph)
             core_ops = rbf_ops.core_ops()
 
             #Add training op

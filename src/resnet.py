@@ -44,7 +44,7 @@ class Resnet:
         # a = tf.reshape(a, shape=[-1, conf.d])
         # z = operation.fc(a, conf.d)
         z = operation.per_filter_fc(a)
-        self.all_end_ops = end.create_ops(z)
+        self.all_end_ops = end.tensors_for_network(z)
         self.a = self.all_end_ops[0]
         main_loss = self.all_end_ops[1]
 

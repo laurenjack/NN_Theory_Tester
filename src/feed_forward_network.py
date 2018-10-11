@@ -26,7 +26,7 @@ class Network:
 
         self.z = self._create_layer(a, l+1, [ins[-1], outs[-1]])
 
-        self.all_end_ops = self.end.create_ops(self.z)
+        self.all_end_ops = self.end.tensors_for_network(self.z)
         self.a = self.all_end_ops[0]
         self.loss = self.all_end_ops[1]
         self.train_op = conf.optimizer(learning_rate=conf.lr, momentum=0.9).minimize(self.loss)
