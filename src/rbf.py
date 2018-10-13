@@ -1,5 +1,4 @@
 import tensorflow as tf
-from configuration import conf
 
 
 class RBF(object):
@@ -8,10 +7,17 @@ class RBF(object):
     Intended be utilised as the end of a neural network, see public methods for details.
     """
 
-    def __init__(self, z_bar_init, tau_init):
+    def __init__(self, conf, z_bar_init, tau_init):
+        # Unpack configuration
         self.num_class = conf.num_class
         self.d = conf.d
         self.rbf_c = conf.rbf_c
+        self.norm_epsilon = conf.norm_epsilon
+        self.z_bar_lr_increase_factor = conf.z_bar_lr_increase_factor
+        self.tau_lr_increase_factor = conf.tau_lr_increase_factor
+        self.target_precision = conf.target_precision
+
+        # Assign initializers and placeholders
         self.z_bar_init = z_bar_init
         self.tau_init = tau_init
         self.y = tf.placeholder(tf.int32, shape=[None], name="y")
@@ -59,24 +65,15 @@ class RBF(object):
             Returns an instance of RbfTensors (see rbf.RbfTensors) which encapsulates all the tensor needed by
             other rbf-softmax components (e.g. those tensors needed by a neural network such as the loss function).
         """
-
-        @tf.RegisterGradient("stub_and_save_xe_sm_grad")
-        def _stub_and_save(unused_op, grad):
-            self.xe_sm_grad = grad
-            return tf.ones(tf.shape(grad))
-
-        @tf.RegisterGradient("stub_rbf_grad")
-        def _stub_rbf_grad(unused_op, grad):
-            return tf.ones(tf.shape(grad))
-
         # Create the rbf parameters
         graph = tf.get_default_graph()
         z, z_tile = self._tile_z(graph, z, batch_indices)
         z_bar, z_bar_tile = self._create_z_bar(graph)
         tau, tau_tile = self._create_tau(graph)
+
         z_diff = z_tile - z_bar_tile
         self.z_difference_squared = z_diff ** 2.0
-        tau_square_tile = tau_tile ** 2.0
+        tau_square_tile = tau_tile ** 2.0 #TODO(Jack) do I actually need to tile tau? Can't I just use a matmul?
 
         @tf.RegisterGradient("zero_the_grad")
         def _zero_the_grad(unused_op, grad):
@@ -94,20 +91,15 @@ class RBF(object):
         with graph.gradient_override_map({'Identity': "zero_the_grad"}):
             z_diff_sq_alternate = tf.identity(self.z_difference_squared, name='Identity')
 
-        weighted_z_diff_sq = tf.multiply(tau_sq_alternate, self.z_difference_squared)
-        neg_dist = -tf.reduce_mean(weighted_z_diff_sq, axis=1)
-        with graph.gradient_override_map({'Identity': "stub_rbf_grad"}):
-            neg_dist_identity = tf.identity(neg_dist, name='Identity')
-        exp = tf.exp(neg_dist_identity)
-        rbf = self.rbf_c * exp
-        with graph.gradient_override_map({'Identity': "stub_and_save_xe_sm_grad"}):
-            rbf = tf.identity(rbf, name='Identity')
+        weighted_z_diff_sq, neg_dist, rbf = self._create_rbf_values(graph, self.z_difference_squared, tau_sq_alternate)
+        weighted_variance, target_tau_diff, tau_loss = self._create_tau_loss(graph, z_diff_sq_alternate,
+                                                                             tau_square_tile)
 
-        weighted_variance, target_tau_diff, tau_loss = self.create_tau_loss(graph, z_diff_sq_alternate, tau_square_tile)
-
+        # Calculate softmax and apply cross entropy loss function.
         sm = tf.nn.softmax(rbf)
         image_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf)
         loss = tf.reduce_sum(image_loss) + tau_loss
+
         return RbfTensors(z, z_bar, tau, sm, z_diff, self.z_difference_squared, weighted_z_diff_sq,
                           target_tau_diff, self.tau_quadratic_grad, self.z_grad, self.z_bar_grad, loss, rbf,
                           weighted_variance, neg_dist)
@@ -176,7 +168,7 @@ class RBF(object):
 
                         Returns: The complete modified gradient of the xe loss function w.r.t z_bar_base
                         """
-            return grad * (self.z_bar_sd + conf.norm_epsilon)
+            return grad * (self.z_bar_sd + self.norm_epsilon)
 
         z_bar_base = tf.get_variable("z_bar_base", shape=[self.d, self.num_class], initializer=self.z_bar_init)
         with graph.gradient_override_map({'Identity': "z_bar_base_grad"}):
@@ -189,7 +181,7 @@ class RBF(object):
         # Store of state in rbf object not ideal, but needed for gradient modification
         self.z_bar_sd = tf.reduce_mean(z_bar_diff ** 2.0, axis=1) ** 0.5
         self.z_bar_sd = tf.reshape(self.z_bar_sd, [self.d, 1])
-        z_bar = 5.0 * z_bar_diff / (self.z_bar_sd + conf.norm_epsilon)
+        z_bar = 5.0 * z_bar_diff / (self.z_bar_sd + self.norm_epsilon)
 
         @tf.RegisterGradient("z_bar_grad")
         def _z_bar_grad(unused_op, grad):
@@ -214,7 +206,7 @@ class RBF(object):
             xe_sm_grad_reshaped = tf.reshape(self.xe_sm_grad, [-1, 1, K])
             grad = xe_sm_grad_reshaped * grad
             self.z_bar_grad = grad / tf.cast(self.batch_size, tf.float32) ** 0.5
-            return self.z_bar_grad * conf.z_bar_lr_increase_factor
+            return self.z_bar_grad * self.z_bar_lr_increase_factor
 
         # Tile the z_bar's, so that they can be used for all m * d * k combinations of z - z_bar (broadcasting would
         # take care of this but the README specifies why this is done explicitly).
@@ -242,7 +234,7 @@ class RBF(object):
             Returns: tau's modified gradient
             """
             return tf.sign(self.tau_quadratic_grad) * tf.abs(self.tau_quadratic_grad) ** 0.5 \
-                / (tf.reduce_max(self.z_difference_squared, axis=0) + 10.0 ** -5.0) * conf.tau_lr_increase_factor
+                / (tf.reduce_max(self.z_difference_squared, axis=0) + 10.0 ** -5.0) * self.tau_lr_increase_factor
 
         tau = tf.abs(tf.get_variable("tau", shape=[self.d, self.num_class],
                                      initializer=self.tau_init))
@@ -252,7 +244,54 @@ class RBF(object):
         # Tile the taus's, so that they can be used for all m * d * k combinations of tau * (z - z_bar)
         return tau, self._tile(tau)
 
-    def create_tau_loss(self, graph, z_diff_sq_alternate, tau_square_tile):
+    def _create_rbf_values(self, graph, z_diff_sq, tau_sq_alternate):
+        """Create the rbf values, i.e. the rbf probabilities scaled by the rbf constant.
+
+        This function defines the part of the graph that takes the, m * d * K tensors (z - z_bar) ** 2.0 and
+        tiled tau ** 2.0, and uses them to compute the scaled rbf probabilities. Two gradient modifications are applied,
+        one to the gradient and another to the cross entropy softmax gradient.
+
+        Args:
+            z_diff_sq: The m * d * K tensor (z - z_bar) ** 2.0
+            tau_sq_alternate: The m * d * K tensor tiled tau ** 2.0
+
+        Returns: An m * K tensor of scaled rbf probabilities
+        """
+        weighted_z_diff_sq = tf.multiply(tau_sq_alternate, z_diff_sq)
+        neg_dist = -tf.reduce_mean(weighted_z_diff_sq, axis=1)
+
+        @tf.RegisterGradient("stub_rbf_grad")
+        def _stub_rbf_grad(unused_op, grad):
+            """Stub out the rbf gradient, by returning a tensor of ones in its place.
+
+            At this point in the Backprop, the xe softmax gradient has been stubbed and saved, so effectively grad is
+            just the derivative of rbf_c * exp w.r.t neg_dist, which is just rbf_c * exp. While the constant is benign
+            the exponential is deadly and quickly causes the gradient to vanish. It's an unnecessary exponential scaling
+            factor, so all this function does is remove it from the backward flow. See the README for more details.
+            """
+            return tf.ones(tf.shape(grad))
+
+        with graph.gradient_override_map({'Identity': "stub_rbf_grad"}):
+            neg_dist = tf.identity(neg_dist, name='Identity')
+        exp = tf.exp(neg_dist)
+        rbf = self.rbf_c * exp
+
+        @tf.RegisterGradient("stub_and_save_xe_sm_grad")
+        def _stub_and_save(unused_op, grad):
+            """Stub out the cross entropy softmax gradient (w.r.t rbf values), and save it so that it may be applied
+            later, post normalisation.
+
+            grad is the gradient of the loss with respect to the rbf values, i.e the cross entropy softmax signal
+            y - a. The details of why this is applied to the rbf parameters later on is specified in the README.
+            """
+            self.xe_sm_grad = grad
+            return tf.ones(tf.shape(grad))
+
+        with graph.gradient_override_map({'Identity': "stub_and_save_xe_sm_grad"}):
+            rbf = tf.identity(rbf, name='Identity')
+        return weighted_z_diff_sq, neg_dist, rbf
+
+    def _create_tau_loss(self, graph, z_diff_sq_alternate, tau_square_tile):
         """Create tau's unique loss function, as specified in the README
         """
         # TODO(Jack) more comments / refactoring if you keep this
@@ -273,7 +312,7 @@ class RBF(object):
 
         with graph.gradient_override_map({'Identity': "stub_and_save_tau_quadratic_grad"}):
             weighted_variance = tf.identity(weighted_variance, name='Identity')
-        target_tau_diff = (conf.target_precision - weighted_variance) ** 2.0
+        target_tau_diff = (self.target_precision - weighted_variance) ** 2.0
         tau_loss = tf.reduce_sum(target_tau_diff)
         return weighted_variance, target_tau_diff, tau_loss
 
@@ -287,7 +326,7 @@ class RBF(object):
         _, _, K = grad.shape
         K = K.value
         grad_mag = tf.reduce_sum(tf.abs(grad), axis=1)  # tf.reduce_sum(grad ** 2.0, axis=1) ** 0.5
-        normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + conf.norm_epsilon)
+        normalised = grad / (tf.reshape(grad_mag, [-1, 1, K]) + self.norm_epsilon)
         return normalised
 
 

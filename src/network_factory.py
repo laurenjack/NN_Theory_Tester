@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import tensorflow as tf
 
@@ -30,20 +32,20 @@ def create_and_train_network(conf):
     """
     graph = tf.Graph()
     with graph.as_default():
-        # It's worth viewing the documentation/comments in configuration.RbfSoftmaxConfiguration before reading /
-        # modifying this function
+        # It's worth viewing the documentation/comments in configuration.RbfSoftmaxConfiguration before reading or
+        # modifying this function.
         if conf.is_rbf:
             z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
             tau_init = tf.constant_initializer(conf.tau_init * np.ones(shape=[conf.d, conf.num_class]))
-            end = rbf.RBF(z_bar_init, tau_init)
+            end = rbf.RBF(conf, z_bar_init, tau_init)
         else:
-            end = vanilla_softmax.VanillaSoftmax()
+            end = vanilla_softmax.VanillaSoftmax(conf)
         if conf.is_resnet:
             if conf.is_rbf:
-                model_save_dir = _append(conf.model_save_dir, _RBF_STORE)
+                model_save_dir = os.path.join(conf.model_save_dir, _RBF_STORE)
             else:
-                model_save_dir = _append(conf.model_save_dir, _VANILLA_STORE)
-            ds = data_set.load_cifar()
+                model_save_dir = os.path.join(conf.model_save_dir, _VANILLA_STORE)
+            ds = data_set.load_cifar(conf.data_dir)
             network = resnet.Resnet(end, model_save_dir)
         else:
             if conf.is_artificial_data:
@@ -57,10 +59,3 @@ def create_and_train_network(conf):
         else:
             network_runner = train_network.train(graph, network, ds)
     return network_runner, ds
-
-
-def _append(directory_name, next_dir):
-    # Tiny helper to create the directory the user saves their models
-    if directory_name.endswith('/'):
-        return directory_name + next_dir
-    return directory_name + '/' + next_dir

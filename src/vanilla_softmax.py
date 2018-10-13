@@ -1,19 +1,27 @@
 import tensorflow as tf
-
-import configuration
-conf = configuration.get_configuration()
-from src.operation import fc
+import operation
 
 
 class VanillaSoftmax:
-    """Standard end of a nueral network"""
+    """Standard softmax end of a neural network
+    """
 
-    def __init__(self):
+    def __init__(self, conf):
+        self.num_class = conf.num_class
         self.batch_size = tf.placeholder(tf.int32, shape=[], name="batch_size")
         self.y = tf.placeholder(tf.int32, shape=[None], name="y")
 
     def tensors_for_network(self, pre_z):
-        z = fc(pre_z, conf.num_class)
+        """Build a standard softmax ending to a Neural network, with a cross entropy loss function.
+
+        Args:
+            pre_z: An m x d floating point tensor, which represents the current batch at the last layer of the
+            neural network before the softmax
+
+        Returns:
+            A list of tensors, for use in the construction of a neural network.
+        """
+        z = operation.fc(pre_z, self.num_class)
         a = tf.nn.softmax(z)
         xe = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=z)
         main_loss = tf.reduce_mean(xe)

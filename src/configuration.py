@@ -20,15 +20,12 @@ class RbfSoftmaxConfiguration:
     """
 
     def __init__(self):
+        # TODO(Jack) Add as command line arguments
         # The first fields are machine specific and should really be passed in as program args
         # Directory for saving models, separate sub-directories will be created based is_rbf
         self.model_save_dir = '/home/laurenjack/models'
-        self.model_save_dir = '/home/laurenjack/models'
-        # 3 parameters to specify where to load the CIFAR training and test sets
-        # TODO 1) use tf's cifar 10, 2) use a proper validation set
-        data_dir = '/home/laurenjack/models/cifar-data/cifar-10-batches-bin'
-        self.train_files = [data_dir + '/data_batch_{}.bin'.format(i+1) for i in xrange(5)]
-        self.test_file = data_dir + '/test_batch.bin'
+        # parameter to specify where to load the CIFAR training and test sets
+        self.data_dir = '/home/laurenjack/models/cifar-data'
 
         # Run an experiment on an NN, or on a toy rbf problem to get gradients right.
         self.is_net = True
