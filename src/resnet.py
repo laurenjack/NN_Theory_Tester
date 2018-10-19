@@ -1,18 +1,19 @@
 import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
 
-from rbf import RBF
+from rbf import Rbf
 from src import operation
 
 import configuration
 conf = configuration.get_configuration()
 
 BATCH_NORM_OPS_KEY = 'batch_norm_ops'
+_IMAGE_DEPTH = 3
 
 
 class Resnet:
 
-    def __init__(self, end, model_save_dir):
+    def __init__(self, end, model_save_dir, image_width):
         self.end = end
         self.model_save_dir = model_save_dir
         self.kernel_stride = conf.kernel_stride
@@ -20,10 +21,8 @@ class Resnet:
         self.kernel_width = conf.kernel_width
         self.bn_decay = conf.bn_decay
         self.bn_epsilon = conf.bn_epsilon
-        self.num_class = conf.num_class
-        self.image_width = conf.image_width
 
-        self.x = tf.placeholder(tf.float32, shape=[None, conf.image_width, conf.image_width, conf.image_depth],
+        self.x = tf.placeholder(tf.float32, shape=[None, image_width, image_width, _IMAGE_DEPTH],
                                 name="x")
         self.lr = tf.placeholder(tf.float32, shape=[], name='lr')
         self.is_training = tf.placeholder(dtype=tf.bool, shape=[], name='is_training')
@@ -33,7 +32,7 @@ class Resnet:
                                                        conf.decay_epochs, conf.wd_decay_rate)
 
         # Create the first layer
-        x_augmented = self._augment(self.x)
+        x_augmented = self._augment(self.x, image_width)
         a = self._layer(x_augmented, conf.num_filter_first, self.kernel_stride, 'first_layer')
         # Create other hidden layers
         num_stack = len(conf.num_filter_for_stack)
@@ -62,7 +61,7 @@ class Resnet:
             self.train_op = tf.group(self.optimzer, increment_epochs_trained)
 
     def has_rbf(self):
-        return isinstance(self.end, RBF)
+        return isinstance(self.end, Rbf)
 
     def get_x(self): #TODO consolidate with the similar functions on feedforward
         return self.x
@@ -82,6 +81,7 @@ class Resnet:
     def get_y_hot(self):
         return self.end.y_hot
 
+    # TODO(Jack) refactor this bad boy out for good
     def rbf_params(self):
         if not self.has_rbf():
             raise NotImplementedError('This network does not have an rbf end')
@@ -132,9 +132,9 @@ class Resnet:
         tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, weight_reg)
         return tf.nn.conv2d(a, weights, [1, stride, stride, 1], padding='SAME')
 
-    def _augment(self, x):
+    def _augment(self, x, image_width):
         padded = tf.pad(x, [[0, 0], [4, 4], [4, 4], [0, 0]])
-        cropped = tf.random_crop(padded, [self.end.batch_size, self.image_width, self.image_width, 3])
+        cropped = tf.random_crop(padded, [self.end.batch_size, image_width, image_width, _IMAGE_DEPTH])
         do_flip = tf.greater(tf.random_uniform(shape=[self.end.batch_size]), 0.5)
         flipped = tf.where(do_flip, tf.image.flip_left_right(cropped), cropped)
         return control_flow_ops.cond(self.is_training, lambda: flipped, lambda: x)

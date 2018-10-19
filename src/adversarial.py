@@ -4,10 +4,20 @@ conf = configuration.get_configuration()
 
 """Responsible for adversarial operations"""
 
+# TODO(Jack) include in docs properly
+""" Given an image and a deliberately faulty label, return the gradient
+        with respect to that image which minimises the loss function, using that
+        faulty label.
+
+        As the z grads ignore off target points, simply trying to
+        maximise the loss function will just run the example down into a low
+        rbf region. Therefore, rather than maximising the loss, we minimise
+        the loss with respect to a different target. Ideally the nearest z_bar"""
+
 def adversarial_gd(network_runner, correct, closest_classes):
     """Use gradient descent to generate adversarial examples"""
     x, adversarial_y, actual_y = _select_sample(correct, closest_classes)
-    adverse_op = network_runner.network.adversarial_gradient()
+    adverse_op = network_runner.network.gradient_wrt_inputs()
     x_orig = x
 
     for e in xrange(conf.adversarial_epochs):
@@ -18,12 +28,6 @@ def adversarial_gd(network_runner, correct, closest_classes):
 
     return x, actual_y, x_orig
 
-
-def adversarial_fgsm(network_runner, correct, closest_classes):
-    x, adversarial_y, actual_y = _select_sample(correct, closest_classes)
-    adverse_op = network_runner.network.fgsm_adversarial_with_target()
-    x = network_runner.feed_and_run(x, adversarial_y, adverse_op)
-    return network_runner, x, actual_y
 
 def _select_sample(correct, closest_classes):
     k1, k2 = closest_classes

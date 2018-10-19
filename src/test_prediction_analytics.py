@@ -75,10 +75,6 @@ class TestPredictionOutputWriter(test.TestCase):
         # 1: 0.8, 0.5, 0.2      1 / 6, 2 / 6, 5 / 6
         # 2: 0.6, 0.25, 0.1     0 / 6, 2 / 6 ....
 
-
-        from configuration import conf
-        conf.num_class = 3
-
         # mocks
         network_runner = Mock()
         network_runner.probabilities = Mock(return_value=probabilities)

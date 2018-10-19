@@ -10,7 +10,6 @@ class TestRbf(test.TestCase):
         conf = configuration.get_conf()
 
         conf.m = 3
-        conf.num_class = 2
         conf.d = 2
         conf.rbf_c = 4.0
         conf.lr = 1.0
@@ -25,7 +24,7 @@ class TestRbf(test.TestCase):
         y = np.array([0, 0, 1])
         y_hot = np.array([[1, 0],[1, 0],[0, 1]]).reshape(3,1,2)
         z_var = tf.get_variable("z", shape=[conf.m, conf.d], initializer=z_init)
-        net = rb.RBF(z_bar_init, tau_init)
+        net = rb.Rbf(z_bar_init, tau_init)
         rbf_ops = net.create_all_ops(z_var)
 
         # Get ops for testing

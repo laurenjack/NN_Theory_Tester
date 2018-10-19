@@ -21,11 +21,12 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
     def __init__(self):
         # TODO(Jack) Add as command line arguments
-        # The first fields are machine specific and should really be passed in as program args
-        # Directory for saving models, separate sub-directories will be created based is_rbf
-        self.model_save_dir = '/home/laurenjack/models'
-        # parameter to specify where to load the CIFAR training and test sets
+        # The first fields are machine specific and should really be passed in as program args.
+        # A parameter to specify where to load the CIFAR10 training and test sets
         self.data_dir = '/home/laurenjack/models/cifar-data'
+        # (optional) Directory for saving models, separate sub-directories will be created based on is_rbf. Note that
+        # only resnet models will be saved (so if is_resnet is False, no model will be saved).
+        self.model_save_dir = '/home/laurenjack/models'
 
         # Run an experiment on an NN, or on a toy rbf problem to get gradients right.
         self.is_net = True
@@ -44,12 +45,6 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Only does something if is_resnet is False. Then, if is_artificial_data is True, the network will train on
         # the problem specified in artificial_problem.py TODO(Jack) refactor artificial problem name/location
         self.is_artificial_data = False
-
-        # TODO(Jack) refactor these data set specific parameters, they can be inferred from the data set itself
-        self.n = 1
-        self.num_class = 10
-        self.image_width = 32
-        self.image_depth = 3
 
         # Network and rbf params
         # The number of dimensions in z space (i.e. the number of neurons at the layer pre softmax / rbf-softmax)
@@ -95,7 +90,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.lr = 0.003  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
-        self.epochs = 10
+        self.epochs = 2
         # The epochs we should decrease the learning rate by decrease_lr_factor
         self.decrease_lr_points = [80, 120]
         self.decrease_lr_factor = 0.01
@@ -146,6 +141,8 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
         # Rbf only parameters, for when is_net is False and we are only training z variables directly (rather than
         # a network TODO(Jack) lot's of deprecated stuff to get rid of here
+        self.n = 1
+        self.num_class = 1
         self.num_runs = 1
         self.rbf_only_out_dir = '/home/laurenjack/test_rbf' + str(self.d)  # '/Users/jack/tf_runs/test_rbf5'
         self.show_animation = True

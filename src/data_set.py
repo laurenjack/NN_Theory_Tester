@@ -6,7 +6,9 @@ import numpy as np
 from tensorflow.examples.tutorials import mnist
 
 
-_IMAGE_WIDTH = 32
+_MNIST_NUM_CLASS = 10
+_CIFAR10_NUM_CLASS = 10
+_CIFAR10_IMAGE_WIDTH = 32
 _CIFAR10_VALIDATION_SET_SIZE = 5000
 _CIFAR10_BINARY_TAR_URL = 'https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz'
 _CIFAR10_TAR_FILE_NAME = 'cifar-10-binary.tar.gz'
@@ -22,17 +24,21 @@ class DataSet:
     Either n * p where p is the total number of pixels in an image, or n * height * width * 3.
 
     Attributes:
+        num_class: the number of class labels
         X_train: training set images
         Y_train: training set labels
         X_val: validation set images
         Y_val: validation set labels
+        image_width: (optional) The width of the image
     """
 
-    def __init__(self, X_train, Y_train, X_val, Y_val):
+    def __init__(self, num_class, X_train, Y_train, X_val, Y_val, image_width=None):
+        self.num_class = num_class
         self.X_train = X_train
         self.Y_train = Y_train
         self.X_val = X_val
         self.Y_val = Y_val
+        self.image_width = image_width
 
     @property
     def n_train(self):
@@ -54,7 +60,7 @@ def load_mnist():
     mnist_data = mnist.input_data.read_data_sets('MNIST_data', one_hot=False)
     train_set = mnist_data.train
     val_set = mnist_data.validation
-    return DataSet(train_set.images, train_set.labels, val_set.images, val_set.labels)
+    return DataSet(_MNIST_NUM_CLASS, train_set.images, train_set.labels, val_set.images, val_set.labels)
 
 
 def load_cifar(data_dir):
@@ -89,7 +95,7 @@ def load_cifar(data_dir):
     x_train /= 128.0
     x_val -= pixel_mean
     x_val /= 128.0
-    return DataSet(x_train, y_train, x_val, y_val)
+    return DataSet(_CIFAR10_NUM_CLASS, x_train, y_train, x_val, y_val, _CIFAR10_IMAGE_WIDTH)
 
 
 def _maybe_download(data_dir, cifar_file_paths):
@@ -122,7 +128,7 @@ def _load_data(file_paths):
     y = x[:, 0]
     x = x[:, 1:]
     # Reshape
-    x = x.reshape(n, 3, _IMAGE_WIDTH, _IMAGE_WIDTH)
+    x = x.reshape(n, 3, _CIFAR10_IMAGE_WIDTH, _CIFAR10_IMAGE_WIDTH)
     x = x.transpose(0, 2, 3, 1)
     x = x.astype(dtype=np.float32)
     return x, y

@@ -10,6 +10,7 @@ import rbf
 
 
 def train(graph, network, data_set):
+    num_class = data_set.num_class
     X = data_set.X_train
     Y = data_set.Y_train
     X_val = data_set.X_val
@@ -24,7 +25,7 @@ def train(graph, network, data_set):
     network_runner = NetworkRunner(network, sess, graph)
 
     class_wise_z_list = []
-    for k in xrange(conf.num_class):
+    for k in xrange(num_class):
         class_wise_z_list.append([])
     z_bars = []
     taus = []
@@ -55,7 +56,7 @@ def train(graph, network, data_set):
         #At the end of epoch, calculate what will be shown for animation, (if required)
         if conf.show_animation and conf.is_rbf:
             z, z_bar, tau = network_runner.feed_and_run(X, Y, network.rbf_params(), animation_indicies, is_training=True)
-            for k in xrange(conf.num_class):
+            for k in xrange(num_class):
                 ind_of_class = np.argwhere(Y[animation_indicies] == k)[:, 0]
                 class_wise_z_list[k].append(z[ind_of_class])
             z_bars.append(z_bar)
@@ -64,7 +65,7 @@ def train(graph, network, data_set):
 
     network_runner.set_ops_over_time((class_wise_z_list, z_bars, taus))
 
-    if network.model_save_dir is not None:
+    if network.model_save_dir:
         saver.save(sess, network.model_save_dir+'/model.ckpt')
     return network_runner
 

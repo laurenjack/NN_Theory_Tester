@@ -6,8 +6,8 @@ class VanillaSoftmax:
     """Standard softmax end of a neural network
     """
 
-    def __init__(self, conf):
-        self.num_class = conf.num_class
+    def __init__(self, num_class):
+        self.num_class = num_class
         self.batch_size = tf.placeholder(tf.int32, shape=[], name="batch_size")
         self.y = tf.placeholder(tf.int32, shape=[None], name="y")
 

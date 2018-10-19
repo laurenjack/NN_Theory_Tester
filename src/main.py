@@ -1,8 +1,8 @@
+import configuration
 import animator
 import train_rbf
-import reporter as rep
 import network_factory
-import configuration
+import reporter_factory
 
 
 def run_network(conf):
@@ -12,10 +12,11 @@ def run_network(conf):
         conf: configuration.RbfSoftmaxConfiguration
     """
     network_runner, data_set = network_factory.create_and_train_network(conf)
-    rep.report_single_network(network_runner, data_set)
+    reporter = reporter_factory.create_reporter(data_set)
+    reporter.report_single_network(network_runner, data_set)
 
 
-def run_rbf_test(conf): # TODO(Jack) sort this rbf only code
+def run_rbf_test(conf):  # TODO(Jack) sort this rbf only code
     total_correct = 0
     for i in xrange(conf.num_runs):
         train_result = train_rbf.train()

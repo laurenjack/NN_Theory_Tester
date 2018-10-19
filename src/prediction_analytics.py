@@ -4,6 +4,14 @@ import configuration
 conf = configuration.get_configuration()
 
 
+class PredictionAnalytics:  # TODO(Jack) give a better name and move its behavior to correct places
+    """Responsible for performing analytics on network outputs or at least transforming network outputs and storing
+    them externally for further analytics.
+    """
+
+    def __init__(self, num_class):
+        self.num_class = num_class
+
 def extract_and_transform(X, Y, network_runner):
     """Extract and transform the data regarding an rbf networks predictions, to a relational model"""
     # Load the network data
@@ -44,7 +52,7 @@ def roc_curve(X, Y, network_runner):
     n = probabilities.shape[0]
     class_wise_tprs = []
     class_wise_fprs = []
-    for k in xrange(conf.num_class):
+    for k in xrange(self.num_class):
         actual_k_indicies = np.argwhere(Y == k)[:, 0]
         not_k_indicies = np.argwhere(Y != k)[:, 0]
         probability_of_k = probabilities[:, k]
@@ -123,7 +131,7 @@ def not_roc_curve(X, Y, network_runner):
     class_wise_fprs = []
     prob_of_ks_for_actual_ks = []
     not_ks_probabilities = []
-    for k in xrange(conf.num_class):
+    for k in xrange(self.num_class):
         actual_k_indicies = np.argwhere(Y == k)[:, 0]
         not_k_indicies = np.argwhere(Y != k)[:, 0]
         probability_of_k = probabilities[:, k]

@@ -1,15 +1,15 @@
 import tensorflow as tf
 
 
-class RBF(object):
+class Rbf(object):
     """Represents an rbf-softmax graph, which begins at the z-space and ends at the cross entropy loss function.
 
     Intended be utilised as the end of a neural network, see public methods for details.
     """
 
-    def __init__(self, conf, z_bar_init, tau_init):
+    def __init__(self, conf, z_bar_init, tau_init, num_class):
         # Unpack configuration
-        self.num_class = conf.num_class
+        self.num_class = num_class
         self.d = conf.d
         self.rbf_c = conf.rbf_c
         self.norm_epsilon = conf.norm_epsilon

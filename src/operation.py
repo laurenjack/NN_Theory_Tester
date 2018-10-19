@@ -14,13 +14,13 @@ def fc(a, num_units_out):
     tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, weight_reg)
     return a
 
-
+#TODO(Jack) Right now, d for a resnet is coupled to this method and to 64 filters, fix this
 def per_filter_fc(a):
     dims = a.get_shape()
     num_filters = dims[3]
     num_units_in = dims[1] * dims[2]
 
-    weights_initializer = tf.contrib.layers.variance_scaling_initializer(1.0/16.0)
+    weights_initializer = tf.contrib.layers.variance_scaling_initializer(1.0/16.0)  # TODO(Jack) coupled to 64
     out = []
     # Create a weight matrix for each filter
     # Apply filter-wise matrix multiplication
