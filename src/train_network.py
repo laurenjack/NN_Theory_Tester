@@ -29,8 +29,8 @@ def train(graph, network, data_set):
     z_bars = []
     taus = []
 
-# Train
-    n = conf.n
+    # Train
+    n = data_set.n_train
     m = conf.m
     batch_indicies = np.arange(n)
     animation_indicies = np.random.choice(batch_indicies, size=conf.animation_ss, replace=False)

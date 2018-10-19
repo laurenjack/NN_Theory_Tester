@@ -2,7 +2,7 @@ import math
 import tensorflow as tf
 
 
-class RbfSoftmaxConfiguration:
+class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
     """
     Responsible for configuring a network for the rbf softmax experiment.
 
@@ -46,7 +46,7 @@ class RbfSoftmaxConfiguration:
         self.is_artificial_data = False
 
         # TODO(Jack) refactor these data set specific parameters, they can be inferred from the data set itself
-        self.n = 50000
+        self.n = 1
         self.num_class = 10
         self.image_width = 32
         self.image_depth = 3
