@@ -26,12 +26,8 @@ class NetworkRunner:
             x = x[batch]
             y = y[batch]
         batch_size = x.shape[0]
-        feed_dict = {self.network.get_x(): x, self.network.get_y(): y, self.network.get_batch_size(): batch_size,
-                     self.network.get_lr(): conf.lr, self.network.is_training: is_training}
-        # Necessary evil, replace the globals in rbf with this networks tensors
-        if self.network.has_rbf():
-            rbf.batch_size = self.network.get_batch_size()
-            rbf.y_hot = self.network.get_y_hot()
+        feed_dict = {self.network.x: x, self.network.y: y, self.network.batch_size: batch_size,
+                     self.network.lr: conf.lr, self.network.is_training: is_training}
         result = self.sess.run(op, feed_dict=feed_dict)
         return result
 

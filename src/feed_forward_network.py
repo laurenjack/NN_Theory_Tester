@@ -15,7 +15,7 @@ class FeedForward(network.Network):
     def __init__(self, conf, end, num_inputs):
         """
         Args:
-            conf: see configuration.RbfSoftmaxConfiguration
+            conf: A static set of properties to configure the network
             end: The last layer/part of the network, e.g. an rbf-softmax end with a cross entropy loss function
             num_inputs: The number of inputs for the network, e.g. could be 784, for the 784 pixels of MNIST.
         """
@@ -35,10 +35,7 @@ class FeedForward(network.Network):
         self.all_end_ops = self.end.tensors_for_network(pre_z)
         self.a = self.all_end_ops[0]
         self.loss = self.all_end_ops[1]
-        self.train_op = conf.optimizer(learning_rate=conf.lr, momentum=0.9).minimize(self.loss)
-
-    def get_ops(self):
-        return [self.train_op] + self.all_end_ops
+        self.train_op = tf.train.MomentumOptimizer(learning_rate=conf.lr, momentum=0.9).minimize(self.loss)
 
     def _create_layer(self, a, l, shape, activation_func=None):
         weights_init = tf.contrib.layers.variance_scaling_initializer()
@@ -53,28 +50,5 @@ class FeedForward(network.Network):
         if activation_func is not None:
             return activation_func(a)
         return a
-
-    # TODO(Jack) cull from here
-    def get_x(self):
-        return self.x
-
-    def get_y(self):
-        return self.end.y
-
-    def get_y_hot(self):
-        return self.end.y_hot
-
-    def get_batch_size(self):
-        return self.end.batch_size
-
-    def get_lr(self):
-        return self.lr
-
-    # TODO(Jack) to here
-
-
-    def has_rbf(self):
-        return isinstance(self.end, rbf.Rbf)
-
 
 

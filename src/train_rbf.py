@@ -21,7 +21,7 @@ def train():
             core_ops = rbf_ops.core_ops()
 
             #Add training op
-            core_ops[0] = conf.optimizer(learning_rate=conf.lr, momentum=0.9).minimize(core_ops[0])
+            core_ops[0] = tf.train.MomentumOptimizer(learning_rate=conf.lr, momentum=0.9).minimize(core_ops[0])
 
             # Summaries for variables
             if conf.num_runs == 1:

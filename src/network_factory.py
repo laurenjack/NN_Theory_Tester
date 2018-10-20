@@ -3,6 +3,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
+import configuration
 import feed_forward_network
 import resnet
 import data_set as ds
@@ -40,8 +41,9 @@ def create_and_train_network(conf):
             else:
                 model_save_dir = os.path.join(conf.model_save_dir, _VANILLA_STORE)
             data_set = ds.load_cifar(conf.data_dir)
+            configuration.validate(conf, data_set)
             end = _build_network_end(conf, data_set)
-            network = resnet.Resnet(end, model_save_dir, data_set.image_width)
+            network = resnet.Resnet(conf, end, model_save_dir, data_set.image_width)
         else:
             if conf.is_artificial_data:
                 # TODO(Jack) this is yuck refactor

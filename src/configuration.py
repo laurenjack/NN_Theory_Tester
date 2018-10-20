@@ -2,6 +2,16 @@ import math
 import tensorflow as tf
 
 
+conf = None  # singleton reference
+
+
+def get_configuration():
+    global conf
+    if not conf:
+        conf = RbfSoftmaxConfiguration()
+    return conf
+
+
 class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
     """
     Responsible for configuring a network for the rbf softmax experiment.
@@ -48,7 +58,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
         # Network and rbf params
         # The number of dimensions in z space (i.e. the number of neurons at the layer pre softmax / rbf-softmax)
-        self.d = 4096
+        self.d = 128
         # Rbf Constant c. The scaling factor applied to every rbf value before the softmax is applied
         self.rbf_c = 4.0
         # The initialisation variance of each z_bar value
@@ -67,14 +77,13 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # The number of filters in the first layer (the layer that moves over the image)
         self.num_filter_first = 16
         # List[int] - The number of stacks (number of elements) and how many filters are in each layer of the stack
-        # (the elements themselves)
+        # (the elements themselves). All stacks other than the first stack reduce the width (and height of the filters).
+        # Incidentally the number of stacks less 1 specifies how many times the size of the filters drops by a factor
+        # of 2. e.g. 32 * 32 -> 16 * 16  -> 8 * 8. Therefore, a config exception will be thrown if the number of
+        # elements in this list - 1 is greater than the powers of 2 that factor into the images width.
         self.num_filter_for_stack = [16, 32, 64]
         # List[int] - The number of blocks per stack. Must be the same length as num_filter_for_stack
         self.num_blocks_per_stack = [5, 5, 5]
-        self.kernel_width = 3
-        self.kernel_stride = 1
-        # The kernel stride when moving from one stack to the next thinner stack.
-        self.stack_entry_kernel_stride = 2
         # Batch normalisation parameters, resnet
         self.bn_decay = 0.9997
         self.bn_epsilon = 0.001
@@ -82,6 +91,11 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.weight_decay = 0.0002
         self.wd_decay_rate = 0.2
         self.decay_epochs = 100
+        # If is_per_filter_fc is true, then instead of using the standard global average pooling post the
+        # convolutional layers, use a fully connected layer per filter (see opeartion.py for details) Setting this to
+        # True requires that d is a multiple of the last conv layer's number of activations per filter. Consequently
+        # an exception will be thrown if d != k * last_filter_width ** 2.0
+        self.is_per_filter_fc = True
 
         # Training parameters
         # Batch size
@@ -94,9 +108,6 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # The epochs we should decrease the learning rate by decrease_lr_factor
         self.decrease_lr_points = [80, 120]
         self.decrease_lr_factor = 0.01
-        # The optimizer to use for training the network
-        # TODO(Jack) currently the code is coupled to a momentum optimizer
-        self.optimizer = tf.train.MomentumOptimizer
         # The target precision of the z instances
         self.target_precision = 1.0
         # The sample size when used when reporting accurarcy after each epoch of training
@@ -154,11 +165,44 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.do_useless_dimensions = False
 
 
-conf = None  # singleton reference
+def validate(conf, data_set):
+    """Validate the configuration is consistent, as pertaining to network training and construction.
+
+    By no means does this cover all inconsistencies, just the ones that aren't obvious to the user.
+
+    Args:
+        conf: see configuration.RbfSoftmaxConfiguration
+        data_set: The data set the network specified by conf will be trained on.
+
+    Raises: ConfigurationException - when the set of configurations for network construction and training is
+    inconsistent and unresolvable.
+    """
+    if conf.is_resnet:
+        # Validate the number of stacks isn't too big
+        image_width = data_set.image_width
+        num_stacks = len(conf.num_filter_for_stack)
+        num_width_reductions = num_stacks - 1
+        if image_width % (2 ** num_width_reductions) != 0:
+            raise ConfigurationException("\nToo many stacks, i.e. num_filter_for_stack is too long. Recall that\n"
+                                         "each stack reduces the filter width by a half, this is not possible with\n"
+                                         "an image_width of {} and {} stacks\n".format(image_width, num_stacks))
+
+        # Validate that there is a block size specified for every stack.
+        if num_stacks != len(conf.num_blocks_per_stack):
+            raise ConfigurationException("\nThe number of filters per stack: {} specifies there are {} stacks,\n"
+                                         "so the number of blocks per stack: {} has an incorrect length.\n"
+                                         .format(conf.num_filter_for_stack, num_stacks, conf.num_blocks_per_stack))
+
+        # If per filter fc is used, validate d is a multiple of the last conv layers number of filters
+        num_filter = conf.num_filter_for_stack[-1]
+        if conf.is_per_filter_fc and conf.d % num_filter != 0:
+            raise ConfigurationException("\nWhen using a per-filter-fully-connected layer after the conv filters,\n"
+                                         "you must make sure that d is a multiple of the last number of filters\n"
+                                         "However, d: {} and num_filter_for_stack has last element {}\n"
+                                         .format(conf.d, num_filter))
 
 
-def get_configuration():
-    global conf
-    if not conf:
-        conf = RbfSoftmaxConfiguration()
-    return conf
+class ConfigurationException(Exception):
+    """Represents a logically inconsistent and unresolvable set of configuration parameters
+    """
+    pass

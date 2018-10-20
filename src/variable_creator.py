@@ -6,7 +6,7 @@ class VariableCreator():
     A small class for creating Tensorflow variables.
 
     The reason for this classes existence is having a convenient, non-intrusive way of mocking the creation of
-    variables
+    variables.
     """
 
     def get_variable(self, name, shape, initializer, dtype=tf.float32, trainable=True):
