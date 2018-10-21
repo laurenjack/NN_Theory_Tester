@@ -171,7 +171,7 @@ class Reporter:
 
     def _get_probabilities_for(self, network_runner, x, y, report=False):
         a = network_runner.network.a
-        probabilities = network_runner.feed_and_run(x, y, a)
+        probabilities = network_runner.probabilities()
         prediction = np.argmax(probabilities, axis=1)
         if report:
             for i in xrange(x.shape[0]):

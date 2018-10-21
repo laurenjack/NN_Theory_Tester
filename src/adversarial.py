@@ -21,7 +21,7 @@ def adversarial_gd(network_runner, correct, closest_classes):
     x_orig = x
 
     for e in xrange(conf.adversarial_epochs):
-        dx = network_runner.feed_and_run(x, adversarial_y, adverse_op)
+        dx = network_runner.feed_and_return(x, adversarial_y, adverse_op)
         # normed =  dx / np.sum(dx ** 2.0) ** 0.5
         normed = np.sign(dx)
         x = x - conf.adversarial_epsilon * normed

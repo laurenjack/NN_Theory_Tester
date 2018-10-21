@@ -49,9 +49,9 @@ class Resnet(network.Network):
             a = tf.reduce_mean(a, axis=[1, 2], name="avg_pool")
             z = operation.fc(a, conf.d)
 
-        self.all_end_ops = end.tensors_for_network(z)
-        self.a = self.all_end_ops[0]
-        main_loss = self.all_end_ops[1]
+        self.all_end_tensors = end.tensors_for_network(z)
+        self.a = self.all_end_tensors[0]
+        main_loss = self.all_end_tensors[1]
 
         # Regularisation (still tied to the lr of the main update)
         reg_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)

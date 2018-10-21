@@ -9,9 +9,9 @@ class Network(object):
         """
         Args:
             end: The last layer/part of the network, e.g. a softmax end with a cross entropy loss function.
-            input_shape: The batch-wise input shape for the networks inputs e.g. [None, 32, 32, 3] (CIFAR10)
-            is_resnet: True if and only if the network is a resnet
-            model_save_dir: The directory to save all this network's variables.
+            input_shape: The batch-wise shape for the networks inputs e.g. [None, 32, 32, 3] (CIFAR10)
+            is_resnet: True if the network is a resnet
+            model_save_dir: The directory to save all the network's variables.
         """
         self.end = end
         self.lr = tf.placeholder(tf.float32, shape=[], name='lr')
@@ -20,10 +20,10 @@ class Network(object):
         self.is_resnet = is_resnet
         self.model_save_dir = model_save_dir
 
-    def get_ops(self):
+    def get_tensors(self):
         """Returns: All the tensors required for training and reporting on this network.
         """
-        return [self.train_op] + self.all_end_ops
+        return [self.train_op] + self.all_end_tensors
 
     def gradient_wrt_inputs(self):
         """Find the gradient of the loss function with respect to network inputs.
@@ -51,6 +51,7 @@ class Network(object):
 
     # TODO(Jack) refactor this bad boy out for good
     def rbf_params(self):
+        """rbf_tensors: A tuple of three tensorflow tensors, z [m, d], z_bar [d, num_class] and tau [d, num_class]"""
         if not self.has_rbf():
             raise NotImplementedError('This network does not have an rbf end')
-        return self.all_end_ops[2], self.all_end_ops[3], self.all_end_ops[4]
+        return self.all_end_tensors[2], self.all_end_tensors[3], self.all_end_tensors[4]

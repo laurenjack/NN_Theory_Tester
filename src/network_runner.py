@@ -1,104 +1,172 @@
 import numpy as np
 import tensorflow as tf
-import rbf
-import configuration
-conf = configuration.get_configuration()
 
 
-class NetworkRunner:
-    """Within the context of a tensorflow session, responsible
-    for loading numpy data into a network and running network operations
+class NetworkRunner(object):
+    """Responsible for loading numpy data into a network and finding the value of specific tensors, within the context
+    of a tensorflow session.
 
-    These include most of the networks tensorflow ops, but also additional
-    operations such as reporting on accuracy"""
+    Attributes:
+        network: The network to train/run via session.run().
+        session: The tensorflow session.
+        graph: The tensorflow Graph which the network is/is a part of.
+        m: The batch_size as specified by the network configuration.
+    """
 
-    def __init__(self, network, session, graph=None):
+    def __init__(self, network, session, m, graph=None):
+        self.network = network
+        self.sess = session
+        self.m = m
         self.graph = graph
         if self.graph is None:
             self.graph = tf.get_default_graph()
-        self.network = network
-        self.sess = session
-        self.ops_over_time = None
 
+    def feed_and_run(self, x, y, op, indices=None, lr=None, sample_size=None):
+        """Feed a data set (examples x, targets y) to the underlying network and run the operation/operations specified
+        by the tensor/tensors op.
 
-    def feed_and_run(self, x, y, op, batch=None, is_training=False):
-        if batch is not None:
-            x = x[batch]
-            y = y[batch]
-        batch_size = x.shape[0]
-        feed_dict = {self.network.x: x, self.network.y: y, self.network.batch_size: batch_size,
-                     self.network.lr: conf.lr, self.network.is_training: is_training}
-        result = self.sess.run(op, feed_dict=feed_dict)
-        return result
+        If lr (learning rate) is specified then True will be fed to the networks is_training place holder, and a
+        training step will take place (unless op does not contain any training/update tensors). This function is
+        essentially a convenience wrapper for session.run().
 
-    def report_rbf_params(self, X, Y, ss=None):
-        """Report the rbf parameters (z, z_bar and tau) for the data set X, Y
-        Optional sample size for choosing random sample of data set"""
-        n = X.shape[0]
-        if ss is not None:
-            batch = _random_batch(np.arange(X.shape[0]), ss)
-            X = X[batch]
-            Y = Y[batch]
-            n = ss
-        m = conf.m
-        batch_inds = np.arange(n)
-        z_list = []
-        for k in xrange(0, n, m):
-            batch = batch_inds[k:k+m]
-            z, z_bar, tau = self.feed_and_run(X[batch], Y[batch], self.network.rbf_params())
-            z_list.append(z)
-        z = np.concatenate(z_list)
-        return z, z_bar, tau
+        Args:
+            x: A numpy array of input examples - e.g. could have shape [n, num_pixels]
+            y: A numpy array of target classes, must have shape [n], where n = x.shape[0]
+            op: A tensor,  or a list of tensors, or a tuple of tensors to run.
+            indices: The caller may provide an array of indices with shape [s] where 0 < s < n. This array must contain
+            a subset of the indices 0 -> n-1. The ordering of these indices specifies  of the order in which x, and y
+            are processed and split into batches. If indices is not provided, an in-order array of indices of shape [n]
+            will be created, so x and y are processed in order.
+            lr: The learning rate, the network will train if you specify this and won't otherwise.
+            sample_size: If this is an integer such that 0 < sample_size < n, then this function will operate on a
+            random sample from the data_set, instead of using all indices.
+        """
+        self._feed_and_return(x, y, op, indices, lr, sample_size)
 
-    def probabilities(self, X, Y):
-        n = X.shape[0]
-        m = 128
-        probs = []
-        batch_inds = np.arange(n)
-        for k in xrange(0, n, m):
-            batch = batch_inds[k:k + m]
-            a = self.feed_and_run(X[batch], Y[batch], self.network.a)
-            probs.append(a)
-        a = np.concatenate(probs)
-        return a
+    def feed_and_return(self, x, y, op, indices=None, lr=None, sample_size=None):
+        """Same as feed_and_run, but returns the numpy arrays corresponding to the tensor specified by op
 
-    def report_accuracy(self, set_name, batch_indicies, X, Y, accuracy_ss=None):
+        Returns: The single numpy array or the list of numpy arrays for op - the tensor/s submitted to
+        session.run().
+        """
+        result_list = self._feed_and_return(x, y, op, indices, lr, sample_size, [])
+        transposed_results = self._transpose(result_list)
 
-        if accuracy_ss is None:
-            accuracy_ss = X.shape[0]
-        acc_batch = _random_batch(batch_indicies, accuracy_ss)
-        a = self.feed_and_run(X, Y, self.network.a, acc_batch)
-        y = Y[acc_batch]
+        # Preserve how session.run() returns null results by returning them, keeping the length of the concatenate
+        # results equal to the length of op
+        concatenated_results = [None if r is None else np.concatenate(r) for r in transposed_results]
+        if len(concatenated_results) == 1:
+            return concatenated_results[0]
+        return concatenated_results
+
+    def probabilities(self, x, y):
+        """Get the probabilities of the networks class predictions, also know as a.
+
+        Let n = x.shape[0]
+
+        Args:
+            x: A set of examples, e.g. a numpy array of shape [n, num_pixel]
+            y: A set of targets corresponding to x, must have shape [n]
+
+        Returns: An [n, num_class] numpy array of probabilities.
+        """
+        return self.feed_and_return(x, y, self.network.a)
+
+    def report_accuracy(self, set_name, x, y, indices, accuracy_ss=None):
+        """Compute and print the accuracy of the network, i.e. evaluate the percentage examples where f(x[i]) == y[i].
+
+        Args:
+            set_name: The name of the data set x, y, e.g. 'Training Set'
+            x: A set of examples, e.g. a numpy array of shape [n, num_pixel]
+            y: A set of targets corresponding to x, must have shape [n]
+
+        Returns: A scalar acc, 0 <= acc <=1, representing the percentage of correct examples.
+        """
+        if accuracy_ss:
+            batch = _random_batch(indices, accuracy_ss)
+        else:
+            batch = indices
+        a = self.feed_and_return(x, y, self.network.a, batch, sample_size=accuracy_ss)
+        y = y[batch]
         acc = self._compute_accuracy(a, y)
         print set_name + " Accuracy: " + str(acc)
         return acc
 
-    def all_correct_incorrect(self, X, Y):
-        """Get The prediction report for all the correct, and all the incorrect predictions"""
-        n = X.shape[0]
-        m = 128
-        probs = []
-        batch_inds = np.arange(n)
-        for k in xrange(0, n, m):
-            batch = batch_inds[k:k+m]
-            a = self.feed_and_run(X[batch], Y[batch], self.network.a)
-            probs.append(a)
-        a = np.concatenate(probs)
+    def all_correct_incorrect(self, x, y):
+        a = self.probabilities(x, y)
         preds = np.argmax(a, axis=1)
         # Find the correct predictions
-        is_correct = np.equal(Y, preds)
+        is_correct = np.equal(y, preds)
         correct_inds = np.argwhere(is_correct)[:, 0]
         incorr_inds = np.argwhere(np.logical_not(is_correct))[:, 0]
-        corr = PredictionReport("Correct", a[correct_inds], X[correct_inds], Y[correct_inds])
-        incorr = PredictionReport("Incorrect", a[incorr_inds], X[incorr_inds], Y[incorr_inds])
+        corr = PredictionReport("Correct", a[correct_inds], x[correct_inds], y[correct_inds])
+        incorr = PredictionReport("Incorrect", a[incorr_inds], x[incorr_inds], y[incorr_inds])
         return corr, incorr, correct_inds, incorr_inds
 
     def sample_correct_incorrect(self, ss, X, Y):
         corr, incorr, _, _ = self.all_correct_incorrect(X, Y)
         return corr.sample(ss), incorr.sample(ss)
 
-    def set_ops_over_time(self, ops_over_time):
-        self.ops_over_time = ops_over_time
+    def _feed_and_return(self, x, y, op, indices, lr, sample_size, init_result_list=None):
+        """See documentation of feed_and_run and feed_and_return"""
+        if indices is None:
+            n = x.shape[0]
+            indices = np.arange(n)
+        else:
+            n = indices.shape[0]
+
+        if sample_size and 0 < sample_size < n:
+            indices = _random_batch(indices, sample_size)
+
+        feed_dict = {}
+        if lr:
+            feed_dict[self.network.lr] = lr
+            feed_dict[self.network.is_training] = True
+        else:
+            feed_dict[self.network.is_training] = False
+
+        for k in xrange(0, n, self.m):
+            batch = indices[k:k + self.m]
+            batch_size = batch.shape[0]
+            x_batch = x[batch]
+            y_batch = y[batch]
+            feed_dict[self.network.x] = x_batch
+            feed_dict[self.network.y] = y_batch
+            feed_dict[self.network.batch_size] = batch_size
+            result = self.sess.run(op, feed_dict=feed_dict)
+            if init_result_list is not None:
+                init_result_list.append(result)
+        return init_result_list
+
+    def _transpose(self, result_list):
+        """Group the numpy array results relating to the same tensor, in the same list.
+
+        Essentially, if feed_and_return was called with a list of 3 tensors, b times, then result_list is a [b, 3] list
+        of lists. This operation transposes that list of list to have the shape [3, b]. Additionally, if one of the
+        tensors was something like a training operation, which returns None from sess.run(), rather than keeping a
+        list of b None's, this function will put a single None in the place of that list.
+        """
+        first_result = result_list[0]
+
+        # The case where op is a list or tuple of tensors, [b, 3] -> [3, b]
+        if isinstance(first_result, (list, tuple)):
+            # A list of lists, where each inner list corresponds to one of the tensors
+            transposed_results = []
+            for array in first_result:
+                if array is not None:
+                    transposed_results.append([])
+                else:
+                    transposed_results.append(None)
+
+            for result in result_list:
+                num_result = len(result)
+                for array, i in zip(result, xrange(num_result)):
+                    if transposed_results[i] is not None:
+                        transposed_results[i].append(array)
+            return transposed_results
+
+        # The case where op was a single tensor, so [b] becomes [1, b]
+        return [None] if result_list[0] is None else [result_list]
 
     def _compute_accuracy(self, a, y):
         ss = y.shape[0]
@@ -107,7 +175,31 @@ class NetworkRunner:
         return float(np.sum(correct_indicator)) / float(ss)
 
 
+class RbfNetworkRunner(NetworkRunner):
+    """NetworkRunner with additional behavior specific to rbf-softmax networks.
+    """
+
+    def __init__(self, network, session, m, graph=None):
+        super(RbfNetworkRunner, self).__init__(network, session, m, graph)
+
+    def report_rbf_params(self, x, y, ss=None):
+        """Report the rbf parameters (z, z_bar and tau) for the data set X, Y
+        Optional sample size for choosing random sample of data set"""
+        return self.feed_and_return(x, y, self.network.rbf_params(), random_sample_size=ss)
+
+
 class PredictionReport:
+    """Convenient way of grouping the predictions the network made on a particular subset of the data set.
+
+    Let the number of examples in this subset be n.
+
+    Attributes:
+        name: The logical name for the subset, e.g 'All Correct Predictions'.
+        a: The probabilities as produced by the softmax. Shape: [n, num_class]
+        x: The input examples, e.g. could have shape [n, num_pixel] (must have n in first dimension)
+        y: The targets, must have shape [n].
+        prediction: The network's prediction, must have shape [n].
+    """
 
     def __init__(self, name, a, x, y):
         self.name = name
@@ -117,6 +209,8 @@ class PredictionReport:
         self.prediction = np.argmax(self.a, axis=1)
 
     def show(self):
+        """Print this subset of predictions.
+        """
         print "Name: "+str(self.name)
         ss = self.y.shape[0]
         for i in xrange(ss):
@@ -126,23 +220,66 @@ class PredictionReport:
         print "\n"
 
     def prediction_prob(self):
+        """The prediction probabilities, i.e. the probability the softmax gave for it's prediction (the highest).
+
+        Returns: A numpy array of n prediction probabilities.
+        """
         return self.a[np.arange(self.a.shape[0]), self.prediction]
 
-    def get_sample_of_class(self, k, ss):
-        inds_of_class = np.argwhere(self.y == k)[:, 0]
-        num_k = inds_of_class.shape[0]
-        ss = min(ss, num_k)
-        inds_of_sample = _random_batch(inds_of_class, ss)
-        return PredictionReport(self.name, self.a[inds_of_sample], self.x[inds_of_sample], self.y[inds_of_sample])
+    def get_sample_of_class(self, k, sample_size):
+        """Take a sample of a single class k, and produce a new prediction report using just a sample of predictions
+        that were of actual class k.
+
+        Note that if sample_size exceeds the number of examples of class k, this will return all examples of class
+        k in this prediction report.
+
+        Args:
+            k: The class to sample.
+            sample_size: The number of examples of class k to sample.
+
+
+        Returns: PredictionReport for a subset of size sample_size (if possible) of just class k
+        """
+        indices_of_class = np.argwhere(self.y == k)[:, 0]
+        num_k = indices_of_class.shape[0]
+        sample_size = min(sample_size, num_k)
+        indices_of_sample = _random_batch(indices_of_class, sample_size)
+        return PredictionReport(self.name+'{}'.format(k), self.a[indices_of_sample], self.x[indices_of_sample],
+                                self.y[indices_of_sample])
 
 
     def sample(self, sample_size):
-        """Return a new prediction report, based on a random sample of this prediction report"""
+        """Return a new prediction report, based on a random sample of this prediction report.
+
+        Args:
+             sample_size: The number of examples the new prediction report will have, (technically it will have
+             min(sample_size, n) examples.
+
+        Returns: PredictionReport for a subset of size sample_size (if possible)
+        """
         m = self.a.shape[0]
         ss = min(m, sample_size)
-        inds = np.arange(m)
-        r_inds = _random_batch(inds, ss)
-        return PredictionReport(self.name, self.a[r_inds], self.x[r_inds], self.y[r_inds])
+        indices = np.arange(m)
+        random_indices = _random_batch(indices, ss)
+        return PredictionReport(self.name, self.a[random_indices], self.x[random_indices], self.y[random_indices])
+
+
+def build_network_runner(graph, network, m, is_rbf=False):
+    """Factory method for building a network runner, starts the tensorflow session and initialises the networks
+    variables.
+
+    graph: The tensorflow Graph which the network is/ is a part of.
+    network: The network to train / report on
+    m: The standard batch size as specified b the configuration
+    is_rbf: Will create an instance of RbfNetworkRunner if true.
+
+    Returns: An instance of NetworkRunner of one of it's subclasses.
+    """
+    sess = tf.InteractiveSession()
+    tf.global_variables_initializer().run()
+    if is_rbf:
+        return RbfNetworkRunner(network, sess, m, graph)
+    return NetworkRunner(network, sess, m, graph)
 
 
 def _random_batch(batch_indicies, m):

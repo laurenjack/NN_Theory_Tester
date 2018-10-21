@@ -11,6 +11,8 @@ import train_network
 import rbf
 import vanilla_softmax
 import artificial_problem as ap
+import collector as coll
+import network_runner as nr
 
 
 _RBF_STORE = 'resnet_rbf'
@@ -31,32 +33,49 @@ def create_and_train_network(conf):
         A NetworkRunner. This network runner encapsulates the network was specified by conf, and is fully trained as
         specified by conf
     """
+
+    # It's worth viewing the documentation/comments in configuration.RbfSoftmaxConfiguration before reading or
+    # modifying this function.
     graph = tf.Graph()
     with graph.as_default():
-        # It's worth viewing the documentation/comments in configuration.RbfSoftmaxConfiguration before reading or
-        # modifying this function.
-        if conf.is_resnet and conf.model_save_dir:
-            if conf.is_rbf:
+        # Create a resnet
+        if conf.is_resnet:
+            # Specify a place to store/load the model
+            if conf.model_save_dir and conf.is_rbf:
                 model_save_dir = os.path.join(conf.model_save_dir, _RBF_STORE)
-            else:
+            elif conf.model_save_dir :
                 model_save_dir = os.path.join(conf.model_save_dir, _VANILLA_STORE)
+
             data_set = ds.load_cifar(conf.data_dir)
             configuration.validate(conf, data_set)
             end = _build_network_end(conf, data_set)
             network = resnet.Resnet(conf, end, model_save_dir, data_set.image_width)
+        # Create a feed forward netowrk
         else:
+            # Use an artificial data set
             if conf.is_artificial_data:
                 # TODO(Jack) this is yuck refactor
                 data_set = ap.simple_identical_plane(conf.n // conf.num_class, conf.artificial_in_dim, conf.num_class)
+            # Use MNIST
             else:
                 data_set = ds.load_mnist()
+
             num_inputs = data_set.X_train.shape[1]
             end = _build_network_end(conf, data_set)
             network = feed_forward_network.FeedForward(conf, end, num_inputs)
+
+        network_runner = nr.build_network_runner(graph, network, conf.m, conf.is_rbf)
+
+        # Load the network from a pre-saved model
         if not conf.do_train and conf.is_resenet:
-            network_runner = train_network.load_pre_trained(graph, network)
+            train_network.load_pre_trained(network_runner)
+        # Train the network
         else:
-            network_runner = train_network.train(graph, network, data_set)
+            if conf.is_rbf:
+                collector = coll.build_rbf_collector(data_set, conf.animation_ss)
+            else:
+                collector = coll.NullCollector()
+            network_runner = train_network.train(conf, network_runner, data_set, collector)
     return network_runner, data_set
 
 

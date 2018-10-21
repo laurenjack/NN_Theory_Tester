@@ -58,7 +58,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
         # Network and rbf params
         # The number of dimensions in z space (i.e. the number of neurons at the layer pre softmax / rbf-softmax)
-        self.d = 128
+        self.d = 960
         # Rbf Constant c. The scaling factor applied to every rbf value before the softmax is applied
         self.rbf_c = 4.0
         # The initialisation variance of each z_bar value
@@ -104,7 +104,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.lr = 0.003  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
-        self.epochs = 2
+        self.epochs = 10
         # The epochs we should decrease the learning rate by decrease_lr_factor
         self.decrease_lr_points = [80, 120]
         self.decrease_lr_factor = 0.01
