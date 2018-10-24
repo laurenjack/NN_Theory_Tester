@@ -52,8 +52,8 @@ class NetworkRunner(object):
         result_list = self._feed_and_return(x, y, op, indices, lr, sample_size, [])
         transposed_results = self._transpose(result_list)
 
-        # Preserve how session.run() returns null results by returning them, keeping the length of the concatenate
-        # results equal to the length of op
+        # Preserve how session.run() returns null results by returning them, keeping the length of the concatenated
+        # results equal to the length of op.
         concatenated_results = [None if r is None else np.concatenate(r) for r in transposed_results]
         if len(concatenated_results) == 1:
             return concatenated_results[0]
@@ -76,9 +76,9 @@ class NetworkRunner(object):
         """Compute and print the accuracy of the network, i.e. evaluate the percentage examples where f(x[i]) == y[i].
 
         Args:
-            set_name: The name of the data set x, y, e.g. 'Training Set'
-            x: A set of examples, e.g. a numpy array of shape [n, num_pixel]
-            y: A set of targets corresponding to x, must have shape [n]
+            set_name: The name of the data set x, y, e.g. 'Training Set'.
+            x: A set of examples, e.g. a numpy array of shape [n, num_pixel].
+            y: A set of targets corresponding to x, must have shape [n].
 
         Returns: A scalar acc, 0 <= acc <=1, representing the percentage of correct examples.
         """
@@ -93,19 +93,37 @@ class NetworkRunner(object):
         return acc
 
     def all_correct_incorrect(self, x, y):
-        a = self.probabilities(x, y)
-        preds = np.argmax(a, axis=1)
-        # Find the correct predictions
-        is_correct = np.equal(y, preds)
-        correct_inds = np.argwhere(is_correct)[:, 0]
-        incorr_inds = np.argwhere(np.logical_not(is_correct))[:, 0]
-        corr = PredictionReport("Correct", a[correct_inds], x[correct_inds], y[correct_inds])
-        incorr = PredictionReport("Incorrect", a[incorr_inds], x[incorr_inds], y[incorr_inds])
-        return corr, incorr, correct_inds, incorr_inds
+        """Separate the correct and incorrect predictions for the data set x, y, by the network.
 
-    def sample_correct_incorrect(self, ss, X, Y):
-        corr, incorr, _, _ = self.all_correct_incorrect(X, Y)
-        return corr.sample(ss), incorr.sample(ss)
+        Args:
+            x: A set of examples, e.g. a numpy array of shape [n, num_pixel].
+            y: A set of targets corresponding to x, must have shape [n].
+
+        Returns: A PredictionReport for all the correct examples followed by a PredictionReport of all the incorrect
+        examples.
+        """
+        a = self.probabilities(x, y)
+        prediction = np.argmax(a, axis=1)
+        is_correct = np.equal(y, prediction)
+        correct_indices = np.argwhere(is_correct)[:, 0]
+        incorrect_indices = np.argwhere(np.logical_not(is_correct))[:, 0]
+        correct = _build_prediction_Report("Correct", x, y, a, correct_indices)
+        incorrect = _build_prediction_Report("Incorrect", x, y, a, incorrect_indices)
+        return correct, incorrect
+
+    def sample_correct_incorrect(self, x, y, sample_size):
+        """Return two PredictionReports, a sample of correct examples and a sample of incorrect examples, both of which
+        are size sample_size.
+
+        Args:
+            x: A set of examples, e.g. a numpy array of shape [n, num_pixel].
+            y: A set of targets corresponding to x, must have shape [n].
+
+        Returns: A PredictionReport for a sample of correct examples followed by a PredictionReport for a sample of
+        incorrect examples.
+        """
+        correct, incorrect = self.all_correct_incorrect(x, y)
+        return correct.sample(sample_size), incorrect.sample(sample_size)
 
     def _feed_and_return(self, x, y, op, indices, lr, sample_size, init_result_list=None):
         """See documentation of feed_and_run and feed_and_return"""
@@ -191,21 +209,23 @@ class RbfNetworkRunner(NetworkRunner):
 class PredictionReport:
     """Convenient way of grouping the predictions the network made on a particular subset of the data set.
 
-    Let the number of examples in this subset be n.
+    Let the number of examples in this subset be n_sub.
 
     Attributes:
         name: The logical name for the subset, e.g 'All Correct Predictions'.
-        a: The probabilities as produced by the softmax. Shape: [n, num_class]
-        x: The input examples, e.g. could have shape [n, num_pixel] (must have n in first dimension)
-        y: The targets, must have shape [n].
-        prediction: The network's prediction, must have shape [n].
+        x: The input examples, e.g. could have shape [n_sub, num_pixel]
+        y: The targets, must have shape [n_sub].
+        a: The probabilities as produced by the softmax. Shape: [n_sub, num_class]
+        indices: The indices this subset had in the original data set of length n.
+        prediction: The network's prediction, must have shape [n_sub].
     """
 
-    def __init__(self, name, a, x, y):
+    def __init__(self, name, x, y, a, indices):
         self.name = name
         self.a = a
         self.x = x
         self.y = y
+        self.indices = indices
         self.prediction = np.argmax(self.a, axis=1)
 
     def show(self):
@@ -244,9 +264,7 @@ class PredictionReport:
         num_k = indices_of_class.shape[0]
         sample_size = min(sample_size, num_k)
         indices_of_sample = _random_batch(indices_of_class, sample_size)
-        return PredictionReport(self.name+'{}'.format(k), self.a[indices_of_sample], self.x[indices_of_sample],
-                                self.y[indices_of_sample])
-
+        return _build_prediction_Report(self.name+'{}'.format(k), self.x, self.y, self.a, indices_of_sample)
 
     def sample(self, sample_size):
         """Return a new prediction report, based on a random sample of this prediction report.
@@ -261,7 +279,7 @@ class PredictionReport:
         ss = min(m, sample_size)
         indices = np.arange(m)
         random_indices = _random_batch(indices, ss)
-        return PredictionReport(self.name, self.a[random_indices], self.x[random_indices], self.y[random_indices])
+        return _build_prediction_Report(self.name, self.x, self.y, self.a, random_indices)
 
 
 def build_network_runner(graph, network, m, is_rbf=False):
@@ -280,6 +298,20 @@ def build_network_runner(graph, network, m, is_rbf=False):
     if is_rbf:
         return RbfNetworkRunner(network, sess, m, graph)
     return NetworkRunner(network, sess, m, graph)
+
+
+def _build_prediction_Report(name, x, y, a, indices):
+    """Constructs a PredictionReport, based on a subset of the data set x, y and its softmax probabilities a. This
+    subset is specified by indices.
+
+    Args:
+        name: The name for the PredictionReport, e.g 'All Correct Predictions'.
+        x: The input examples, e.g. could have shape [n, num_pixel]
+        y: The targets, must have shape [n].
+        a: The probabilities as produced by the softmax, must have shape [n, num_class].
+        indices: A numpy array of indices of shape [n_sub] where n_sub <= n, which specifies the subset.
+    """
+    return PredictionReport(name, x[indices], y[indices], a[indices], indices)
 
 
 def _random_batch(batch_indicies, m):

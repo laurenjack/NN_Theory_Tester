@@ -145,7 +145,7 @@ class Reporter:
     def _report(self, network_runner, data_set):
         X_val = data_set.X_val
         Y_val = data_set.Y_val
-        correct, incorrect, _, _ = network_runner.all_correct_incorrect(X_val, Y_val)
+        correct, incorrect = network_runner.all_correct_incorrect(X_val, Y_val)
 
         # Report on a sample of correct and incorrect results
         correct_sample = correct.sample(10)

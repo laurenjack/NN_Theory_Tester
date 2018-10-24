@@ -104,7 +104,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.lr = 0.003  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
-        self.epochs = 10
+        self.epochs = 2
         # The epochs we should decrease the learning rate by decrease_lr_factor
         self.decrease_lr_points = [80, 120]
         self.decrease_lr_factor = 0.01
