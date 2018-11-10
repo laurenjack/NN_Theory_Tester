@@ -22,8 +22,8 @@ class Reporter:
 
         This includes analysis of the rbf parameters, an examination of the
         properties of correct, incorrect and adversarial examples etc."""
-        x_validation = data_set.x_validation
-        y_validation = data_set.y_validation
+        x_validation = data_set.validation.x
+        y_validation = data_set.validation.y
         correct, incorrect = self._report(network_runner, data_set)
 
         if conf.print_rbf_params and conf.is_rbf:
@@ -143,8 +143,8 @@ class Reporter:
         print 'Number of convincing adverseries: ' + str(np.sum(threating_adversary)) + ' / ' + str(ss)
 
     def _report(self, network_runner, data_set):
-        x_validation = data_set.x_validation
-        y_validation = data_set.y_validation
+        x_validation = data_set.validation.x
+        y_validation = data_set.validation.y
         correct, incorrect = network_runner.all_correct_incorrect(x_validation, y_validation)
 
         # Report on a sample of correct and incorrect results

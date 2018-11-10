@@ -26,15 +26,12 @@ class Dataset:
     Attributes:
         num_class: The number of class labels
         train: The Subset of examples for training
-        targets: A [num_class, num_class] matrix, where the ith row indicates the target vector of the ith class.
-        (Usually, this is a one hot vector, unless using random targets).
         validation: The Subset of examples for validation
         image_width: (optional) The width of the image inputs, if the inputs are structured as square images
     """
 
-    def __init__(self, num_class, targets, training_set, validation_set, image_width=None):
+    def __init__(self, num_class, training_set, validation_set, image_width=None):
         self.num_class = num_class
-        self.targets = targets
         self.train = training_set
         self.validation = validation_set
         self.image_width = image_width
@@ -46,16 +43,13 @@ class Subset:
     Attributes:
         x: The input examples, either an [n, d] matrix where d is the number of network inputs. Or an
         [n, image_width, image_width, 3] tensor (i.e. a set of images).
-        y: An [n, num_class] matrix corresponding to the targets (e.g. in the standard case each row is a one hot
-        vector).
-        labels: An [n] vector of integers such that each element corresponds to a valid class, i.e.
+        y: An [n] vector of integers such that each element corresponds to a valid class, i.e.
         e is an element of Z: 0 <= e < num_class.
     """
 
-    def __init__(self, x, y, labels):
+    def __init__(self, x, y):
         self.x = x
-        self.y = labels
-        # self.labels = labels
+        self.y = y
 
     @property
     def n(self):
@@ -69,20 +63,19 @@ def load_mnist(random_targets=False):
     Returns: A DataSet instance for MNIST. Where the images of each subset have the shape n * p
     e.g. (50000 images * 784 pixels).
     """
-    targets = _create_targets(_MNIST_NUM_CLASS, random_targets)
     # Load raw data.
     mnist_data = mnist.input_data.read_data_sets('MNIST_data', one_hot=False)
 
     # Create target vectors.
-    tf_train_set = mnist_data.train
-    tf_validation_set = mnist_data.validation
-    y_train = targets[tf_train_set.labels]
-    y_validation = targets[tf_validation_set.labels]
+    x_train = mnist_data.train.images
+    y_train = mnist_data.train.labels
+    x_validation = mnist_data.validation.images
+    y_validation = mnist_data.validation.labels
 
     # Create training and validation sets
-    train_set = Subset(tf_train_set.images, y_train, tf_train_set.labels)
-    validation_set = Subset(tf_validation_set.images, y_validation, tf_validation_set.labels)
-    return Dataset(_MNIST_NUM_CLASS, targets, train_set, validation_set)
+    train_set = Subset(x_train, y_train)
+    validation_set = Subset(x_validation, y_validation)
+    return Dataset(_MNIST_NUM_CLASS, train_set, validation_set)
 
 
 def load_cifar(data_dir, classes=None, random_targets=False):
@@ -108,27 +101,19 @@ def load_cifar(data_dir, classes=None, random_targets=False):
     _maybe_download(data_dir, train_file_paths + test_file_paths)
 
     # Load the non-test examples, split into training and validation
-    x, labels = _load_data(train_file_paths)
-    x, labels = _shuffle(x, labels)
+    x, y = _load_data(train_file_paths)
+    x, y = _shuffle(x, y)
 
     num_class = _CIFAR10_NUM_CLASS
     if classes:
-        x, labels = _only_get_examples_of(classes, x, labels)
+        x, labels = _only_get_examples_of(classes, x, y)
         num_class = len(classes)
-
-    targets = _create_targets(num_class, random_targets)
-    y = targets[labels]
 
     validation_set_size = int(x.shape[0] * _CIFAR10_VALIDATION_SET_PROPORTION)
     x_train = x[validation_set_size:]
     y_train = y[validation_set_size:]
-    labels_train = labels[validation_set_size:]
     x_validation = x[0:validation_set_size]
     y_validation = y[0:validation_set_size]
-    labels_validation = labels[0:validation_set_size]
-
-    if random_targets:
-        pass
 
     # Use the pixel mean of the training set for normalisation
     pixel_mean = _compute_per_pixel_mean(x_train)
@@ -137,9 +122,9 @@ def load_cifar(data_dir, classes=None, random_targets=False):
     x_validation -= pixel_mean
     x_validation /= 128.0
 
-    train = Subset(x_train, y_train, labels_train)
-    validation = Subset(x_validation, y_validation, labels_validation)
-    return Dataset(num_class, targets, train, validation, _CIFAR10_IMAGE_WIDTH)
+    train = Subset(x_train, y_train)
+    validation = Subset(x_validation, y_validation)
+    return Dataset(num_class, train, validation, _CIFAR10_IMAGE_WIDTH)
 
 
 def _only_get_examples_of(classes, x, labels):
@@ -198,19 +183,3 @@ def _shuffle(x, labels):
     indices = np.arange(n)
     np.random.shuffle(indices)
     return x[indices], labels[indices]
-
-
-def _create_targets(num_class, random_targets=False):
-    """ Creates y hot targets for each class.
-
-    Args:
-        num_class: The number of classes for the problem at hand.
-        random_targets: If true, creates a random vector target for each class, otherwise creates one hot vectors for
-        each class.
-
-    Returns: An ndarray - targets, of shape [num_class, num_class]. Where the row at targets[i], is the target vector
-    for class i. Where 0 <= target[i, j] < 1
-    """
-    if random_targets:
-        return np.uniform((num_class, num_class))
-    return np.eye(num_class)

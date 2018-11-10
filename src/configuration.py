@@ -44,9 +44,9 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.debug_ops = False
         # Specify whether you want to train a convolutional resnet or a standard feed-forward net. This will also
         # inadvertently specify whether CIFAR-10 (True) or MNIST (FALSE) is used for training.
-        self.is_resnet = True
+        self.is_resnet = False
         # Use an rbf-softmax at the end of this network, or a softmax (vanilla softmax) end.
-        self.is_rbf = False
+        self.is_rbf = True
         # If is_resent is true AND do_train is False, this specifies that the application should try load a network
         # from the location specified by model_save_dir. If is_resent is True true AND do_train is True the application
         # will train a new network and save it in model_save_dir. However if is_resnet is False, the feed-forward net
@@ -60,7 +60,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
         # Network and rbf params
         # The number of dimensions in z space (i.e. the number of neurons at the layer pre softmax / rbf-softmax)
-        self.d = 960
+        self.d = 10
         # Rbf Constant c. The scaling factor applied to every rbf value before the softmax is applied
         self.rbf_c = 4.0
         # The initialisation variance of each z_bar value
@@ -103,7 +103,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Batch size
         self.m = 128
         # Learning Rate, and experimental multipliers on that learning rate for rbf components
-        self.lr = 0.001 * 100  # * float(self.d) ** 0.5 #0.001 # 0.00001
+        self.lr = 0.01# 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
         self.epochs = 20
