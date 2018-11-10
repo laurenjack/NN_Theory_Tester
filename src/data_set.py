@@ -9,14 +9,14 @@ from tensorflow.examples.tutorials import mnist
 _MNIST_NUM_CLASS = 10
 _CIFAR10_NUM_CLASS = 10
 _CIFAR10_IMAGE_WIDTH = 32
-_CIFAR10_VALIDATION_SET_SIZE = 5000
+_CIFAR10_VALIDATION_SET_PROPORTION = 0.1
 _CIFAR10_BINARY_TAR_URL = 'https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz'
 _CIFAR10_TAR_FILE_NAME = 'cifar-10-binary.tar.gz'
 _TRAIN_FILE_NAMES = ['cifar-10-batches-bin/data_batch_{}.bin'.format(i + 1) for i in xrange(5)]
 _TEST_FILE_NAME = 'cifar-10-batches-bin/test_batch.bin'
 
 
-class DataSet:
+class Dataset:
     """Represents a data set for a neural network to be trained/tested/reported on.
 
     Note that all labels are scalars, (i.e. not one_hot). Therefore the Y attributes are vectors with n elements,
@@ -24,46 +24,68 @@ class DataSet:
     Either n * p where p is the total number of pixels in an image, or n * height * width * 3.
 
     Attributes:
-        num_class: the number of class labels
-        X_train: training set images
-        Y_train: training set labels
-        X_val: validation set images
-        Y_val: validation set labels
-        image_width: (optional) The width of the image
+        num_class: The number of class labels
+        train: The Subset of examples for training
+        targets: A [num_class, num_class] matrix, where the ith row indicates the target vector of the ith class.
+        (Usually, this is a one hot vector, unless using random targets).
+        validation: The Subset of examples for validation
+        image_width: (optional) The width of the image inputs, if the inputs are structured as square images
     """
 
-    def __init__(self, num_class, X_train, Y_train, X_val, Y_val, image_width=None):
+    def __init__(self, num_class, targets, training_set, validation_set, image_width=None):
         self.num_class = num_class
-        self.X_train = X_train
-        self.Y_train = Y_train
-        self.X_val = X_val
-        self.Y_val = Y_val
+        self.targets = targets
+        self.train = training_set
+        self.validation = validation_set
         self.image_width = image_width
 
-    @property
-    def n_train(self):
-        """The number of examples in the training set."""
-        return self.X_train.shape[0]
+
+class Subset:
+    """Dataset.Subset - Should only be used to represent the training/validation/test set of a data set.
+
+    Attributes:
+        x: The input examples, either an [n, d] matrix where d is the number of network inputs. Or an
+        [n, image_width, image_width, 3] tensor (i.e. a set of images).
+        y: An [n, num_class] matrix corresponding to the targets (e.g. in the standard case each row is a one hot
+        vector).
+        labels: An [n] vector of integers such that each element corresponds to a valid class, i.e.
+        e is an element of Z: 0 <= e < num_class.
+    """
+
+    def __init__(self, x, y, labels):
+        self.x = x
+        self.y = labels
+        # self.labels = labels
 
     @property
-    def n_val(self):
-        """The number of examples in the validation set."""
-        return self.X_val.shape[0]
+    def n(self):
+        """The number of examples in the subset"""
+        return self.x.shape[0]
 
 
-def load_mnist():
+def load_mnist(random_targets=False):
     """Get the mnist data set, will download underlying files if they aren't locally present.
 
-    Returns: A DataSet instance for MNIST. Where each individual image is a vector (the rows of X_train or and X_val).
-    i.e. X_train has the shape n * p (50000 images * 784 pixels)
+    Returns: A DataSet instance for MNIST. Where the images of each subset have the shape n * p
+    e.g. (50000 images * 784 pixels).
     """
+    targets = _create_targets(_MNIST_NUM_CLASS, random_targets)
+    # Load raw data.
     mnist_data = mnist.input_data.read_data_sets('MNIST_data', one_hot=False)
-    train_set = mnist_data.train
-    val_set = mnist_data.validation
-    return DataSet(_MNIST_NUM_CLASS, train_set.images, train_set.labels, val_set.images, val_set.labels)
+
+    # Create target vectors.
+    tf_train_set = mnist_data.train
+    tf_validation_set = mnist_data.validation
+    y_train = targets[tf_train_set.labels]
+    y_validation = targets[tf_validation_set.labels]
+
+    # Create training and validation sets
+    train_set = Subset(tf_train_set.images, y_train, tf_train_set.labels)
+    validation_set = Subset(tf_validation_set.images, y_validation, tf_validation_set.labels)
+    return Dataset(_MNIST_NUM_CLASS, targets, train_set, validation_set)
 
 
-def load_cifar(data_dir):
+def load_cifar(data_dir, classes=None, random_targets=False):
     """Get the CIFAR 10 data set, will download and extract and normalise the data set if it doesn't exist in data_dir
 
     See https://www.cs.toronto.edu/~kriz/cifar.html If the data already exists it will simply be loaded from data_dir
@@ -71,31 +93,62 @@ def load_cifar(data_dir):
     range pixels can take on (128) This scales most pixels roughly between -1 and 1 (technically -2 < p < 2).
 
     Args:
-        data_dir: The directory that holds, or will hold, the unzipped CIFAR10 data files. This is the directory the
-        user specified as a program argument.
+        data_dir: The name of the directory that holds, or will hold, the unzipped CIFAR10 data files.
+        classes: A binary tuple containing two integers from 0-9 each representing a CIFAR10 class. If this argument is
+        provided, then only examples of these classes will be part of the data set (and all of such examples).
 
-    Returns: A DataSet instance for CIFAR10. Where each individual images has the shape IMAGE_WIDTH * IMAGE_WIDTH * 3.
-    i.e. X_train has the shape n * IMAGE_WIDTH * IMAGE_WIDTH * 3.
+    Returns: A DataSet instance for CIFAR10. Where each individual images has the shape [IMAGE_WIDTH, IMAGE_WIDTH, 3].
+    i.e. a subset of size n will have an x tensor of shape [n, IMAGE_WIDTH, IMAGE_WIDTH, 3]
+
+    Raises:
+        If classes is not none or not a binary tuple/list.
     """
     train_file_paths = [os.path.join(data_dir, file_name) for file_name in _TRAIN_FILE_NAMES]
     test_file_paths = [os.path.join(data_dir, _TEST_FILE_NAME)]
     _maybe_download(data_dir, train_file_paths + test_file_paths)
 
     # Load the non-test examples, split into training and validation
-    x, y = _load_data(train_file_paths)
-    x, y = _shuffle(x, y)
-    x_train = x[_CIFAR10_VALIDATION_SET_SIZE:]
-    y_train = y[_CIFAR10_VALIDATION_SET_SIZE:]
-    x_val = x[0:_CIFAR10_VALIDATION_SET_SIZE]
-    y_val = y[0:_CIFAR10_VALIDATION_SET_SIZE]
+    x, labels = _load_data(train_file_paths)
+    x, labels = _shuffle(x, labels)
+
+    num_class = _CIFAR10_NUM_CLASS
+    if classes:
+        x, labels = _only_get_examples_of(classes, x, labels)
+        num_class = len(classes)
+
+    targets = _create_targets(num_class, random_targets)
+    y = targets[labels]
+
+    validation_set_size = int(x.shape[0] * _CIFAR10_VALIDATION_SET_PROPORTION)
+    x_train = x[validation_set_size:]
+    y_train = y[validation_set_size:]
+    labels_train = labels[validation_set_size:]
+    x_validation = x[0:validation_set_size]
+    y_validation = y[0:validation_set_size]
+    labels_validation = labels[0:validation_set_size]
+
+    if random_targets:
+        pass
 
     # Use the pixel mean of the training set for normalisation
     pixel_mean = _compute_per_pixel_mean(x_train)
     x_train -= pixel_mean
     x_train /= 128.0
-    x_val -= pixel_mean
-    x_val /= 128.0
-    return DataSet(_CIFAR10_NUM_CLASS, x_train, y_train, x_val, y_val, _CIFAR10_IMAGE_WIDTH)
+    x_validation -= pixel_mean
+    x_validation /= 128.0
+
+    train = Subset(x_train, y_train, labels_train)
+    validation = Subset(x_validation, y_validation, labels_validation)
+    return Dataset(num_class, targets, train, validation, _CIFAR10_IMAGE_WIDTH)
+
+
+def _only_get_examples_of(classes, x, labels):
+    """Only get examples which have their target class in classes.
+    """
+    if len(classes) != 2:
+        raise ValueError('Should only specify None or a tuple of two classes, instead {} was specified'.format(classes))
+    where_in_classes = np.logical_or(np.equal(labels, classes[0]), np.equal(labels, classes[1]))
+    return x[where_in_classes], labels[where_in_classes]
 
 
 def _maybe_download(data_dir, cifar_file_paths):
@@ -140,8 +193,24 @@ def _compute_per_pixel_mean(x_train):
     return pixel_mean
 
 
-def _shuffle(x, y):
+def _shuffle(x, labels):
     n = x.shape[0]
-    inds = np.arange(n)
-    np.random.shuffle(inds)
-    return x[inds], y[inds]
+    indices = np.arange(n)
+    np.random.shuffle(indices)
+    return x[indices], labels[indices]
+
+
+def _create_targets(num_class, random_targets=False):
+    """ Creates y hot targets for each class.
+
+    Args:
+        num_class: The number of classes for the problem at hand.
+        random_targets: If true, creates a random vector target for each class, otherwise creates one hot vectors for
+        each class.
+
+    Returns: An ndarray - targets, of shape [num_class, num_class]. Where the row at targets[i], is the target vector
+    for class i. Where 0 <= target[i, j] < 1
+    """
+    if random_targets:
+        return np.uniform((num_class, num_class))
+    return np.eye(num_class)

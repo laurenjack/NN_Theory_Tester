@@ -17,21 +17,21 @@ class Reporter:
         self.num_class = num_class
         self.prediction_analytics = prediction_analytics
 
-    def report_single_network(self, network_runner, data_set):
+    def report_single_network(self, network_runner, data_set, training_results=None):
         """Module responsible for reporting on the results of a trained network.
 
         This includes analysis of the rbf parameters, an examination of the
         properties of correct, incorrect and adversarial examples etc."""
-        X_val = data_set.X_val
-        Y_val = data_set.Y_val
+        x_validation = data_set.x_validation
+        y_validation = data_set.y_validation
         correct, incorrect = self._report(network_runner, data_set)
 
         if conf.print_rbf_params and conf.is_rbf:
-            self._print_rbf_bacth(X_val, Y_val, network_runner)
+            self._print_rbf_bacth(x_validation, y_validation, network_runner)
 
         class_to_adversary = conf.class_to_adversary_class
         if class_to_adversary is None:
-            z, z_bar, tau = network_runner.report_rbf_params(X_val, Y_val)
+            z, z_bar, tau = network_runner.report_rbf_params(x_validation, y_validation)
             class_to_adversary = self._report_shortest_point(z_bar, tau)
 
         # show adversaries
@@ -42,27 +42,27 @@ class Reporter:
 
         # Write structured data to a csv file
         if conf.write_csv:
-            self.prediction_analytics.write_csv(X_val, Y_val, network_runner)
+            self.prediction_analytics.write_csv(x_validation, y_validation, network_runner)
 
-        if conf.show_animation and conf.is_rbf:
-            animate(*network_runner.ops_over_time)
+        if conf.show_animation and training_results:
+            animate(*training_results)
 
         if conf.show_z_stats and conf.is_rbf:
-            X_train = data_set.X_train
-            Y_train = data_set.Y_train
-            # correct, incorrect, _, _ = network_runner.all_correct_incorrect(X_train, Y_train)
-            x_val_corr = correct.x
-            y_val_corr = correct.y
+            x_train = data_set.train.x
+            y_train = data_set.train.y
+            # correct, incorrect, _, _ = network_runner.all_correct_incorrect(x_train, y_train)
+            x_validation_corr = correct.x
+            y_validation_corr = correct.y
             prediction_prob_corr = correct.prediction_prob()
-            x_val_inc = incorrect.x
-            y_val_inc = incorrect.y
+            x_validation_inc = incorrect.x
+            y_validation_inc = incorrect.y
             prediction_prob_inc = incorrect.prediction_prob()
 
             num_class = self.num_class
-            z, z_bar, tau = network_runner.report_rbf_params(x_val_corr, y_val_corr)
-            z_inc, _, _ = network_runner.report_rbf_params(x_val_inc, y_val_inc)
+            z, z_bar, tau = network_runner.report_rbf_params(x_validation_corr, y_validation_corr)
+            z_inc, _, _ = network_runner.report_rbf_params(x_validation_inc, y_validation_inc)
             for k in xrange(num_class):
-                inds_of_k = np.argwhere(np.logical_and(y_val_corr == k, True))[:, 0]  # prediction_prob_corr > 0.6
+                inds_of_k = np.argwhere(np.logical_and(y_validation_corr == k, True))[:, 0]  # prediction_prob_corr > 0.6
                 # length = inds_of_k.shape[0] // 2
                 # s1 = inds_of_k[:length]
                 # s2 = inds_of_k[length:]
@@ -86,7 +86,7 @@ class Reporter:
                     # plot_histogram(prediction_prob[inds_of_k])
 
         if conf.show_roc:
-            tprs, fprs = self.prediction_analytics.roc_curve(X_val, Y_val, network_runner)
+            tprs, fprs = self.prediction_analytics.roc_curve(x_validation, y_validation, network_runner)
             self.prediction_analytics.visualisation.plot('ROC curve', fprs, tprs)
 
         # Show incorrect above the threshold
@@ -109,7 +109,7 @@ class Reporter:
             correct, incorrect, = self._report(nr1, data_set)
             class_to_adversary = conf.class_to_adversary_class
             if class_to_adversary is None:
-                z, z_bar, tau = nr1.report_rbf_params(data_set.X_val, data_set.Y_val)
+                z, z_bar, tau = nr1.report_rbf_params(data_set.x_validation, data_set.y_validation)
                 class_to_adversary = self._report_shortest_point(z_bar, tau)
 
             x_adv, y_actual, x_actual = adversarial_gd(nr1, correct, class_to_adversary)
@@ -143,9 +143,9 @@ class Reporter:
         print 'Number of convincing adverseries: ' + str(np.sum(threating_adversary)) + ' / ' + str(ss)
 
     def _report(self, network_runner, data_set):
-        X_val = data_set.X_val
-        Y_val = data_set.Y_val
-        correct, incorrect = network_runner.all_correct_incorrect(X_val, Y_val)
+        x_validation = data_set.x_validation
+        y_validation = data_set.y_validation
+        correct, incorrect = network_runner.all_correct_incorrect(x_validation, y_validation)
 
         # Report on a sample of correct and incorrect results
         correct_sample = correct.sample(10)
@@ -181,9 +181,9 @@ class Reporter:
                 print ''
         return prediction, probabilities
 
-    def _print_rbf_bacth(self, X, Y, network_runner):
+    def _print_rbf_bacth(self, x, y, network_runner):
         """Print the rbf parameters from a random batch of the data set"""
-        z, z_bar, tau = network_runner.report_rbf_params(X, Y, conf.m)
+        z, z_bar, tau = network_runner.report_rbf_params(x, y, conf.m)
         print str(z) + '\n'
         print str(z_bar) + '\n'
         print str(tau) + '\n'

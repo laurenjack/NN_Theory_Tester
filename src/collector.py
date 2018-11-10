@@ -42,6 +42,12 @@ class RbfCollector(object):
         self.z_bars.append(z_bar)
         self.taus.append(tau)
 
+    def results(self):
+        """Returns: The three lists of rbf parameters, collected over training.
+        """
+        return self.class_wise_z_list, self.z_bars, self.taus
+
+
 
 class NullCollector(object):
     """Following the null object pattern, used when there is no information that needs to be collected during training.
@@ -49,6 +55,12 @@ class NullCollector(object):
 
     def __init__(self):
         pass
+
+    def collect(self, network_runner, x, y):
+        pass
+
+    def results(self):
+        return None
 
 
 def build_rbf_collector(data_set, animation_ss):
@@ -62,7 +74,7 @@ def build_rbf_collector(data_set, animation_ss):
     Returns: An instance of RbfCollector
     """
     num_class = data_set.num_class
-    n = data_set.n_train
+    n = data_set.train.n
     train_indices = np.arange(n)
     z_indices = np.random.choice(train_indices, size=animation_ss, replace=False)
     class_wise_z_list = []

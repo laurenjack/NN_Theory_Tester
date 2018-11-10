@@ -54,7 +54,16 @@ class NetworkRunner(object):
 
         # Preserve how session.run() returns null results by returning them, keeping the length of the concatenated
         # results equal to the length of op.
-        concatenated_results = [None if r is None else np.concatenate(r) for r in transposed_results]
+        concatenated_results = []
+        for r in transposed_results:
+            if r and len(r[0].shape) > 0:
+                concatenated_results.append(np.concatenate(r))
+            else:
+                # If r does not have a result, keep the concatenate result as null, if it is a list of scalars, keep it
+                # as a list of scalars (most likely aggregates).
+                # TODO(Jack) bug for aggregates, you probably over-engineered this.
+                concatenated_results.append(r)
+
         if len(concatenated_results) == 1:
             return concatenated_results[0]
         return concatenated_results

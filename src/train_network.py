@@ -15,10 +15,10 @@ def train(conf, network_runner, data_set, collector):
 
     Returns: An instance of NetworkRunner, an encapsulation of the trained network for easy reporting.
     """
-    X = data_set.X_train
-    Y = data_set.Y_train
-    X_val = data_set.X_val
-    Y_val = data_set.Y_val
+    x = data_set.train.x
+    y = data_set.train.y
+    x_validation = data_set.validation.x
+    y_validation = data_set.validation.y
 
     network = network_runner.network
     train_op = network.train_op
@@ -26,8 +26,8 @@ def train(conf, network_runner, data_set, collector):
     saver = tf.train.Saver(tf.global_variables())
 
     # Train
-    n = data_set.n_train
-    n_val = data_set.n_val
+    n = data_set.train.n
+    n_val = data_set.validation.n
     training_indices = np.arange(n)
     validation_indices = np.arange(n_val)
     epochs = conf.epochs
@@ -38,19 +38,20 @@ def train(conf, network_runner, data_set, collector):
             lr *= conf.decrease_lr_factor
         np.random.shuffle(training_indices)
         if conf.debug_ops:
-            network_runner.feed_and_run(X, Y, all_ops, indices=training_indices, lr=lr)
+            network_runner.feed_and_run(x, y, all_ops, indices=training_indices, lr=lr)
         else:
-            network_runner.feed_and_run(X, Y, train_op, indices=training_indices, lr=lr)
+            network_runner.feed_and_run(x, y, train_op, indices=training_indices, lr=lr)
         print 'Epoch: '+str(e)
-        network_runner.report_accuracy('Train', X, Y, training_indices, accuracy_ss)
-        network_runner.report_accuracy('Validation', X_val, Y_val, validation_indices, accuracy_ss)
+        network_runner.report_accuracy('Train', x, y, training_indices, accuracy_ss)
+        network_runner.report_accuracy('Validation', x_validation, y_validation, validation_indices, accuracy_ss)
         print ''
+
         # Collect info about the network in it's current state, before it changes due to the next epochs training.
-        collector.collect(network_runner, X, Y)
+        collector.collect(network_runner, x, y)
 
     if network.model_save_dir:
         saver.save(network_runner.sess, network.model_save_dir+'/model.ckpt')
-    return network_runner
+    return collector.results()
 
 
 def load_pre_trained(network_runner):

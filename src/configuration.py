@@ -34,19 +34,19 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # The first fields are machine specific and should really be passed in as program args.
         # A parameter to specify where to load the CIFAR10 training and test sets
         self.data_dir = '/home/laurenjack/models/cifar-data'
-        # (optional) Directory for saving models, separate sub-directories will be created based on is_rbf. Note that
-        # only resnet models will be saved (so if is_resnet is False, no model will be saved).
+        # (optional) Directory for saving models, the model will be stored in different sub directories based on
+        # different combinations of is_rbf and is_resnet
         self.model_save_dir = '/home/laurenjack/models'
 
         # Run an experiment on an NN, or on a toy rbf problem to get gradients right.
         self.is_net = True
         # Compute all_ops in training, rather than just the training operation.
-        self.debug_ops = True
+        self.debug_ops = False
         # Specify whether you want to train a convolutional resnet or a standard feed-forward net. This will also
         # inadvertently specify whether CIFAR-10 (True) or MNIST (FALSE) is used for training.
         self.is_resnet = True
         # Use an rbf-softmax at the end of this network, or a softmax (vanilla softmax) end.
-        self.is_rbf = True
+        self.is_rbf = False
         # If is_resent is true AND do_train is False, this specifies that the application should try load a network
         # from the location specified by model_save_dir. If is_resent is True true AND do_train is True the application
         # will train a new network and save it in model_save_dir. However if is_resnet is False, the feed-forward net
@@ -55,6 +55,8 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Only does something if is_resnet is False. Then, if is_artificial_data is True, the network will train on
         # the problem specified in artificial_problem.py TODO(Jack) refactor artificial problem name/location
         self.is_artificial_data = False
+        # Specify two specific classes, load all examples of just those classes, rather than the whole data set.
+        self.just_these_classes = None
 
         # Network and rbf params
         # The number of dimensions in z space (i.e. the number of neurons at the layer pre softmax / rbf-softmax)
@@ -64,9 +66,9 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # The initialisation variance of each z_bar value
         self.z_bar_init_sd = 3.0
         # The initial value every tau variable has
-        self.tau_init = 0.5
+        self.tau_init = 2.5
         # Epsilon value to offset dividing by zero when normalizing gradient
-        self.norm_epsilon = 10 ** (-10)
+        self.norm_epsilon = 10 ** (-8)
 
         # Feed-forward specific parameters
         # List[int] - where the number of elements corresponds to the number of hidden layers BEFORE the z space.
@@ -101,10 +103,10 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Batch size
         self.m = 128
         # Learning Rate, and experimental multipliers on that learning rate for rbf components
-        self.lr = 0.003  # * float(self.d) ** 0.5 #0.001 # 0.00001
+        self.lr = 0.001 * 100  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
-        self.epochs = 2
+        self.epochs = 20
         # The epochs we should decrease the learning rate by decrease_lr_factor
         self.decrease_lr_points = [80, 120]
         self.decrease_lr_factor = 0.01

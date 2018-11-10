@@ -25,12 +25,12 @@ class ExperimentTrainer:
             A Network runner, an object that encapsulates the network and session of the trained network,
             for convenient post training analysis
         """
-        X = training_set.X
-        Y = training_set.Y
-        n = X.shape[0]
-        X_val = validation_set.X
-        Y_val = validation_set.Y
-        n_val = X_val.shape[0]
+        x = training_set.x
+        y = training_set.y
+        n = x.shape[0]
+        x_validation = validation_set.x
+        y_validation = validation_set.y
+        n_val = x_validation.shape[0]
 
         train_indicies = np.arange(n)
 
@@ -39,8 +39,8 @@ class ExperimentTrainer:
             np.random.shuffle(train_indicies)
             for b in xrange(0, n, self.batch_size):
                 batch = train_indicies[b:b + self.batch_size]
-                x = X[batch]
-                y = Y[batch]
+                x = x[batch]
+                y = y[batch]
                 feed_dict = {network.x: x, network.y: y}
                 _, a1, a, bias = sess.run((network.train_op, network.a1, network.a, network.b), feed_dict=feed_dict)
             if self.num_runs == 1:
@@ -58,10 +58,10 @@ class ExperimentTrainer:
         return train_all_correct, val_all_correct, adv_all_correct
 
     def _report_acc(self, name, network, sess, data_set):
-        X = data_set.X
-        Y = data_set.Y
-        n = X.shape[0]
-        a = sess.run(network.a, feed_dict={network.x: X})
-        num_correct = np.sum((np.argmax(a, axis=1) == Y).astype(dtype=np.int32))
+        x = data_set.x
+        y = data_set.y
+        n = x.shape[0]
+        a = sess.run(network.a, feed_dict={network.x: x})
+        num_correct = np.sum((np.argmax(a, axis=1) == y).astype(dtype=np.int32))
         print '{name}: {num_correct} / {n}'.format(name=name, num_correct=num_correct, n=n)
         return num_correct == n

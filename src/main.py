@@ -11,9 +11,9 @@ def run_network(conf):
     Args:
         conf: configuration.RbfSoftmaxConfiguration
     """
-    network_runner, data_set = network_factory.create_and_train_network(conf)
+    network_runner, data_set, training_results = network_factory.create_and_train_network(conf)
     reporter = reporter_factory.create_reporter(data_set)
-    reporter.report_single_network(network_runner, data_set)
+    reporter.report_single_network(network_runner, data_set, training_results)
 
 
 def run_rbf_test(conf):  # TODO(Jack) sort this rbf only code

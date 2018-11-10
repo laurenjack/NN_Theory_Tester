@@ -1,11 +1,12 @@
 import numpy as np
-from data_set import DataSet
+from data_set import Dataset
 from configuration import conf
 
 DATA_START = -3.0
 DATA_END = 3.0
 DATA_WIDTH = DATA_END - DATA_START
 
+# TODO(Jack) does not properly use data_set contract
 def simple_identical_plane(n_per_class, d, K): # , keep_individual_dims_constant=False
     """Generate K classes each seperated by an identical plane with biases"""
     if conf.n != n_per_class * K:
@@ -38,7 +39,7 @@ def simple_identical_plane(n_per_class, d, K): # , keep_individual_dims_constant
     y = np.tile(y, [n_per_class, 1])
     y = y.transpose()
     y = y.flatten()
-    return DataSet(X, y, X, y)
+    return Dataset(X, y, X, y)
 
 if __name__ == '__main__':
     n_per_class = 50
@@ -46,7 +47,7 @@ if __name__ == '__main__':
     K = 4
     conf.n = n_per_class * K
     data_set = simple_identical_plane(n_per_class, d, K)
-    X = data_set.X_train
+    X = data_set.train.x
     Xt = X.reshape(n_per_class, K, d).transpose(1, 2, 0)
     d0 = Xt[:, 0]
     d1 = Xt[:, 1]

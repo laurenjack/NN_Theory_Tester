@@ -15,6 +15,8 @@ import collector as coll
 import network_runner as nr
 
 
+_FEED_FORWARD = 'feed_forward'
+_RESNET = 'resnet'
 _RBF_STORE = 'resnet_rbf'
 _VANILLA_STORE = 'resnet_plain'
 
@@ -41,12 +43,16 @@ def create_and_train_network(conf):
         # Create a resnet
         if conf.is_resnet:
             # Specify a place to store/load the model
-            if conf.model_save_dir and conf.is_rbf:
-                model_save_dir = os.path.join(conf.model_save_dir, _RBF_STORE)
-            elif conf.model_save_dir :
-                model_save_dir = os.path.join(conf.model_save_dir, _VANILLA_STORE)
+            if conf.model_save_dir:
+                net_dir = _FEED_FORWARD
+                if conf.is_resnet:
+                    net_dir = _RESNET
+                end_dir = _VANILLA_STORE
+                if conf.is_rbf:
+                    end_dir = _RBF_STORE
+                model_save_dir = os.path.join(conf.model_save_dir, net_dir, end_dir)
 
-            data_set = ds.load_cifar(conf.data_dir)
+            data_set = ds.load_cifar(conf.data_dir, conf.just_these_classes)
             configuration.validate(conf, data_set)
             end = _build_network_end(conf, data_set)
             network = resnet.Resnet(conf, end, model_save_dir, data_set.image_width)
@@ -60,7 +66,7 @@ def create_and_train_network(conf):
             else:
                 data_set = ds.load_mnist()
 
-            num_inputs = data_set.X_train.shape[1]
+            num_inputs = data_set.train.x.shape[1]
             end = _build_network_end(conf, data_set)
             network = feed_forward_network.FeedForward(conf, end, num_inputs)
 
@@ -75,8 +81,8 @@ def create_and_train_network(conf):
                 collector = coll.build_rbf_collector(data_set, conf.animation_ss)
             else:
                 collector = coll.NullCollector()
-            network_runner = train_network.train(conf, network_runner, data_set, collector)
-    return network_runner, data_set
+            traing_results = train_network.train(conf, network_runner, data_set, collector)
+    return network_runner, data_set, traing_results
 
 
 def _build_network_end(conf, data_set):
