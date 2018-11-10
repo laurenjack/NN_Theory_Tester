@@ -16,6 +16,18 @@ def run_network(conf):
     reporter.report_single_network(network_runner, data_set, training_results)
 
 
+def run_networks_and_report_transferability(conf):
+    """Train a series of networks, then test the transferability of adverserial attacks.
+
+    Args:
+        conf: configuration.RbfSoftmaxConfiguration
+    """
+    network_runners, data_set = network_factory.create_and_train_n_networks(conf)
+    reporter = reporter_factory.create_reporter(data_set)
+    network_runner1, network_runner2 = network_runners
+    reporter.report_with_adverseries_from_second(network_runner1, network_runner2, data_set)
+
+
 def run_rbf_test(conf):  # TODO(Jack) sort this rbf only code
     total_correct = 0
     for i in xrange(conf.num_runs):
@@ -41,7 +53,10 @@ def run_rbf_test(conf):  # TODO(Jack) sort this rbf only code
 def run():
     conf = configuration.get_configuration()
     if conf.is_net:
-        run_network(conf)
+        if conf.n_networks and conf.n_networks > 1:
+            run_networks_and_report_transferability(conf)
+        else:
+            run_network(conf)
     else:
         run_rbf_test(conf)
 

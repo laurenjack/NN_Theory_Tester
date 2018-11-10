@@ -139,8 +139,8 @@ class Reporter:
         was_adversarial_prediction = adv_predictions == adv_class
         ss = adv_predictions.shape[0]
         exceeded_thresh = adv_probs[np.arange(ss), adv_predictions] > 0.5
-        threating_adversary = np.logical_and(was_adversarial_prediction, exceeded_thresh).astype(np.int32)
-        print 'Number of convincing adverseries: ' + str(np.sum(threating_adversary)) + ' / ' + str(ss)
+        threatning_adversary = np.logical_and(was_adversarial_prediction, exceeded_thresh).astype(np.int32)
+        print 'Number of convincing adverseries: ' + str(np.sum(threatning_adversary)) + ' / ' + str(ss)
 
     def _report(self, network_runner, data_set):
         x_validation = data_set.validation.x
@@ -171,7 +171,7 @@ class Reporter:
 
     def _get_probabilities_for(self, network_runner, x, y, report=False):
         a = network_runner.network.a
-        probabilities = network_runner.probabilities()
+        probabilities = network_runner.probabilities(x, y)
         prediction = np.argmax(probabilities, axis=1)
         if report:
             for i in xrange(x.shape[0]):

@@ -36,7 +36,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.data_dir = '/home/laurenjack/models/cifar-data'
         # (optional) Directory for saving models, the model will be stored in different sub directories based on
         # different combinations of is_rbf and is_resnet
-        self.model_save_dir = '/home/laurenjack/models'
+        self.model_save_dir = '/Users/jack/models' #'/home/laurenjack/models'
 
         # Run an experiment on an NN, or on a toy rbf problem to get gradients right.
         self.is_net = True
@@ -47,6 +47,8 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.is_resnet = False
         # Use an rbf-softmax at the end of this network, or a softmax (vanilla softmax) end.
         self.is_rbf = True
+        # If this is more than 1, train multiple networks and compare their transferability.
+        self.n_networks = 2
         # If is_resent is true AND do_train is False, this specifies that the application should try load a network
         # from the location specified by model_save_dir. If is_resent is True true AND do_train is True the application
         # will train a new network and save it in model_save_dir. However if is_resnet is False, the feed-forward net
@@ -60,13 +62,13 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
         # Network and rbf params
         # The number of dimensions in z space (i.e. the number of neurons at the layer pre softmax / rbf-softmax)
-        self.d = 10
+        self.d = 100
         # Rbf Constant c. The scaling factor applied to every rbf value before the softmax is applied
         self.rbf_c = 4.0
         # The initialisation variance of each z_bar value
         self.z_bar_init_sd = 3.0
         # The initial value every tau variable has
-        self.tau_init = 2.5
+        self.tau_init = 1.0
         # Epsilon value to offset dividing by zero when normalizing gradient
         self.norm_epsilon = 10 ** (-8)
 
@@ -103,8 +105,8 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Batch size
         self.m = 128
         # Learning Rate, and experimental multipliers on that learning rate for rbf components
-        self.lr = 0.01# 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
-        self.z_bar_lr_increase_factor = float(self.d)  # ** 0.5
+        self.lr = 0.003 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
+        self.z_bar_lr_increase_factor = 0.0 # float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
         self.epochs = 20
         # The epochs we should decrease the learning rate by decrease_lr_factor
@@ -126,7 +128,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # The size of the perturbation, at each step
         self.adversarial_epsilon = 0.01
         # The number of adversarial examples to generation
-        self.adversarial_ss = 10
+        self.adversarial_ss = 1000
         # The number of epochs we make continual perturbations to an adversary
         self.adversarial_epochs = 100
         # Change the image such that the class at index 0 should be perturb into adversary of the class at index 1.
@@ -138,7 +140,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # If True, will print the rbf parameters z (valdiation set), z_bar, and tau, only works if is_rbf is True
         self.print_rbf_params = False
         # Report on adversarial examples for the given network
-        self.show_adversaries = False
+        self.show_adversaries = True
         # Show an ROC curve for the validation set
         self.show_roc = False
         # Show the 5 most incorrect examples - where most incorrect means, the 5 incorrectly classified validation

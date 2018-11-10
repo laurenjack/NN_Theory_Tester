@@ -7,7 +7,7 @@ class Rbf(object):
     Intended be utilised as the end of a neural network, see public methods for details.
     """
 
-    def __init__(self, conf, z_bar_init, tau_init, num_class):
+    def __init__(self, conf, z_bar_init, tau_init, num_class, network_id):
         # Unpack configuration
         self.num_class = num_class
         self.d = conf.d
@@ -16,6 +16,7 @@ class Rbf(object):
         self.z_bar_lr_increase_factor = conf.z_bar_lr_increase_factor
         self.tau_lr_increase_factor = conf.tau_lr_increase_factor
         self.target_precision = conf.target_precision
+        self.network_id = network_id
 
         # Assign initializers and placeholders
         self.z_bar_init = z_bar_init
@@ -75,7 +76,9 @@ class Rbf(object):
         self.z_difference_squared = z_diff ** 2.0
         tau_square_tile = tau_tile ** 2.0 #TODO(Jack) do I actually need to tile tau? Can't I just use a matmul?
 
-        @tf.RegisterGradient("zero_the_grad")
+        zero_the_grad = "zero_the_grad_"+self.network_id
+
+        @tf.RegisterGradient(zero_the_grad)
         def _zero_the_grad(unused_op, grad):
             return tf.zeros(tf.shape(grad))
 
@@ -85,10 +88,10 @@ class Rbf(object):
         # we don't want to pollute the gradients of the main loss with the gradients of the tau loss or vice versa,
         # Hence why each branch of the graph begins with a zeroing of the grads.
         # Firstly, we zero the  z - z_bar. No gradients will flow back to z or z_bar from the tau loss function.
-        with graph.gradient_override_map({'Identity': "zero_the_grad"}):
+        with graph.gradient_override_map({'Identity': zero_the_grad}):
             tau_sq_alternate = tf.identity(tau_square_tile, name='Identity')
         # Then, we zero the  z - z_bar. No gradients will flow back to z or z_bar from the tau loss function.
-        with graph.gradient_override_map({'Identity': "zero_the_grad"}):
+        with graph.gradient_override_map({'Identity': zero_the_grad}):
             z_diff_sq_alternate = tf.identity(self.z_difference_squared, name='Identity')
 
         weighted_z_diff_sq, neg_dist, rbf = self._create_rbf_values(graph, self.z_difference_squared, tau_sq_alternate)
@@ -107,7 +110,9 @@ class Rbf(object):
     def _tile_z(self, graph, z, batch_indices):
         """Tile z and define it's gradient modification.
         """
-        @tf.RegisterGradient("z_grad")
+        z_grad_tag = "z_grad_"+self.network_id
+
+        @tf.RegisterGradient(z_grad_tag)
         def _z_grad(unused_op, grad):
             """Modify the gradient of the cross-entropy loss function w.r.t z so training issues do not prohibit z
             from reach it's rbf cluster.
@@ -143,7 +148,7 @@ class Rbf(object):
         # care of this but the README specifies why this is done explicitly).
         z_re = tf.reshape(z_batch, [-1, self.d, 1])
         z_tile = tf.tile(z_re, [1, 1, self.num_class])
-        with graph.gradient_override_map({'Identity': "z_grad"}):
+        with graph.gradient_override_map({'Identity': z_grad_tag}):
             z_tile = tf.identity(z_tile, name='Identity')
         return z, z_tile
 
@@ -152,7 +157,9 @@ class Rbf(object):
         applied so they don't stray excessively. The gradient modifications to z_bar and z_bar_base are applied in
         this function.
         """
-        @tf.RegisterGradient("z_bar_base_grad")
+        z_bar_base_grad_tag = "z_bar_base_grad_"+self.network_id
+
+        @tf.RegisterGradient(z_bar_base_grad_tag)
         def _z_bar_base_grad(unused_op, grad):
             """The gradient for z_bar_base.
 
@@ -171,7 +178,7 @@ class Rbf(object):
             return grad * (self.z_bar_sd + self.norm_epsilon)
 
         z_bar_base = tf.get_variable("z_bar_base", shape=[self.d, self.num_class], initializer=self.z_bar_init)
-        with graph.gradient_override_map({'Identity': "z_bar_base_grad"}):
+        with graph.gradient_override_map({'Identity': z_bar_base_grad_tag}):
             z_bar_base = tf.identity(z_bar_base, name='Identity')
 
         # Apply normalisation of z_bar_base to produce z_bar
@@ -183,7 +190,9 @@ class Rbf(object):
         self.z_bar_sd = tf.reshape(self.z_bar_sd, [self.d, 1])
         z_bar = 5.0 * z_bar_diff / (self.z_bar_sd + self.norm_epsilon)
 
-        @tf.RegisterGradient("z_bar_grad")
+        z_bar_grad_tag = "z_bar_grad_"+self.network_id
+
+        @tf.RegisterGradient(z_bar_grad_tag)
         def _z_bar_grad(unused_op, grad):
             """Modify the gradient of the cross-entropy loss function w.r.t z_bar so training issues do not prohibit
             z_bar from reaching optima.
@@ -211,7 +220,7 @@ class Rbf(object):
         # Tile the z_bar's, so that they can be used for all m * d * k combinations of z - z_bar (broadcasting would
         # take care of this but the README specifies why this is done explicitly).
         z_bar_tile = self._tile(z_bar)
-        with graph.gradient_override_map({'Identity': "z_bar_grad"}):
+        with graph.gradient_override_map({'Identity': z_bar_grad_tag}):
             z_bar_tile = tf.identity(z_bar_tile, name='Identity')
 
         return z_bar, z_bar_tile
@@ -219,7 +228,9 @@ class Rbf(object):
     def _create_tau(self, graph):
         """Create tau, tile it, and define it's gradient modification.
         """
-        @tf.RegisterGradient("tau_grad")
+        tau_grad_tag = "tau_grad_"+self.network_id
+
+        @tf.RegisterGradient(tau_grad_tag)
         def _tau_grad(unused_op, grad):
             """Modify the gradient of the cross-entropy loss function w.r.t tau so training issues do not prohibit
             tau from reaching optima.
@@ -238,7 +249,7 @@ class Rbf(object):
 
         tau = tf.abs(tf.get_variable("tau", shape=[self.d, self.num_class],
                                      initializer=self.tau_init))
-        with graph.gradient_override_map({'Identity': "tau_grad"}):
+        with graph.gradient_override_map({'Identity': tau_grad_tag}):
             tau = tf.identity(tau, name='Identity')
 
         # Tile the taus's, so that they can be used for all m * d * k combinations of tau * (z - z_bar)
@@ -260,7 +271,9 @@ class Rbf(object):
         weighted_z_diff_sq = tf.multiply(tau_sq_alternate, z_diff_sq)
         neg_dist = -tf.reduce_mean(weighted_z_diff_sq, axis=1)
 
-        @tf.RegisterGradient("stub_rbf_grad")
+        stub_rbf_grad_tag = "stub_rbf_grad_"+self.network_id
+
+        @tf.RegisterGradient(stub_rbf_grad_tag)
         def _stub_rbf_grad(unused_op, grad):
             """Stub out the rbf gradient, by returning a tensor of ones in its place.
 
@@ -271,12 +284,14 @@ class Rbf(object):
             """
             return tf.ones(tf.shape(grad))
 
-        with graph.gradient_override_map({'Identity': "stub_rbf_grad"}):
+        with graph.gradient_override_map({'Identity': stub_rbf_grad_tag}):
             neg_dist = tf.identity(neg_dist, name='Identity')
         exp = tf.exp(neg_dist)
         rbf = self.rbf_c * exp
 
-        @tf.RegisterGradient("stub_and_save_xe_sm_grad")
+        stub_and_save_xe_sm_grad_tag = "stub_and_save_xe_sm_grad_"+self.network_id
+
+        @tf.RegisterGradient(stub_and_save_xe_sm_grad_tag)
         def _stub_and_save(unused_op, grad):
             """Stub out the cross entropy softmax gradient (w.r.t rbf values), and save it so that it may be applied
             later, post normalisation.
@@ -287,7 +302,7 @@ class Rbf(object):
             self.xe_sm_grad = grad
             return tf.ones(tf.shape(grad))
 
-        with graph.gradient_override_map({'Identity': "stub_and_save_xe_sm_grad"}):
+        with graph.gradient_override_map({'Identity': stub_and_save_xe_sm_grad_tag}):
             rbf = tf.identity(rbf, name='Identity')
         return weighted_z_diff_sq, neg_dist, rbf
 
@@ -305,12 +320,14 @@ class Rbf(object):
         safe_class_wise_batch_size = tf.reshape(safe_class_wise_batch_size, [1, self.num_class])
         weighted_variance = tf.reduce_sum(filtered_sum, axis=0) / safe_class_wise_batch_size
 
-        @tf.RegisterGradient("stub_and_save_tau_quadratic_grad")
+        stub_and_save_tau_quadratic_grad_tag = "stub_and_save_tau_quadratic_grad_"+self.network_id
+
+        @tf.RegisterGradient(stub_and_save_tau_quadratic_grad_tag)
         def _stub_and_save_tau_quadratic_grad(unused_op, grad):
             self.tau_quadratic_grad = grad
             return tf.ones(tf.shape(grad))
 
-        with graph.gradient_override_map({'Identity': "stub_and_save_tau_quadratic_grad"}):
+        with graph.gradient_override_map({'Identity': stub_and_save_tau_quadratic_grad_tag}):
             weighted_variance = tf.identity(weighted_variance, name='Identity')
         target_tau_diff = (self.target_precision - weighted_variance) ** 2.0
         tau_loss = tf.reduce_sum(target_tau_diff)
