@@ -36,7 +36,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.data_dir = '/home/laurenjack/models/cifar-data'
         # (optional) Directory for saving models, the model will be stored in different sub directories based on
         # different combinations of is_rbf and is_resnet
-        self.model_save_dir = '/Users/jack/models' #'/home/laurenjack/models'
+        self.model_save_dir = '/home/laurenjack/models'  # '/Users/jack/models'   '/home/laurenjack/models'
 
         # Run an experiment on an NN, or on a toy rbf problem to get gradients right.
         self.is_net = True
@@ -48,7 +48,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Use an rbf-softmax at the end of this network, or a softmax (vanilla softmax) end.
         self.is_rbf = True
         # If this is more than 1, train multiple networks and compare their transferability.
-        self.n_networks = 2
+        self.n_networks = 5
         # If is_resent is true AND do_train is False, this specifies that the application should try load a network
         # from the location specified by model_save_dir. If is_resent is True true AND do_train is True the application
         # will train a new network and save it in model_save_dir. However if is_resnet is False, the feed-forward net
@@ -135,6 +135,9 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # If you set the this parameter to None if you would like to use the two closest classes instead, in terms of
         # the unweighted distance between their z_bar centres. (This will only work for rbf networks).
         self.class_to_adversary_class = (3, 5)
+        # The arbitrary threshold used to consider when an adverserial example is convincing. This is used by the
+        # transferability test to indicate if an example is convincing.
+        self.convincing_threshold = 0.3
 
         # Reporting params (see reporter module)
         # If True, will print the rbf parameters z (valdiation set), z_bar, and tau, only works if is_rbf is True

@@ -24,8 +24,7 @@ def run_networks_and_report_transferability(conf):
     """
     network_runners, data_set = network_factory.create_and_train_n_networks(conf)
     reporter = reporter_factory.create_reporter(data_set)
-    network_runner1, network_runner2 = network_runners
-    reporter.report_with_adverseries_from_second(network_runner1, network_runner2, data_set)
+    reporter.report_with_adverseries_from_first(network_runners, data_set, conf.convincing_threshold)
 
 
 def run_rbf_test(conf):  # TODO(Jack) sort this rbf only code

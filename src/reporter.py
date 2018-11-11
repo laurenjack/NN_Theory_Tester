@@ -103,27 +103,41 @@ class Reporter:
             print 'Prediction Probs: ' + str(really_incorrect_prediction_probs)
             plot_all_image(really_incorrect_x, really_incorrect_prediction, really_incorrect_actual)
 
-    def report_with_adverseries_from_second(self, nr1, nr2, data_set):
+    def report_with_adverseries_from_first(self, network_runners, data_set, convincing_threshold):
         """Reporting function focused on generating adverser"""
-        with nr1.graph.as_default():
-            correct, incorrect, = self._report(nr1, data_set)
+        first = network_runners[0]
+        with first.graph.as_default():
+            correct, incorrect, = self._report(first, data_set)
             class_to_adversary = conf.class_to_adversary_class
             if class_to_adversary is None:
-                z, z_bar, tau = nr1.report_rbf_params(data_set.x_validation, data_set.y_validation)
+                z, z_bar, tau = first.report_rbf_params(data_set.x_validation, data_set.y_validation)
                 class_to_adversary = self._report_shortest_point(z_bar, tau)
 
-            x_adv, y_actual, x_actual = adversarial_gd(nr1, correct, class_to_adversary)
-            predictions1, probs1 = self._get_probabilities_for(nr1, x_actual, y_actual)
-            adv_predictions1, adv_probs1 = self._get_probabilities_for(nr1, x_adv, y_actual)
-
-        with nr2.graph.as_default():
-            predictions2, probs2 = self._get_probabilities_for(nr2, x_actual, y_actual)
-            adv_predictions2, adv_probs2 = self._get_probabilities_for(nr2, x_adv, y_actual)
-            adv_ss = x_adv.shape[0]
+            x_adv, y_actual, x_actual = adversarial_gd(first, correct, class_to_adversary)
+            predictions1, probs1 = self._get_probabilities_for(first, x_actual, y_actual)
+            adv_predictions1, adv_probs1 = self._get_probabilities_for(first, x_adv, y_actual)
 
         actual_class, adv_class = class_to_adversary
-        self._convincing_adverseries(adv_predictions1, adv_probs1, adv_class)
-        self._convincing_adverseries(adv_predictions2, adv_probs2, adv_class)
+        print 'Adversaries evaluated on their source network:'
+        self._convincing_adverseries(adv_predictions1, adv_probs1, adv_class, convincing_threshold)
+
+        adv_ss = x_adv.shape[0]
+        attacked_all_nets = np.ones(adv_ss, dtype=np.bool)
+        print 'Subsequent networks, what is the success of transferred attacks?'
+        for network_runner in network_runners[1:]:
+            with network_runner.graph.as_default():
+                predictions2, probs2 = self._get_probabilities_for(network_runner, x_actual, y_actual)
+                adv_predictions2, adv_probs2 = self._get_probabilities_for(network_runner, x_adv, y_actual)
+                is_convincing_adversary = self._convincing_adverseries(adv_predictions2, adv_probs2, adv_class,
+                                                                       convincing_threshold)
+                attacked_all_nets = np.logical_and(attacked_all_nets, is_convincing_adversary)
+
+        # Count how many adversaries from the first network fooled all subseqent networks
+        count_fooled_all = self._count_true(attacked_all_nets)
+        print 'Fooled all: {}'.format(count_fooled_all)
+
+
+
 
         # for i in xrange(adv_ss):
         #     print 'Actual: '+str(y_actual[i])
@@ -135,12 +149,17 @@ class Reporter:
 
         # plot_all_with_originals(x_adv, adv_predictions1, y_actual, x_actual)
 
-    def _convincing_adverseries(self, adv_predictions, adv_probs, adv_class):
+    def _convincing_adverseries(self, adv_predictions, adv_probs, adv_class, convincing_threshold):
         was_adversarial_prediction = adv_predictions == adv_class
         ss = adv_predictions.shape[0]
-        exceeded_thresh = adv_probs[np.arange(ss), adv_predictions] > 0.5
-        threatning_adversary = np.logical_and(was_adversarial_prediction, exceeded_thresh).astype(np.int32)
-        print 'Number of convincing adverseries: ' + str(np.sum(threatning_adversary)) + ' / ' + str(ss)
+        exceeded_thresh = adv_probs[np.arange(ss), adv_predictions] > convincing_threshold
+        is_convincing_adversary = np.logical_and(was_adversarial_prediction, exceeded_thresh)
+        number_of_convincing = self._count_true(is_convincing_adversary)
+        print 'Number of convincing adverseries: ' + str(number_of_convincing) + ' / ' + str(ss)
+        return is_convincing_adversary
+
+    def _count_true(self, boolean_array):
+        return np.sum(boolean_array.astype(np.int32))
 
     def _report(self, network_runner, data_set):
         x_validation = data_set.validation.x
