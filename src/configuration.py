@@ -35,8 +35,8 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # A parameter to specify where to load the CIFAR10 training and test sets
         self.data_dir = '/home/laurenjack/models/cifar-data'
         # (optional) Directory for saving models, the model will be stored in different sub directories based on
-        # different combinations of is_rbf and is_resnet
-        self.model_save_dir = '/home/laurenjack/models'  # '/Users/jack/models'   '/home/laurenjack/models'
+        # different combinations of is_resnet and is_rbf
+        self.model_save_dir = '/home/laurenjack/models' # '/home/laurenjack/models'  # '/Users/jack/models'
 
         # Run an experiment on an NN, or on a toy rbf problem to get gradients right.
         self.is_net = True
@@ -44,16 +44,14 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.debug_ops = False
         # Specify whether you want to train a convolutional resnet or a standard feed-forward net. This will also
         # inadvertently specify whether CIFAR-10 (True) or MNIST (FALSE) is used for training.
-        self.is_resnet = False
+        self.is_resnet = True
         # Use an rbf-softmax at the end of this network, or a softmax (vanilla softmax) end.
         self.is_rbf = True
         # If this is more than 1, train multiple networks and compare their transferability.
-        self.n_networks = 5
-        # If is_resent is true AND do_train is False, this specifies that the application should try load a network
-        # from the location specified by model_save_dir. If is_resent is True true AND do_train is True the application
-        # will train a new network and save it in model_save_dir. However if is_resnet is False, the feed-forward net
-        # will just go ahead and train, without saving the model (why bother its quick)
-        self.do_train = True
+        self.n_networks = 3
+        # This specifies that the application should try load a network from the location specified by model_save_dir,
+        # (and sub directories which are specified by is_resnet and is_rbf)
+        self.do_train = False
         # Only does something if is_resnet is False. Then, if is_artificial_data is True, the network will train on
         # the problem specified in artificial_problem.py TODO(Jack) refactor artificial problem name/location
         self.is_artificial_data = False
@@ -62,7 +60,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
         # Network and rbf params
         # The number of dimensions in z space (i.e. the number of neurons at the layer pre softmax / rbf-softmax)
-        self.d = 100
+        self.d = 1920
         # Rbf Constant c. The scaling factor applied to every rbf value before the softmax is applied
         self.rbf_c = 4.0
         # The initialisation variance of each z_bar value
@@ -79,13 +77,13 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
         # Resnet specific parameters, see: https://arxiv.org/abs/1512.03385
         # The number of filters in the first layer (the layer that moves over the image)
-        self.num_filter_first = 16
+        self.num_filter_first = 32
         # List[int] - The number of stacks (number of elements) and how many filters are in each layer of the stack
         # (the elements themselves). All stacks other than the first stack reduce the width (and height of the filters).
         # Incidentally the number of stacks less 1 specifies how many times the size of the filters drops by a factor
         # of 2. e.g. 32 * 32 -> 16 * 16  -> 8 * 8. Therefore, a config exception will be thrown if the number of
         # elements in this list - 1 is greater than the powers of 2 that factor into the images width.
-        self.num_filter_for_stack = [16, 32, 64]
+        self.num_filter_for_stack = [32, 64, 128]
         # List[int] - The number of blocks per stack. Must be the same length as num_filter_for_stack
         self.num_blocks_per_stack = [5, 5, 5]
         # Batch normalisation parameters, resnet
@@ -105,12 +103,12 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Batch size
         self.m = 128
         # Learning Rate, and experimental multipliers on that learning rate for rbf components
-        self.lr = 0.003 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
+        self.lr = 0.001 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = 0.0 # float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
-        self.epochs = 20
+        self.epochs = 60
         # The epochs we should decrease the learning rate by decrease_lr_factor
-        self.decrease_lr_points = [80, 120]
+        self.decrease_lr_points = [30, 42, 53]
         self.decrease_lr_factor = 0.01
         # The target precision of the z instances
         self.target_precision = 1.0
@@ -128,16 +126,16 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # The size of the perturbation, at each step
         self.adversarial_epsilon = 0.01
         # The number of adversarial examples to generation
-        self.adversarial_ss = 1000
+        self.adversarial_ss = 300
         # The number of epochs we make continual perturbations to an adversary
         self.adversarial_epochs = 100
         # Change the image such that the class at index 0 should be perturb into adversary of the class at index 1.
         # If you set the this parameter to None if you would like to use the two closest classes instead, in terms of
         # the unweighted distance between their z_bar centres. (This will only work for rbf networks).
-        self.class_to_adversary_class = (3, 5)
+        self.class_to_adversary_class = (0, 7)
         # The arbitrary threshold used to consider when an adverserial example is convincing. This is used by the
         # transferability test to indicate if an example is convincing.
-        self.convincing_threshold = 0.3
+        self.convincing_threshold = 0.7
 
         # Reporting params (see reporter module)
         # If True, will print the rbf parameters z (valdiation set), z_bar, and tau, only works if is_rbf is True

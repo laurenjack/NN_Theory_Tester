@@ -102,7 +102,7 @@ def load_cifar(data_dir, classes=None, random_targets=False):
 
     # Load the non-test examples, split into training and validation
     x, y = _load_data(train_file_paths)
-    x, y = _shuffle(x, y)
+    # x, y = _shuffle(x, y)
 
     num_class = _CIFAR10_NUM_CLASS
     if classes:

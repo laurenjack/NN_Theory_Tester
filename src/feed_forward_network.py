@@ -12,15 +12,16 @@ class FeedForward(network.Network):
     argument to the constructor.
     """
 
-    def __init__(self, conf, end, num_inputs):
+    def __init__(self, conf, end, model_save_dir, num_inputs):
         """
         Args:
-            conf: A static set of properties to configure the network
-            end: The last layer/part of the network, e.g. an rbf-softmax end with a cross entropy loss function
+            conf: A static set of properties to configure the network.
+            end: The last layer/part of the network, e.g. an rbf-softmax end with a cross entropy loss function.
+            model_save_dir: The directory to save all this network's variables.
             num_inputs: The number of inputs for the network, e.g. could be 784, for the 784 pixels of MNIST.
         """
         input_shape = [None, num_inputs]
-        super(FeedForward, self).__init__(end, input_shape, False)
+        super(FeedForward, self).__init__(end, input_shape, False, model_save_dir)
         d = conf.d
 
         # Feed-forward

@@ -17,8 +17,8 @@ import network_runner as nr
 
 _FEED_FORWARD = 'feed_forward'
 _RESNET = 'resnet'
-_RBF_STORE = 'resnet_rbf'
-_VANILLA_STORE = 'resnet_plain'
+_RBF_STORE = 'rbf'
+_VANILLA_STORE = 'plain'
 
 
 def create_and_train_network(conf):
@@ -41,20 +41,15 @@ def create_and_train_network(conf):
     graph = tf.Graph()
     with graph.as_default():
         data_set = _load_data_set(conf)
-        network = _build_network(conf, data_set, 'network0', conf.model_save_dir)
+        network = _build_network(conf, data_set, 'network0')
         network_runner = nr.build_network_runner(graph, network, conf.m, conf.is_rbf)
 
-        # Load the network from a pre-saved model
-        if not conf.do_train and conf.is_resenet:
-            train_network.load_pre_trained(network_runner)
-            training_results = None
-        # Train the network
+        if conf.is_rbf:
+            collector = coll.build_rbf_collector(data_set, conf.animation_ss)
         else:
-            if conf.is_rbf:
-                collector = coll.build_rbf_collector(data_set, conf.animation_ss)
-            else:
-                collector = coll.NullCollector()
-            training_results = train_network.train(conf, network_runner, data_set, collector)
+            collector = coll.NullCollector()
+
+        training_results = _train_or_load(conf, network_runner, data_set, collector)
     return network_runner, data_set, training_results
 
 
@@ -84,10 +79,10 @@ def create_and_train_n_networks(conf):
         with graph.as_default():
             network_id = 'network{}'.format(i)
             # Model save directory disabled in multi-network case.
-            network = _build_network(conf, data_set, network_id, model_save_dir=None)
+            network = _build_network(conf, data_set, network_id)
             network_runner = nr.build_network_runner(graph, network, conf.m, conf.is_rbf)
             collector = coll.NullCollector()
-            train_network.train(conf, network_runner, data_set, collector)
+            _train_or_load(conf, network_runner, data_set, collector)
             network_runners.append(network_runner)
     return network_runners, data_set
 
@@ -108,25 +103,26 @@ def _load_data_set(conf):
     return data_set
 
 
-def _build_network(conf, data_set, network_id, model_save_dir):
-    if conf.is_resnet:
-        # Specify a place to store/load the model
-        if model_save_dir:
-            net_dir = _FEED_FORWARD
-            if conf.is_resnet:
-                net_dir = _RESNET
-            end_dir = _VANILLA_STORE
-            if conf.is_rbf:
-                end_dir = _RBF_STORE
-            model_save_dir = os.path.join(conf.model_save_dir, net_dir, end_dir)
+def _build_network(conf, data_set, network_id):
+    # Specify a place to store/load the model
+    model_save_dir = conf.model_save_dir
+    if model_save_dir:
+        net_dir = _FEED_FORWARD
+        if conf.is_resnet:
+            net_dir = _RESNET
+        end_dir = _VANILLA_STORE
+        if conf.is_rbf:
+            end_dir = _RBF_STORE
+        model_save_dir = os.path.join(conf.model_save_dir, net_dir, end_dir, network_id)
 
-        end = _build_network_end(conf, data_set)
+    end = _build_network_end(conf, data_set, network_id)
+    # Create a resnet
+    if conf.is_resnet:
         network = resnet.Resnet(conf, end, model_save_dir, data_set.image_width)
-    # Create a feed forward netowrk
+    # Create a feed forward network
     else:
         num_inputs = data_set.train.x.shape[1]
-        end = _build_network_end(conf, data_set, network_id)
-        network = feed_forward_network.FeedForward(conf, end, num_inputs)
+        network = feed_forward_network.FeedForward(conf, end, model_save_dir, num_inputs)
     return network
 
 
@@ -137,4 +133,11 @@ def _build_network_end(conf, data_set, network_id):
         tau_init = tf.constant_initializer(conf.tau_init * np.ones(shape=[conf.d, num_class]))
         return rbf.Rbf(conf, z_bar_init, tau_init, num_class, network_id)
     return vanilla_softmax.VanillaSoftmax(num_class)
+
+
+def _train_or_load(conf, network_runner, data_set, collector):
+    if not conf.do_train:
+        train_network.load_pre_trained(network_runner)
+        return None
+    return train_network.train(conf, network_runner, data_set, collector)
 

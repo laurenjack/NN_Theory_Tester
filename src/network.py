@@ -5,7 +5,7 @@ class Network(object):
     """Abstract class representing a neural network.
     """
 
-    def __init__(self, end, input_shape, is_resnet, model_save_dir=None):
+    def __init__(self, end, input_shape, is_resnet, model_save_dir):
         """
         Args:
             end: The last layer/part of the network, e.g. a softmax end with a cross entropy loss function.
