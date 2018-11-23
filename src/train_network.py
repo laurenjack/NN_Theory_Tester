@@ -51,7 +51,7 @@ def train(conf, network_runner, data_set, collector):
         collector.collect(network_runner, x, y)
 
     if network.model_save_dir:
-        os.makedirs(network.model_save_dir)
+        # os.makedirs(network.model_save_dir)
         saver.save(network_runner.sess, network.model_save_dir+'/model.ckpt')
     return collector.results()
 

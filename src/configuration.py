@@ -41,17 +41,17 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Run an experiment on an NN, or on a toy rbf problem to get gradients right.
         self.is_net = True
         # Compute all_ops in training, rather than just the training operation.
-        self.debug_ops = False
+        self.debug_ops = True
         # Specify whether you want to train a convolutional resnet or a standard feed-forward net. This will also
         # inadvertently specify whether CIFAR-10 (True) or MNIST (FALSE) is used for training.
-        self.is_resnet = True
+        self.is_resnet = False
         # Use an rbf-softmax at the end of this network, or a softmax (vanilla softmax) end.
         self.is_rbf = True
         # If this is more than 1, train multiple networks and compare their transferability.
-        self.n_networks = 3
+        self.n_networks = 1
         # This specifies that the application should try load a network from the location specified by model_save_dir,
         # (and sub directories which are specified by is_resnet and is_rbf)
-        self.do_train = False
+        self.do_train = True
         # Only does something if is_resnet is False. Then, if is_artificial_data is True, the network will train on
         # the problem specified in artificial_problem.py TODO(Jack) refactor artificial problem name/location
         self.is_artificial_data = False
@@ -60,7 +60,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
         # Network and rbf params
         # The number of dimensions in z space (i.e. the number of neurons at the layer pre softmax / rbf-softmax)
-        self.d = 1920
+        self.d = 100
         # Rbf Constant c. The scaling factor applied to every rbf value before the softmax is applied
         self.rbf_c = 4.0
         # The initialisation variance of each z_bar value
@@ -73,7 +73,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Feed-forward specific parameters
         # List[int] - where the number of elements corresponds to the number of hidden layers BEFORE the z space.
         # (The z-space is the last hidden layer) The elements themselves are the size of each hidden layer
-        self.hidden_sizes = [784]
+        self.hidden_sizes = [784, 500]
 
         # Resnet specific parameters, see: https://arxiv.org/abs/1512.03385
         # The number of filters in the first layer (the layer that moves over the image)
@@ -103,10 +103,10 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Batch size
         self.m = 128
         # Learning Rate, and experimental multipliers on that learning rate for rbf components
-        self.lr = 0.001 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
+        self.lr = 0.01 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = 0.0 # float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
-        self.epochs = 60
+        self.epochs = 30
         # The epochs we should decrease the learning rate by decrease_lr_factor
         self.decrease_lr_points = [30, 42, 53]
         self.decrease_lr_factor = 0.01
@@ -126,7 +126,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # The size of the perturbation, at each step
         self.adversarial_epsilon = 0.01
         # The number of adversarial examples to generation
-        self.adversarial_ss = 300
+        self.adversarial_ss = 5
         # The number of epochs we make continual perturbations to an adversary
         self.adversarial_epochs = 100
         # Change the image such that the class at index 0 should be perturb into adversary of the class at index 1.

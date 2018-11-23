@@ -101,7 +101,7 @@ class Rbf(object):
         # Calculate softmax and apply cross entropy loss function.
         sm = tf.nn.softmax(rbf)
         image_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=rbf)
-        loss = tf.reduce_sum(image_loss) + tau_loss
+        loss = tf.reduce_sum(image_loss) # + tau_loss
 
         return RbfTensors(z, z_bar, tau, sm, z_diff, self.z_difference_squared, weighted_z_diff_sq,
                           target_tau_diff, self.tau_quadratic_grad, self.z_grad, self.z_bar_grad, loss, rbf,
@@ -244,8 +244,9 @@ class Rbf(object):
 
             Returns: tau's modified gradient
             """
-            return tf.sign(self.tau_quadratic_grad) * tf.abs(self.tau_quadratic_grad) ** 0.5 \
-                / (tf.reduce_max(self.z_difference_squared, axis=0) + 10.0 ** -5.0) * self.tau_lr_increase_factor
+            return tf.zeros(grad.shape) #TODO(Jack) HACK
+            #return tf.sign(self.tau_quadratic_grad) * tf.abs(self.tau_quadratic_grad) ** 0.5 \
+            #    / (tf.reduce_max(self.z_difference_squared, axis=0) + 10.0 ** -5.0) * self.tau_lr_increase_factor
 
         tau = tf.abs(tf.get_variable("tau", shape=[self.d, self.num_class],
                                      initializer=self.tau_init))
