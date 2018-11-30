@@ -1,8 +1,20 @@
 import tensorflow as tf
+import numpy as np
 
 
-def shredding_layer():
-    pass
+_MIN_FILTER_SIZE = 0.03
+
+
+def create_orthogonality_filter(shape):
+    """Create an orthogonality filter to be applied to the receptive field of a layer.
+
+    Args:
+        shape - The shape of the receptive field.
+
+    Returns: A floating point tensor of shape: shape, for element-wise multiplication of the receptive field.
+    """
+    orthogonality_filter = _MIN_FILTER_SIZE + abs(np.random.randn(*shape))
+    return tf.Variable(orthogonality_filter, trainable=False, dtype=tf.float32)
 
 
 def fc(a, num_units_out):

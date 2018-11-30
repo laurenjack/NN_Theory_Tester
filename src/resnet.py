@@ -119,10 +119,8 @@ class Resnet(network.Network):
         weights = tf.get_variable('weights', shape=shape, initializer=initializer)
         weight_reg = tf.nn.l2_loss(weights)
         tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, weight_reg)
-        orthogonality_filter = 0.03 + abs(np.random.randn(_KERNEL_WIDTH, _KERNEL_WIDTH, filters_in, filters_out))
-        orthogonality_filter = tf.Variable(orthogonality_filter, trainable=False, dtype=tf.float32)
+        orthogonality_filter = operation.create_orthogonality_filter(shape)
         w = weights * orthogonality_filter
-        # return tf.nn.conv2d(a, weights, [1, stride, stride, 1], padding='SAME')
         return tf.nn.conv2d(a, w, [1, stride, stride, 1], padding='SAME')
 
     def _augment(self, x, image_width):

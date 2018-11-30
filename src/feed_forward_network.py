@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 import network
+import operation
 
 
 class FeedForward(network.Network):
@@ -24,32 +25,18 @@ class FeedForward(network.Network):
         super(FeedForward, self).__init__(end, input_shape, False, model_save_dir)
         d = conf.d
 
-        # Create random orthogonality filter
-        orthogonality_filter = 0.03 + abs(np.random.randn(784))
-        orthogonality_filter = tf.Variable(orthogonality_filter, trainable=False, dtype=tf.float32)
-        # one_indices = np.arange(784)
-        # np.random.shuffle(one_indices)
-        # step = 16
-        # for i in xrange(0, 784, step):
-        #     current_one_indices = one_indices[i:i+step]
-        #     orthogonality_filter[i:i+step, current_one_indices] = 1.0
-        # print np.sum(orthogonality_filter, axis=1)
-        # orthogonality_filter = tf.constant(16 * orthogonality_filter)
-        # orthogonality_filter = tf.transpose(orthogonality_filter)
-
         # Feed-forward
         hidden_sizes = conf.hidden_sizes
         ins = [num_inputs] + hidden_sizes
         outs = hidden_sizes + [d]
+        orthogonality_filter = operation.create_orthogonality_filter([num_inputs])
         a = self.x * orthogonality_filter
         for l, inp, out in zip(range(len(outs[:-1])), ins[:-1], outs[:-1]):
             a = self._create_layer(a, l, [inp, out], activation_func=tf.nn.relu)
-        orthogonality_filter = 0.03 + abs(np.random.randn(784))
-        # orthogonality_filter = orthogonality_filter / np.sum(orthogonality_filter ** 2.0) ** 0.5
-        orthogonality_filter = tf.Variable(orthogonality_filter, trainable=False, dtype=tf.float32)
-        a = a * orthogonality_filter
+            orthogonality_filter = operation.create_orthogonality_filter([out])
+            a = a * orthogonality_filter
         pre_z = self._create_layer(a, l + 1, [ins[-1], outs[-1]])
-        # TODO(Jack) deal with extra layer
+        # TODO(Jack) deal with extra layer in Vanilla softmax case
 
         self.all_end_tensors = self.end.tensors_for_network(pre_z)
         self.a = self.all_end_tensors[0]

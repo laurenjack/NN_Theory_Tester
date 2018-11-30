@@ -106,7 +106,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.lr = 0.002 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = 0.0 # float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
-        self.epochs = 100
+        self.epochs = 30  # 100
         # The epochs we should decrease the learning rate by decrease_lr_factor
         self.decrease_lr_points = [40, 60, 80]
         self.decrease_lr_factor = 0.01
@@ -128,14 +128,14 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # The number of adversarial examples to generation
         self.adversarial_ss = 300
         # The number of epochs we make continual perturbations to an adversary
-        self.adversarial_epochs = 10
+        self.adversarial_epochs = 100
         # Change the image such that the class at index 0 should be perturb into adversary of the class at index 1.
         # If you set the this parameter to None if you would like to use the two closest classes instead, in terms of
         # the unweighted distance between their z_bar centres. (This will only work for rbf networks).
-        self.class_to_adversary_class = (1, 6)
+        self.class_to_adversary_class = (3, 2)
         # The arbitrary threshold used to consider when an adverserial example is convincing. This is used by the
         # transferability test to indicate if an example is convincing.
-        self.convincing_threshold = 0.78
+        self.convincing_threshold = 0.7
 
         # Reporting params (see reporter module)
         # If True, will print the rbf parameters z (valdiation set), z_bar, and tau, only works if is_rbf is True
