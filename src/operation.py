@@ -1,6 +1,10 @@
 import tensorflow as tf
 
 
+def shredding_layer():
+    pass
+
+
 def fc(a, num_units_out):
     """Perform an affine transformation on matrix a with num_units_out outputs.
 

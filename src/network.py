@@ -23,7 +23,7 @@ class Network(object):
     def get_tensors(self):
         """Returns: All the tensors required for training and reporting on this network.
         """
-        return [self.train_op] + self.all_end_tensors + [self.bs]
+        return [self.train_op] + self.all_end_tensors
 
     def gradient_wrt_inputs(self):
         """Find the gradient of the loss function with respect to network inputs.

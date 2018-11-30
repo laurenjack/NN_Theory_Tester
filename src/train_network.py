@@ -14,7 +14,7 @@ def train(conf, network_runner, data_set, collector):
         data_set: The DataSet to train the network on.
         collector: An object that collects information about the state of the network as it trains.
 
-    Returns: An instance of NetworkRunner, an encapsulation of the trained network for easy reporting.
+    Returns: The Collection results if a non NullCollector is used, otherwise None
     """
     x = data_set.train.x
     y = data_set.train.y

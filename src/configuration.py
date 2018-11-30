@@ -44,14 +44,14 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.debug_ops = True
         # Specify whether you want to train a convolutional resnet or a standard feed-forward net. This will also
         # inadvertently specify whether CIFAR-10 (True) or MNIST (FALSE) is used for training.
-        self.is_resnet = False
+        self.is_resnet = True
         # Use an rbf-softmax at the end of this network, or a softmax (vanilla softmax) end.
         self.is_rbf = True
         # If this is more than 1, train multiple networks and compare their transferability.
-        self.n_networks = 1
+        self.n_networks = 8
         # This specifies that the application should try load a network from the location specified by model_save_dir,
         # (and sub directories which are specified by is_resnet and is_rbf)
-        self.do_train = True
+        self.do_train = False
         # Only does something if is_resnet is False. Then, if is_artificial_data is True, the network will train on
         # the problem specified in artificial_problem.py TODO(Jack) refactor artificial problem name/location
         self.is_artificial_data = False
@@ -60,7 +60,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
         # Network and rbf params
         # The number of dimensions in z space (i.e. the number of neurons at the layer pre softmax / rbf-softmax)
-        self.d = 100
+        self.d = 1920
         # Rbf Constant c. The scaling factor applied to every rbf value before the softmax is applied
         self.rbf_c = 4.0
         # The initialisation variance of each z_bar value
@@ -73,7 +73,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Feed-forward specific parameters
         # List[int] - where the number of elements corresponds to the number of hidden layers BEFORE the z space.
         # (The z-space is the last hidden layer) The elements themselves are the size of each hidden layer
-        self.hidden_sizes = [784, 500]
+        self.hidden_sizes = [784]
 
         # Resnet specific parameters, see: https://arxiv.org/abs/1512.03385
         # The number of filters in the first layer (the layer that moves over the image)
@@ -103,12 +103,12 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Batch size
         self.m = 128
         # Learning Rate, and experimental multipliers on that learning rate for rbf components
-        self.lr = 0.01 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
+        self.lr = 0.002 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = 0.0 # float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
-        self.epochs = 30
+        self.epochs = 100
         # The epochs we should decrease the learning rate by decrease_lr_factor
-        self.decrease_lr_points = [30, 42, 53]
+        self.decrease_lr_points = [40, 60, 80]
         self.decrease_lr_factor = 0.01
         # The target precision of the z instances
         self.target_precision = 1.0
@@ -126,22 +126,22 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # The size of the perturbation, at each step
         self.adversarial_epsilon = 0.01
         # The number of adversarial examples to generation
-        self.adversarial_ss = 5
+        self.adversarial_ss = 300
         # The number of epochs we make continual perturbations to an adversary
-        self.adversarial_epochs = 100
+        self.adversarial_epochs = 10
         # Change the image such that the class at index 0 should be perturb into adversary of the class at index 1.
         # If you set the this parameter to None if you would like to use the two closest classes instead, in terms of
         # the unweighted distance between their z_bar centres. (This will only work for rbf networks).
-        self.class_to_adversary_class = (0, 7)
+        self.class_to_adversary_class = (1, 6)
         # The arbitrary threshold used to consider when an adverserial example is convincing. This is used by the
         # transferability test to indicate if an example is convincing.
-        self.convincing_threshold = 0.7
+        self.convincing_threshold = 0.78
 
         # Reporting params (see reporter module)
         # If True, will print the rbf parameters z (valdiation set), z_bar, and tau, only works if is_rbf is True
         self.print_rbf_params = False
         # Report on adversarial examples for the given network
-        self.show_adversaries = True
+        self.show_adversaries = False
         # Show an ROC curve for the validation set
         self.show_roc = False
         # Show the 5 most incorrect examples - where most incorrect means, the 5 incorrectly classified validation
