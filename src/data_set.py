@@ -4,6 +4,8 @@ import urllib
 
 import numpy as np
 from tensorflow.examples.tutorials import mnist
+import tensorflow as tf
+import bird_or_bicycle
 
 
 _MNIST_NUM_CLASS = 10
@@ -14,6 +16,12 @@ _CIFAR10_BINARY_TAR_URL = 'https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.
 _CIFAR10_TAR_FILE_NAME = 'cifar-10-binary.tar.gz'
 _TRAIN_FILE_NAMES = ['cifar-10-batches-bin/data_batch_{}.bin'.format(i + 1) for i in xrange(5)]
 _TEST_FILE_NAME = 'cifar-10-batches-bin/test_batch.bin'
+_BICYCLE_PATTERN = '/bicycle/*.jpg'
+_BIRD_PATTERN = '/bird/*.jpg'
+_BIRD_BICYCLE_NUM_EACH_CLASS = 125
+_BIRD_BICYCLE_NUM_CLASS = 2
+_BIRD_BICYCLE_IMAGE_WIDTH = 224
+_BIRD_BICYCLE_PRE_CROP_WIDTH = 256
 
 
 class Dataset:
@@ -57,7 +65,7 @@ class Subset:
         return self.x.shape[0]
 
 
-def load_mnist(random_targets=False):
+def load_mnist():
     """Get the mnist data set, will download underlying files if they aren't locally present.
 
     Returns: A DataSet instance for MNIST. Where the images of each subset have the shape n * p
@@ -78,7 +86,7 @@ def load_mnist(random_targets=False):
     return Dataset(_MNIST_NUM_CLASS, train_set, validation_set)
 
 
-def load_cifar(data_dir, classes=None, random_targets=False):
+def load_cifar(data_dir, classes=None):
     """Get the CIFAR 10 data set, will download and extract and normalise the data set if it doesn't exist in data_dir
 
     See https://www.cs.toronto.edu/~kriz/cifar.html If the data already exists it will simply be loaded from data_dir
@@ -125,6 +133,63 @@ def load_cifar(data_dir, classes=None, random_targets=False):
     train = Subset(x_train, y_train)
     validation = Subset(x_validation, y_validation)
     return Dataset(num_class, train, validation, _CIFAR10_IMAGE_WIDTH)
+
+
+def load_bird_or_bicycle():
+    x_train, y_train = _load_bird_bicycle_subset(subset_name='train')
+    x_validation, y_validation = _load_bird_bicycle_subset(subset_name='test')
+
+    # Create DataSet
+    train = Subset(x_train, y_train)
+    validation = Subset(x_validation, y_validation)
+    return Dataset(_BIRD_BICYCLE_NUM_CLASS, train, validation, _BIRD_BICYCLE_IMAGE_WIDTH)
+
+
+def _load_bird_bicycle_subset(subset_name='train'):
+    subset_directory = bird_or_bicycle.get_dataset(subset_name)
+
+    bicycles = _load_images_and_labels_from_single_class(subset_directory, _BICYCLE_PATTERN)
+    birds = _load_images_and_labels_from_single_class(subset_directory, _BIRD_PATTERN)
+    x = np.concatenate([bicycles, birds])
+
+    bicycle_targets = np.zeros(_BIRD_BICYCLE_NUM_EACH_CLASS, dtype=np.int32)
+    bird_targets = np.ones(_BIRD_BICYCLE_NUM_EACH_CLASS, dtype=np.int32)
+    y = np.concatenate([bicycle_targets, bird_targets])
+    return x, y
+
+
+
+def _load_images_and_labels_from_single_class(subset_directory, class_file_pattern):
+    file_pattern = subset_directory + class_file_pattern
+    file_names = tf.data.Dataset.list_files(file_pattern, shuffle=False)
+    image_dataset = file_names.map(_to_image)
+    image_iterator = image_dataset.make_one_shot_iterator()
+    images = []
+    for i in xrange(_BIRD_BICYCLE_NUM_EACH_CLASS):
+        image = image_iterator.get_next()
+        # Shift and scale down
+        image = tf.cast(image, dtype=tf.float32)
+        image = image / 255.0 - 0.5
+        image = tf.image.resize_image_with_pad(image, _BIRD_BICYCLE_PRE_CROP_WIDTH, _BIRD_BICYCLE_PRE_CROP_WIDTH)
+        images.append(image)
+
+    # From tensors to in-memory numpy arrays
+    sess = tf.InteractiveSession()
+    image_arrays = sess.run(images)
+    reshape_image_arrays = []
+    for image in image_arrays:
+        # broadcast grey scale out to rgb
+        if image.shape[2] == 1:
+            image = np.broadcast_to(image, [_BIRD_BICYCLE_PRE_CROP_WIDTH, _BIRD_BICYCLE_PRE_CROP_WIDTH, 3])
+        reshape_image_arrays.append(image)
+    sess.close()
+    return np.array(reshape_image_arrays)
+
+
+def _to_image(filename):
+    image_string = tf.read_file(filename)
+    image_decoded = tf.image.decode_jpeg(image_string)
+    return image_decoded
 
 
 def _only_get_examples_of(classes, x, labels):

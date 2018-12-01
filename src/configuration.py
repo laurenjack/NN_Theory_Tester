@@ -132,7 +132,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Change the image such that the class at index 0 should be perturb into adversary of the class at index 1.
         # If you set the this parameter to None if you would like to use the two closest classes instead, in terms of
         # the unweighted distance between their z_bar centres. (This will only work for rbf networks).
-        self.class_to_adversary_class = (3, 2)
+        self.class_to_adversary_class = (7, 0)
         # The arbitrary threshold used to consider when an adverserial example is convincing. This is used by the
         # transferability test to indicate if an example is convincing.
         self.convincing_threshold = 0.7
