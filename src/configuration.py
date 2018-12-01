@@ -37,6 +37,8 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # (optional) Directory for saving models, the model will be stored in different sub directories based on
         # different combinations of is_resnet and is_rbf
         self.model_save_dir = '/home/laurenjack/models' # '/home/laurenjack/models'  # '/Users/jack/models'
+        # Data set
+        self.dataset_name = None  # 'bird_or_bicycle'
 
         # Run an experiment on an NN, or on a toy rbf problem to get gradients right.
         self.is_net = True
@@ -132,10 +134,10 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Change the image such that the class at index 0 should be perturb into adversary of the class at index 1.
         # If you set the this parameter to None if you would like to use the two closest classes instead, in terms of
         # the unweighted distance between their z_bar centres. (This will only work for rbf networks).
-        self.class_to_adversary_class = (7, 0)
+        self.class_to_adversary_class = (1, 6)
         # The arbitrary threshold used to consider when an adverserial example is convincing. This is used by the
         # transferability test to indicate if an example is convincing.
-        self.convincing_threshold = 0.7
+        self.convincing_threshold = 0.75
 
         # Reporting params (see reporter module)
         # If True, will print the rbf parameters z (valdiation set), z_bar, and tau, only works if is_rbf is True
@@ -186,11 +188,6 @@ def validate(conf, data_set):
         # Validate the number of stacks isn't too big
         image_width = data_set.image_width
         num_stacks = len(conf.num_filter_for_stack)
-        num_width_reductions = num_stacks - 1
-        if image_width % (2 ** num_width_reductions) != 0:
-            raise ConfigurationException("\nToo many stacks, i.e. num_filter_for_stack is too long. Recall that\n"
-                                         "each stack reduces the filter width by a half, this is not possible with\n"
-                                         "an image_width of {} and {} stacks\n".format(image_width, num_stacks))
 
         # Validate that there is a block size specified for every stack.
         if num_stacks != len(conf.num_blocks_per_stack):

@@ -8,6 +8,7 @@ import operation
 
 _IMAGE_DEPTH = 3
 _KERNEL_WIDTH = 3
+_LARGE_FIRST_LAYER_KERNEL_WIDTH = 7
 _KERNEL_STRIDE = 1
 _STACK_ENTRY_KERNEL_STRIDE = 2  # The kernel stride when moving from one stack to the next thinner stack.
 
@@ -16,12 +17,13 @@ class Resnet(network.Network):
     """Represents a Residual Neural network, the architecture is similar to: https://arxiv.org/abs/1512.03385
     """
 
-    def __init__(self, conf, end, model_save_dir, image_width):
+    def __init__(self, conf, end, model_save_dir, image_width, crop_size=None):
         """
         Args:
             conf: A static set of properties to configure the network
             end: The last layer/part of the network, e.g. an rbf-softmax end with a cross entropy loss function
             model_save_dir: The directory to save all this network's variables.
+            is_cifar10: True if the data set is CIFAR10, false otherwise
             image_width: The width (and assumed identical height) of the image input.
         """
         input_shape = [None, image_width, image_width, _IMAGE_DEPTH]
@@ -36,8 +38,15 @@ class Resnet(network.Network):
                                                        conf.decay_epochs, conf.wd_decay_rate)
 
         # Create the first layer
-        x_augmented = self._augment(self.x, image_width)
-        a = self._layer(x_augmented, conf.num_filter_first, _KERNEL_STRIDE, 'first_layer')
+        if crop_size:
+            x_cropped = self._crop(self.x, crop_size)
+            a = self._layer(x_cropped, conf.num_filter_first, _STACK_ENTRY_KERNEL_STRIDE, 'first_layer',
+                            kernel_width=_LARGE_FIRST_LAYER_KERNEL_WIDTH)
+            a = tf.layers.max_pooling2d(a, _KERNEL_WIDTH, _STACK_ENTRY_KERNEL_STRIDE)
+        else:
+            x_augmented = self._augment(self.x, image_width)
+            a = self._layer(x_augmented, conf.num_filter_first, _KERNEL_STRIDE, 'first_layer')
+
 
         # Create other hidden layers
         num_stack = len(conf.num_filter_for_stack)
@@ -99,12 +108,12 @@ class Resnet(network.Network):
             a = self._layer(a, num_filter, _KERNEL_STRIDE, "layer_1", skip=skip)
             return a
 
-    def _layer(self, a, num_filter, stride, scope_name, skip=None):
+    def _layer(self, a, num_filter, stride, scope_name, skip=None, kernel_width=_KERNEL_WIDTH):
         """Create a single convolutional layer. This applies a convolution, batch normalisations and a ReLU to each
         output.
         """
         with tf.variable_scope(scope_name):
-            a = self._convolution(a, num_filter, stride)
+            a = self._convolution(a, num_filter, stride, kernel_width)
             if skip is None:
                 a = tf.layers.batch_normalization(a, momentum=0.9, epsilon=1e-5, training=self.is_training)
                 a = tf.nn.relu(a)
@@ -112,9 +121,9 @@ class Resnet(network.Network):
                 a = a + skip
             return a
 
-    def _convolution(self, a, filters_out, stride):
+    def _convolution(self, a, filters_out, stride, kernel_width=_KERNEL_WIDTH):
         filters_in = a.get_shape()[-1]
-        shape = [_KERNEL_WIDTH, _KERNEL_WIDTH, filters_in, filters_out]
+        shape = [kernel_width, kernel_width, filters_in, filters_out]
         initializer = tf.contrib.layers.variance_scaling_initializer(2.0)
         weights = tf.get_variable('weights', shape=shape, initializer=initializer)
         weight_reg = tf.nn.l2_loss(weights)
@@ -124,9 +133,13 @@ class Resnet(network.Network):
         return tf.nn.conv2d(a, w, [1, stride, stride, 1], padding='SAME')
 
     def _augment(self, x, image_width):
-        """Make random augmentations to the training data before feeding it to the network"""
+        """Make random augmentations to the training data before feeding it to the network.
+        """
         padded = tf.pad(x, [[0, 0], [4, 4], [4, 4], [0, 0]])
         cropped = tf.random_crop(padded, [self.end.batch_size, image_width, image_width, _IMAGE_DEPTH])
         do_flip = tf.greater(tf.random_uniform(shape=[self.end.batch_size]), 0.5)
         flipped = tf.where(do_flip, tf.image.flip_left_right(cropped), cropped)
         return control_flow_ops.cond(self.is_training, lambda: flipped, lambda: x)
+
+    def _crop(self, x, crop_size):
+        return tf.random_crop(x, [self.end.batch_size, crop_size, crop_size, _IMAGE_DEPTH])

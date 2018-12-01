@@ -90,6 +90,9 @@ def create_and_train_n_networks(conf):
 
 def _load_data_set(conf):
     if conf.is_resnet:
+        # TODO(Jack) Replace with proper dataset constants
+        if conf.dataset_name == 'bird_or_bicycle':
+            data_set = ds.load_bird_or_bicycle()
         data_set = ds.load_cifar(conf.data_dir, conf.just_these_classes)
         configuration.validate(conf, data_set)
     else:

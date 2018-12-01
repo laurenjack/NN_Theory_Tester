@@ -20,8 +20,8 @@ _BICYCLE_PATTERN = '/bicycle/*.jpg'
 _BIRD_PATTERN = '/bird/*.jpg'
 _BIRD_BICYCLE_NUM_EACH_CLASS = 125
 _BIRD_BICYCLE_NUM_CLASS = 2
-_BIRD_BICYCLE_IMAGE_WIDTH = 224
-_BIRD_BICYCLE_PRE_CROP_WIDTH = 256
+_BIRD_BICYCLE_IMAGE_WIDTH = 256
+_BIRD_BICYCLE_CROP_SIZE = 224
 
 
 class Dataset:
@@ -36,13 +36,15 @@ class Dataset:
         train: The Subset of examples for training
         validation: The Subset of examples for validation
         image_width: (optional) The width of the image inputs, if the inputs are structured as square images
+        image_crop_size: (optional) For cropping square images
     """
 
-    def __init__(self, num_class, training_set, validation_set, image_width=None):
+    def __init__(self, num_class, training_set, validation_set, image_width=None, image_crop_size=None):
         self.num_class = num_class
         self.train = training_set
         self.validation = validation_set
         self.image_width = image_width
+        self.image_crop_size = image_crop_size
 
 
 class Subset:
@@ -142,7 +144,7 @@ def load_bird_or_bicycle():
     # Create DataSet
     train = Subset(x_train, y_train)
     validation = Subset(x_validation, y_validation)
-    return Dataset(_BIRD_BICYCLE_NUM_CLASS, train, validation, _BIRD_BICYCLE_IMAGE_WIDTH)
+    return Dataset(_BIRD_BICYCLE_NUM_CLASS, train, validation, _BIRD_BICYCLE_IMAGE_WIDTH, _BIRD_BICYCLE_CROP_SIZE)
 
 
 def _load_bird_bicycle_subset(subset_name='train'):
@@ -170,7 +172,7 @@ def _load_images_and_labels_from_single_class(subset_directory, class_file_patte
         # Shift and scale down
         image = tf.cast(image, dtype=tf.float32)
         image = image / 255.0 - 0.5
-        image = tf.image.resize_image_with_pad(image, _BIRD_BICYCLE_PRE_CROP_WIDTH, _BIRD_BICYCLE_PRE_CROP_WIDTH)
+        image = tf.image.resize_image_with_pad(image, _BIRD_BICYCLE_IMAGE_WIDTH, _BIRD_BICYCLE_IMAGE_WIDTH)
         images.append(image)
 
     # From tensors to in-memory numpy arrays
@@ -180,7 +182,7 @@ def _load_images_and_labels_from_single_class(subset_directory, class_file_patte
     for image in image_arrays:
         # broadcast grey scale out to rgb
         if image.shape[2] == 1:
-            image = np.broadcast_to(image, [_BIRD_BICYCLE_PRE_CROP_WIDTH, _BIRD_BICYCLE_PRE_CROP_WIDTH, 3])
+            image = np.broadcast_to(image, [_BIRD_BICYCLE_IMAGE_WIDTH, _BIRD_BICYCLE_IMAGE_WIDTH, 3])
         reshape_image_arrays.append(image)
     sess.close()
     return np.array(reshape_image_arrays)

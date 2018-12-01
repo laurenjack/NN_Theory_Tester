@@ -103,7 +103,7 @@ class Reporter:
             print 'Prediction Probs: ' + str(really_incorrect_prediction_probs)
             plot_all_image(really_incorrect_x, really_incorrect_prediction, really_incorrect_actual)
 
-    def report_with_adverseries_from_first(self, network_runners, data_set, convincing_threshold):
+    def report_with_adversaries_from_first(self, network_runners, data_set, convincing_threshold):
         """Reporting function focused on generating adverser"""
         first = network_runners[0]
         with first.graph.as_default():
@@ -123,7 +123,19 @@ class Reporter:
         print 'Adversaries evaluated on their source network:'
         self._report_number_convincing(adversarial_a, adversarial_predictions, adv_class, convincing_threshold)
 
+
         adv_ss = x_adv.shape[0]
+        successful_adv = adversarial_a[adversarial_predictions == adv_class]
+        inds = np.arange(successful_adv.shape[0])
+        print 'Successful Adv examples mean prediction probability of target: ' + str(
+            np.mean(successful_adv[inds, adv_class]))
+        plot_histogram(successful_adv[inds, adv_class])
+        og = adversarial_a
+        correct_inds = np.arange(actual_a.shape[0])
+        print 'Correct examples mean prediction probability of target: ' + str(
+            np.mean(actual_a[correct_inds, actual_class]))
+        plot_histogram(actual_a[correct_inds, actual_class])
+
         attacked_all_nets = np.ones(adv_ss, dtype=np.bool)
         correct_all_nets = np.ones(adv_ss, dtype=np.bool)
         print 'Subsequent networks, what is the success of transferred attacks?'
@@ -142,11 +154,35 @@ class Reporter:
                 attacked_all_nets = np.logical_and(attacked_all_nets, is_convincing_adversary)
                 print ''
 
+                con = adversarial_a[is_convincing_adversary]
+                number_success = con.shape[0]
+                if number_success > 0:
+                    inds = np.arange(number_success)
+                    print 'Convincing Adv examples mean prediction probability of target: ' + str(
+                        np.mean(con[inds, adv_class]))
+                    plot_histogram(con[inds, adv_class])
+
+                cor = actual_a[is_convincing_correct]
+                number_success = cor.shape[0]
+                if number_success > 0:
+                    inds = np.arange(number_success)
+                    print 'Convincing Correct examples mean prediction probability of target: ' + str(
+                        np.mean(cor[inds, actual_class]))
+                    plot_histogram(cor[inds, actual_class])
+
         count_all_correct = self._count_true(correct_all_nets)
         print 'Correct all: {}'.format(count_all_correct)
         # Count how many adversaries from the first network fooled all subsequent networks
         count_fooled_all = self._count_true(attacked_all_nets)
         print 'Fooled all: {}'.format(count_fooled_all)
+
+        fooled_all_a = og[attacked_all_nets]
+        number_success = fooled_all_a.shape[0]
+        if number_success > 0:
+            inds = np.arange(number_success)
+            print 'Successful Adv examples mean prediction probability of target: ' + str(
+                np.mean(fooled_all_a[inds, adv_class]))
+            plot_histogram(fooled_all_a[inds, adv_class])
 
         plot_all_with_originals(x_adv[attacked_all_nets], None, None, x_actual[attacked_all_nets])
 
