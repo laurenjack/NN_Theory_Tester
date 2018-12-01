@@ -93,7 +93,8 @@ def _load_data_set(conf):
         # TODO(Jack) Replace with proper dataset constants
         if conf.dataset_name == 'bird_or_bicycle':
             data_set = ds.load_bird_or_bicycle()
-        data_set = ds.load_cifar(conf.data_dir, conf.just_these_classes)
+        else:
+            data_set = ds.load_cifar(conf.data_dir, conf.just_these_classes)
         configuration.validate(conf, data_set)
     else:
         # Use an artificial data set
@@ -117,6 +118,9 @@ def _build_network(conf, data_set, network_id):
         if conf.is_rbf:
             end_dir = _RBF_STORE
         model_save_dir = os.path.join(conf.model_save_dir, net_dir, end_dir, network_id)
+        # TODO(Jack) Replace with proper dataset constants
+        if conf.is_resnet and conf.dataset_name == 'bird_or_bicycle':
+            model_save_dir = os.path.join(model_save_dir, 'bird_or_bicycle')
 
     end = _build_network_end(conf, data_set, network_id)
     # Create a resnet

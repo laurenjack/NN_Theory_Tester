@@ -50,7 +50,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Use an rbf-softmax at the end of this network, or a softmax (vanilla softmax) end.
         self.is_rbf = True
         # If this is more than 1, train multiple networks and compare their transferability.
-        self.n_networks = 8
+        self.n_networks = 1
         # This specifies that the application should try load a network from the location specified by model_save_dir,
         # (and sub directories which are specified by is_resnet and is_rbf)
         self.do_train = False
@@ -134,7 +134,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Change the image such that the class at index 0 should be perturb into adversary of the class at index 1.
         # If you set the this parameter to None if you would like to use the two closest classes instead, in terms of
         # the unweighted distance between their z_bar centres. (This will only work for rbf networks).
-        self.class_to_adversary_class = (1, 6)
+        self.class_to_adversary_class = (6, 1)
         # The arbitrary threshold used to consider when an adverserial example is convincing. This is used by the
         # transferability test to indicate if an example is convincing.
         self.convincing_threshold = 0.75
