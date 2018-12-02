@@ -125,7 +125,7 @@ def _build_network(conf, data_set, network_id):
     end = _build_network_end(conf, data_set, network_id)
     # Create a resnet
     if conf.is_resnet:
-        network = resnet.Resnet(conf, end, model_save_dir, data_set.image_width)
+        network = resnet.Resnet(conf, end, model_save_dir, data_set.image_width, data_set.image_crop_size)
     # Create a feed forward network
     else:
         num_inputs = data_set.train.x.shape[1]
@@ -139,7 +139,7 @@ def _build_network_end(conf, data_set, network_id):
         z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
         tau_init = tf.constant_initializer(conf.tau_init * np.ones(shape=[conf.d, num_class]))
         return rbf.Rbf(conf, z_bar_init, tau_init, num_class, network_id)
-    return vanilla_softmax.VanillaSoftmax(num_class)
+    return vanilla_softmax.VanillaSoftmax(num_class, network_id)
 
 
 def _train_or_load(conf, network_runner, data_set, collector):

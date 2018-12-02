@@ -20,7 +20,7 @@ _BICYCLE_PATTERN = '/bicycle/*.jpg'
 _BIRD_PATTERN = '/bird/*.jpg'
 _BIRD_BICYCLE_NUM_EACH_CLASS = 125
 _BIRD_BICYCLE_NUM_CLASS = 2
-_BIRD_BICYCLE_IMAGE_WIDTH = 256
+_BIRD_BICYCLE_IMAGE_WIDTH = 224
 _BIRD_BICYCLE_CROP_SIZE = 224
 
 
@@ -160,7 +160,6 @@ def _load_bird_bicycle_subset(subset_name='train'):
     return x, y
 
 
-
 def _load_images_and_labels_from_single_class(subset_directory, class_file_pattern):
     file_pattern = subset_directory + class_file_pattern
     file_names = tf.data.Dataset.list_files(file_pattern, shuffle=False)
@@ -168,6 +167,7 @@ def _load_images_and_labels_from_single_class(subset_directory, class_file_patte
     image_iterator = image_dataset.make_one_shot_iterator()
     images = []
     for i in xrange(_BIRD_BICYCLE_NUM_EACH_CLASS):
+        # TODO(Jack) Blasphemy! This is an op, what are you doing!
         image = image_iterator.get_next()
         # Shift and scale down
         image = tf.cast(image, dtype=tf.float32)

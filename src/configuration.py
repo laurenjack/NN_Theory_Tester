@@ -38,7 +38,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # different combinations of is_resnet and is_rbf
         self.model_save_dir = '/home/laurenjack/models' # '/home/laurenjack/models'  # '/Users/jack/models'
         # Data set
-        self.dataset_name = None  # 'bird_or_bicycle'
+        self.dataset_name = 'bird_or_bicycle'
 
         # Run an experiment on an NN, or on a toy rbf problem to get gradients right.
         self.is_net = True
@@ -46,14 +46,21 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.debug_ops = True
         # Specify whether you want to train a convolutional resnet or a standard feed-forward net. This will also
         # inadvertently specify whether CIFAR-10 (True) or MNIST (FALSE) is used for training.
-        self.is_resnet = True
+        self.is_resnet = False
         # Use an rbf-softmax at the end of this network, or a softmax (vanilla softmax) end.
         self.is_rbf = True
+        # If is_per_filter_fc is true, then instead of using the standard global average pooling post the
+        # convolutional layers, use a fully connected layer per filter (see opeartion.py for details) Setting this to
+        # True requires that d is a multiple of the last conv layer's number of activations per filter. Consequently
+        # an exception will be thrown if d != k * last_filter_width ** 2.0
+        self.is_per_filter_fc = True
         # If this is more than 1, train multiple networks and compare their transferability.
-        self.n_networks = 1
+        self.n_networks = 2
         # This specifies that the application should try load a network from the location specified by model_save_dir,
         # (and sub directories which are specified by is_resnet and is_rbf)
         self.do_train = False
+        # Specifies whether or not to use orthogonality filters
+        self.use_orthogonality_filters = True
         # Only does something if is_resnet is False. Then, if is_artificial_data is True, the network will train on
         # the problem specified in artificial_problem.py TODO(Jack) refactor artificial problem name/location
         self.is_artificial_data = False
@@ -62,7 +69,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
 
         # Network and rbf params
         # The number of dimensions in z space (i.e. the number of neurons at the layer pre softmax / rbf-softmax)
-        self.d = 1920
+        self.d = 100 # 768
         # Rbf Constant c. The scaling factor applied to every rbf value before the softmax is applied
         self.rbf_c = 4.0
         # The initialisation variance of each z_bar value
@@ -95,27 +102,22 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.weight_decay = 0.0002
         self.wd_decay_rate = 0.2
         self.decay_epochs = 100
-        # If is_per_filter_fc is true, then instead of using the standard global average pooling post the
-        # convolutional layers, use a fully connected layer per filter (see opeartion.py for details) Setting this to
-        # True requires that d is a multiple of the last conv layer's number of activations per filter. Consequently
-        # an exception will be thrown if d != k * last_filter_width ** 2.0
-        self.is_per_filter_fc = True
 
         # Training parameters
         # Batch size
-        self.m = 128
+        self.m = 64
         # Learning Rate, and experimental multipliers on that learning rate for rbf components
-        self.lr = 0.002 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
+        self.lr = 0.001 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = 0.0 # float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
         self.epochs = 30  # 100
         # The epochs we should decrease the learning rate by decrease_lr_factor
-        self.decrease_lr_points = [40, 60, 80]
+        self.decrease_lr_points = [20, 40, 80]
         self.decrease_lr_factor = 0.01
         # The target precision of the z instances
         self.target_precision = 1.0
         # The sample size when used when reporting accurarcy after each epoch of training
-        self.accuracy_ss = 1000
+        self.accuracy_ss = 100 #TODO MAKE 1000!
 
         # Shortest point finder params (see shortest_point_finder module)
         self.spf_lr = 0.01
@@ -128,22 +130,22 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # The size of the perturbation, at each step
         self.adversarial_epsilon = 0.01
         # The number of adversarial examples to generation
-        self.adversarial_ss = 300
+        self.adversarial_ss = 100
         # The number of epochs we make continual perturbations to an adversary
         self.adversarial_epochs = 100
         # Change the image such that the class at index 0 should be perturb into adversary of the class at index 1.
         # If you set the this parameter to None if you would like to use the two closest classes instead, in terms of
         # the unweighted distance between their z_bar centres. (This will only work for rbf networks).
-        self.class_to_adversary_class = (6, 1)
+        self.class_to_adversary_class = (3, 5)
         # The arbitrary threshold used to consider when an adverserial example is convincing. This is used by the
         # transferability test to indicate if an example is convincing.
-        self.convincing_threshold = 0.75
+        self.convincing_threshold = 0.13
 
         # Reporting params (see reporter module)
         # If True, will print the rbf parameters z (valdiation set), z_bar, and tau, only works if is_rbf is True
         self.print_rbf_params = False
         # Report on adversarial examples for the given network
-        self.show_adversaries = False
+        self.show_adversaries = True
         # Show an ROC curve for the validation set
         self.show_roc = False
         # Show the 5 most incorrect examples - where most incorrect means, the 5 incorrectly classified validation
@@ -164,7 +166,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.num_runs = 1
         self.rbf_only_out_dir = '/home/laurenjack/test_rbf' + str(self.d)  # '/Users/jack/tf_runs/test_rbf5'
         self.show_animation = True
-        self.animation_ss = 500
+        self.animation_ss = 100 # TODO MAKE LARGER! Also, recognise this controls z sampling
         self.animation_interval = 500
         self.repeat_animation = True
         self.incorr_report_limit = 3

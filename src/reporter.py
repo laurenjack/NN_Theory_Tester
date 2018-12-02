@@ -118,7 +118,7 @@ class Reporter:
             adversarial_predictions, adversarial_a = self._get_probabilities_for(first, x_adv, y_actual)
 
         actual_class, adv_class = class_to_adversary
-        print 'Correct examples evaluated on their source network:' # TODO(Jack) could remove, tautological
+        print 'Correct examples evaluated on their source network:'
         isc = self._report_number_convincing(actual_a, actual_predictions, actual_class, convincing_threshold)
         print 'Adversaries evaluated on their source network:'
         isa = self._report_number_convincing(adversarial_a, adversarial_predictions, adv_class, convincing_threshold)
@@ -144,6 +144,7 @@ class Reporter:
                                                                          adv_class, convincing_threshold)
                 attacked_all_nets = np.logical_and(attacked_all_nets, is_convincing_adversary)
                 print ''
+                self._activation_mean_and_histogram(adversarial_a, is_convincing_adversary, adv_class)
 
         count_all_correct = self._count_true(correct_all_nets)
         print 'Correct all: {}'.format(count_all_correct)
@@ -151,7 +152,8 @@ class Reporter:
         count_fooled_all = self._count_true(attacked_all_nets)
         print 'Fooled all: {}'.format(count_fooled_all)
 
-        plot_all_with_originals(x_adv[attacked_all_nets], None, None, x_actual[attacked_all_nets])
+        if conf.show_adversaries:
+            plot_all_with_originals(x_adv[attacked_all_nets], None, None, x_actual[attacked_all_nets])
 
     def _report_number_convincing(self, a, predictions, target_class, convincing_threshold):
         """ Of a set of predictions on n examples, report how many of those examples exceeded the convincing threshold.

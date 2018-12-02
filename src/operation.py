@@ -13,20 +13,24 @@ def create_orthogonality_filter(shape):
 
     Returns: A floating point tensor of shape: shape, for element-wise multiplication of the receptive field.
     """
-    orthogonality_filter = _MIN_FILTER_SIZE + abs(np.random.randn(*shape))
+    #orthogonality_filter = _MIN_FILTER_SIZE + abs(np.random.randn(*shape))
+    orthogonality_filter = 3.0 * np.random.randn(shape[0], shape[0]) / float(shape[0]) ** 0.5
     return tf.Variable(orthogonality_filter, trainable=False, dtype=tf.float32)
 
 
-def fc(a, num_units_out):
-    """Perform an affine transformation on matrix a with num_units_out outputs.
+def fc(a, num_units_out, activation_function=None):
+    """This represents a full connected layer in a neural network.
 
-    This represents a full connected layer in a neural network, with no activation function applied.
+    Perform an affine transformation on matrix a with num_units_out outputs, followed by an optional activation
+    function.
 
     Args:
         a: An [m, l] tensor, the previous layer of an NN
         num_units_out: The number of rows in the output matrix.
+        activation_function: A non-linearity to apply post transformation, e.g.
 
-    Returns: An [m, num_units_out] tensor, the output of the affine transformation.
+    Returns: An [m, num_units_out] tensor, the output of the affine transformation (followed by activation function
+    if applied).
     """
     num_units_in = a.get_shape()[1]
     weights_initializer = tf.contrib.layers.variance_scaling_initializer(2.0)
@@ -35,6 +39,8 @@ def fc(a, num_units_out):
     a = tf.nn.xw_plus_b(a, weights, biases)
     weight_reg = tf.nn.l2_loss(weights)
     tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, weight_reg)
+    if activation_function:
+        a = activation_function(a)
     return a
 
 
