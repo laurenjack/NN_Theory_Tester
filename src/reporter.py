@@ -107,6 +107,7 @@ class Reporter:
         """Reporting function focused on generating adverser"""
         first = network_runners[0]
         with first.graph.as_default():
+            self._report_class_wise_accuracy(first, data_set)
             correct, incorrect, = self._report(first, data_set)
             class_to_adversary = conf.class_to_adversary_class
             if class_to_adversary is None:
@@ -123,8 +124,10 @@ class Reporter:
         print 'Adversaries evaluated on their source network:'
         isa = self._report_number_convincing(adversarial_a, adversarial_predictions, adv_class, convincing_threshold)
 
-        self._activation_mean_and_histogram(adversarial_a, isa, adv_class)
-        self._activation_mean_and_histogram(actual_a, isc, actual_class)
+        # print 'Correct Activation Distribution'
+        # self._activation_mean_and_histogram(actual_a, isc, actual_class)
+        # print 'Adversarial Activation Distribution'
+        # self._activation_mean_and_histogram(adversarial_a, isa, adv_class)
 
         adv_ss = x_adv.shape[0]
         attacked_all_nets = np.ones(adv_ss, dtype=np.bool)
@@ -144,7 +147,8 @@ class Reporter:
                                                                          adv_class, convincing_threshold)
                 attacked_all_nets = np.logical_and(attacked_all_nets, is_convincing_adversary)
                 print ''
-                self._activation_mean_and_histogram(adversarial_a, is_convincing_adversary, adv_class)
+                # print 'Transferred Adversarial Activation Distribution'
+                # self._activation_mean_and_histogram(adversarial_a, is_convincing_adversary, adv_class)
 
         count_all_correct = self._count_true(correct_all_nets)
         print 'Correct all: {}'.format(count_all_correct)
@@ -239,3 +243,13 @@ class Reporter:
         print str(z) + '\n'
         print str(z_bar) + '\n'
         print str(tau) + '\n'
+
+    def _report_class_wise_accuracy(self, network_runner, data_set):
+        x = data_set.train.x
+        y = data_set.train.y
+        for k in xrange(self.num_class):
+            is_this_class = y == k
+            x_k = x[is_this_class]
+            y_k = y[is_this_class]
+            class_name = 'Class {}'.format(k)
+            network_runner.report_accuracy(class_name, x_k, y_k)

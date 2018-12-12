@@ -81,7 +81,7 @@ class NetworkRunner(object):
         """
         return self.feed_and_return(x, y, self.network.a)
 
-    def report_accuracy(self, set_name, x, y, indices, accuracy_ss=None):
+    def report_accuracy(self, set_name, x, y, indices=None, accuracy_ss=None):
         """Compute and print the accuracy of the network, i.e. evaluate the percentage examples where f(x[i]) == y[i].
 
         Args:
@@ -91,6 +91,8 @@ class NetworkRunner(object):
 
         Returns: A scalar acc, 0 <= acc <=1, representing the percentage of correct examples.
         """
+        if indices is None:
+            indices = np.arange(x.shape[0])
         if accuracy_ss:
             batch = _random_batch(indices, accuracy_ss)
         else:

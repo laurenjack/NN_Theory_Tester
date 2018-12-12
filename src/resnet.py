@@ -30,6 +30,7 @@ class Resnet(network.Network):
         input_shape = [None, image_width, image_width, _IMAGE_DEPTH]
         super(Resnet, self).__init__(end, input_shape, True, model_save_dir)
 
+        self.dirty_flag = True  #TODO(JACK) remove hack
         self.bn_decay = conf.bn_decay
         self.bn_epsilon = conf.bn_epsilon
         self.use_orthogonality_filters = conf.use_orthogonality_filters
@@ -129,9 +130,13 @@ class Resnet(network.Network):
         weights = tf.get_variable('weights', shape=shape, initializer=initializer)
         weight_reg = tf.nn.l2_loss(weights)
         tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, weight_reg)
-        if self.use_orthogonality_filters:
-            orthogonality_filter = operation.create_orthogonality_filter(shape)
-            weights = weights * orthogonality_filter
+        if self.dirty_flag and self.use_orthogonality_filters:
+            number_of_inputs = kernel_width * kernel_width * filters_in.value
+            orthogonality_filter = operation.create_orthogonality_filter(number_of_inputs)
+            weights = tf.reshape(weights, [number_of_inputs, filters_out])
+            weights = tf.matmul(orthogonality_filter, weights)
+            weights = tf.reshape(weights, shape)
+            self.dirty_flag = False
         return tf.nn.conv2d(a, weights, [1, stride, stride, 1], padding='SAME')
 
     def _augment(self, x, image_width):

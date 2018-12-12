@@ -5,16 +5,17 @@ import numpy as np
 _MIN_FILTER_SIZE = 0.03
 
 
-def create_orthogonality_filter(shape):
+def create_orthogonality_filter(number_of_inputs):
     """Create an orthogonality filter to be applied to the receptive field of a layer.
 
     Args:
-        shape - The shape of the receptive field.
+        number_of_inputs - The number of inputs in the receptive field.
 
-    Returns: A floating point tensor of shape: shape, for element-wise multiplication of the receptive field.
+    Returns: A floating point tensor of shape: [number_of_inputs, number_of_inputs], for element-wise multiplication
+    of the receptive field.
     """
     #orthogonality_filter = _MIN_FILTER_SIZE + abs(np.random.randn(*shape))
-    orthogonality_filter = 3.0 * np.random.randn(shape[0], shape[0]) / float(shape[0]) ** 0.5
+    orthogonality_filter = 3.0 * np.random.randn(number_of_inputs, number_of_inputs) / float(number_of_inputs) ** 0.5
     return tf.Variable(orthogonality_filter, trainable=False, dtype=tf.float32)
 
 
