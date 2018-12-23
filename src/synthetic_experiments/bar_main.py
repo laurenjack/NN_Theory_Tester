@@ -6,13 +6,13 @@ import train_experiment as te
 import bar_experiment as be
 
 # network/training parameters
-num_filters = [3, 2]
+num_filters = [3]
 epochs = 20
 batch_size = 8
 lr = 0.1
 
 # Experiment parameters
-num_runs = 100
+num_runs = 1
 
 tf.logging.set_verbosity(tf.logging.ERROR)
 
@@ -31,6 +31,18 @@ def run_bar_experiment():
     for run_number in xrange(num_runs):
         all_correct = trainer.train(sess, bar_network, training_set, validation_set, adversarial_set, run_number)
         all_correct_flags.append(all_correct)
+
+        # Report on the weights
+        w = sess.run(bar_network.w)
+        print 'Convolutional:'
+        for i in xrange(num_filters[0]):
+            print w[i].tolist()
+        print ''
+        fc = sess.run(bar_network.fc_weight)
+        print 'FC:'
+        for i in xrange(num_filters[0]):
+            print fc[i].tolist()
+
         # Re-init training variables
         tf.global_variables_initializer().run()
 

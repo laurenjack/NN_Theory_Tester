@@ -39,9 +39,9 @@ class ExperimentTrainer:
             np.random.shuffle(train_indicies)
             for b in xrange(0, n, self.batch_size):
                 batch = train_indicies[b:b + self.batch_size]
-                x = x[batch]
-                y = y[batch]
-                feed_dict = {network.x: x, network.y: y}
+                xb = x[batch]
+                yb = y[batch]
+                feed_dict = {network.x: xb, network.y: yb}
                 _, a1, a, bias = sess.run((network.train_op, network.a1, network.a, network.b), feed_dict=feed_dict)
             if self.num_runs == 1:
                 self._report_success(e, network, sess, training_set, validation_set, adversarial_set, 'Epoch')

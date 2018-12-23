@@ -37,12 +37,13 @@ def fc(a, num_units_out, activation_function=None):
     weights_initializer = tf.contrib.layers.variance_scaling_initializer(2.0)
     weights = tf.get_variable('weights', shape=[num_units_in, num_units_out], initializer=weights_initializer)
     biases = tf.get_variable('biases', shape=[num_units_out], initializer=tf.zeros_initializer)
-    a = tf.nn.xw_plus_b(a, weights, biases)
+    #a = tf.nn.xw_plus_b(a, weights, biases)
+    a = tf.matmul(a, weights)
     weight_reg = tf.nn.l2_loss(weights)
     tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, weight_reg)
     if activation_function:
         a = activation_function(a)
-    return a
+    return a, weights
 
 
 def per_filter_fc(a, d):

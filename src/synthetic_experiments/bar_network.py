@@ -13,11 +13,11 @@ class BarNetwork:
         self.is_training = tf.placeholder(dtype=tf.bool, shape=[], name='is_training') # TODO remove once refactored
         # Two convulotional layers
         self.a1 = self._custom_conv_layer(self.x, num_filters[0], 1)
-        self.a2 = self._custom_conv_layer(self.a1, num_filters[1], 2)
+        #self.a2 = self._custom_conv_layer(self.a1, num_filters[1], 2)
 
         # Global average pooling, i.e average of each feature
-        ap = tf.reduce_mean(self.a2, axis=1, name="avg_pool")
-        self.z = op.fc(ap, 2)
+        ap = tf.reduce_mean(self.a1, axis=2, name="avg_pool")
+        self.z, self.fc_weight = op.fc(ap, 2)
 
         # Softmax
         self.a = tf.nn.softmax(self.z)
@@ -36,15 +36,16 @@ class BarNetwork:
                self.vc.get_variable('b'+str(l)+str(i), shape=[], initializer=bias_init)) for i in xrange(num_filter)]
         w, b = zip(*wb)
         self.b = b
+        self.w = w
 
-        # Pass each fitler over each stack of pixels
+        # Pass each filter over each stack of pixels
         a = []
         for i in xrange(width):
             a_i = []
             for j in xrange(num_filter):
                 wj = tf.reshape(w[j], shape=[-1, 1])
                 in_i = input[:, :, i]
-                z_ij = tf.matmul(in_i, wj) + b[j]
+                z_ij = tf.matmul(in_i, wj) # + b[j]
                 a_ij = tf.nn.relu(z_ij)
                 a_i.append(a_ij)
             a_i = tf.concat(a_i, axis=1)
