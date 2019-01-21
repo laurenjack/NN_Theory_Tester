@@ -109,6 +109,8 @@ class Resnet(network.Network):
                 a = tf.nn.relu(a)
             else:
                 a = a + skip
+            # Add the activations from each layer to a list for post training reporting
+            self.activation_list.append(a)
             return a
 
     def _convolution(self, a, filters_out, stride):

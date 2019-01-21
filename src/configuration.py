@@ -46,9 +46,9 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # inadvertently specify whether CIFAR-10 (True) or MNIST (FALSE) is used for training.
         self.is_resnet = False
         # Use an rbf-softmax at the end of this network, or a softmax (vanilla softmax) end.
-        self.is_rbf = True
+        self.is_rbf = False
         # If this is more than 1, train multiple networks and compare their transferability.
-        self.n_networks = 2
+        self.n_networks = 1
         # If is_resent is true AND do_train is False, this specifies that the application should try load a network
         # from the location specified by model_save_dir. If is_resent is True true AND do_train is True the application
         # will train a new network and save it in model_save_dir. However if is_resnet is False, the feed-forward net
@@ -140,7 +140,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # If True, will print the rbf parameters z (valdiation set), z_bar, and tau, only works if is_rbf is True
         self.print_rbf_params = False
         # Report on adversarial examples for the given network
-        self.show_adversaries = True
+        self.show_adversaries = False
         # Show an ROC curve for the validation set
         self.show_roc = False
         # Show the 5 most incorrect examples - where most incorrect means, the 5 incorrectly classified validation
@@ -150,6 +150,10 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Write a table data structure for analytics to a csv file (see prediction_analytics module)
         self.write_csv = False
         self.show_z_stats = False
+        # For Examining the distribution of activations on individual nodes
+        self.show_node_distributions = True
+        # How many random node distributions would you like to see?
+        self.number_of_node_distributions = 30
 
         # TODO(Jack) handle when refactoring artifical_problem.py)
         self.artificial_in_dim = 2

@@ -1,3 +1,6 @@
+import numpy as np
+import tensorflow as tf
+
 from visualisation import *
 from shortest_point_finder import find_shortest_point
 from adversarial import *
@@ -46,6 +49,10 @@ class Reporter:
 
         if conf.show_animation and training_results:
             animate(*training_results)
+
+        if conf.show_node_distributions:
+            self._random_node_distributions(network_runner, x_validation, y_validation,
+                                            conf.number_of_node_distributions)
 
         if conf.show_z_stats and conf.is_rbf:
             x_train = data_set.train.x
@@ -134,6 +141,33 @@ class Reporter:
         #     print ''
 
         # plot_all_with_originals(x_adv, adv_predictions1, y_actual, x_actual)
+
+    def _random_node_distributions(self, network_runner, x, y, number_of_node_distributions):
+        """Choose number_of_node_distributions random nodes from an NN and plot their distributions.
+        """
+        network = network_runner.network
+        activation_list = network.activation_list
+        num_layer = len(activation_list)
+        for i in xrange(number_of_node_distributions):
+            self._choose_node(network_runner, x, y, activation_list, num_layer)
+
+    def _choose_node(self, network_runner, x, y, activation_list, num_layer):
+        # Choose a layer
+        l = np.random.randint(num_layer)
+        a = activation_list[l]
+        a_transpose = tf.transpose(a)
+        shape = a_transpose.shape
+        indices_transpose = []
+        for s in shape[:-1]:
+            index = np.random.randint(s.value)
+            indices_transpose.append(index)
+        # Extract the activations from the single node
+        single_node_transpose = tf.gather_nd(a_transpose, [indices_transpose])
+        single_node = tf.transpose(single_node_transpose)
+        indices = np.array(indices_transpose).transpose()
+        activations = network_runner.feed_and_return(x, y, single_node)[:, 0]
+        show_distribution(activations, l, indices)
+
 
     def _convincing_adverseries(self, adv_predictions, adv_probs, adv_class):
         was_adversarial_prediction = adv_predictions == adv_class

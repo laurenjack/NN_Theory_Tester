@@ -14,6 +14,7 @@ class Network(object):
             model_save_dir: The directory to save all the network's variables.
         """
         self.end = end
+        self.activation_list = []
         self.lr = tf.placeholder(tf.float32, shape=[], name='lr')
         self.x = tf.placeholder(tf.float32, shape=input_shape, name="inputs")
         self.is_training = tf.placeholder(dtype=tf.bool, shape=[], name='is_training')

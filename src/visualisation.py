@@ -3,6 +3,14 @@ import numpy as np
 import scipy.misc
 
 
+def show_distribution(activations, l, indices):
+    """Given a 1D array of activations show how how they are distributed.
+    """
+    plt.title('Layer: {}, Indicies: {}'.format(l, indices))
+    plot_histogram(activations)
+    plt.show()
+
+
 def plot(title, x, y):
     ax = plt.gca()
     ax.set_xlim(0, 1)

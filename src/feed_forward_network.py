@@ -30,7 +30,7 @@ class FeedForward(network.Network):
         a = self.x
         for l, inp, out in zip(range(len(outs[:-1])), ins[:-1], outs[:-1]):
             a = self._create_layer(a, l, [inp, out], activation_func=tf.nn.relu)
-        pre_z = self._create_layer(a, l+1, [ins[-1], outs[-1]])
+        pre_z = self._create_layer(a, l+1, [ins[-1], outs[-1]], activation_func=tf.nn.relu)
 
         self.all_end_tensors = self.end.tensors_for_network(pre_z)
         self.a = self.all_end_tensors[0]
@@ -47,6 +47,8 @@ class FeedForward(network.Network):
                             shape[1],
                             initializer=bias_init)
         a = tf.nn.xw_plus_b(a, W, b)
+        # Add the activations from each layer to a list for post training reporting
+        self.activation_list.append(a)
         if activation_func is not None:
             return activation_func(a)
         return a
