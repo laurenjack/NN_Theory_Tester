@@ -6,7 +6,7 @@ import train_experiment as te
 import bar_experiment as be
 
 # network/training parameters
-num_filters = [3]
+num_filters = [4]
 epochs = 20
 batch_size = 8
 lr = 0.1
