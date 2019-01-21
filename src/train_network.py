@@ -1,3 +1,4 @@
+import os
 import sys
 
 import numpy as np
@@ -13,7 +14,7 @@ def train(conf, network_runner, data_set, collector):
         data_set: The DataSet to train the network on.
         collector: An object that collects information about the state of the network as it trains.
 
-    Returns: An instance of NetworkRunner, an encapsulation of the trained network for easy reporting.
+    Returns: The Collection results if a non NullCollector is used, otherwise None
     """
     x = data_set.train.x
     y = data_set.train.y
@@ -50,6 +51,8 @@ def train(conf, network_runner, data_set, collector):
         collector.collect(network_runner, x, y)
 
     if network.model_save_dir:
+        if not os.path.exists(network.model_save_dir):
+            os.makedirs(network.model_save_dir)
         saver.save(network_runner.sess, network.model_save_dir+'/model.ckpt')
     return collector.results()
 

@@ -6,8 +6,9 @@ class VanillaSoftmax:
     """Standard softmax end of a neural network
     """
 
-    def __init__(self, num_class):
+    def __init__(self, num_class, network_id):
         self.num_class = num_class
+        self.network_id = network_id
         self.batch_size = tf.placeholder(tf.int32, shape=[], name="batch_size")
         self.y = tf.placeholder(tf.int32, shape=[None], name="y")
 
@@ -21,8 +22,9 @@ class VanillaSoftmax:
         Returns:
             A list of tensors, for use in the construction of a neural network.
         """
-        z = operation.fc(pre_z, self.num_class)
-        a = tf.nn.softmax(z)
-        xe = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=z)
-        main_loss = tf.reduce_mean(xe)
+        with tf.variable_scope('vanilla_softmax'):
+            z = operation.fc(pre_z, self.num_class)
+            a = tf.nn.softmax(z)
+            xe = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=z)
+            main_loss = tf.reduce_mean(xe)
         return [a, main_loss, z]

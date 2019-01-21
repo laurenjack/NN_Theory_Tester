@@ -1,24 +1,50 @@
 import tensorflow as tf
+import numpy as np
 
 
-def fc(a, num_units_out):
-    """Perform an affine transformation on matrix a with num_units_out outputs.
+_MIN_FILTER_SIZE = 0.03
 
-    This represents a full connected layer in a neural network, with no activation function applied.
+
+def create_orthogonality_filter(number_of_inputs):
+    """Create an orthogonality filter to be applied to the receptive field of a layer.
+
+    Args:
+        number_of_inputs - The number of inputs in the receptive field.
+
+    Returns: A floating point tensor of shape: [number_of_inputs, number_of_inputs], for element-wise multiplication
+    of the receptive field.
+    """
+    #orthogonality_filter = _MIN_FILTER_SIZE + abs(np.random.randn(*shape))
+    orthogonality_filter = 3.0 * np.random.randn(number_of_inputs, number_of_inputs) / float(number_of_inputs) ** 0.5
+    return tf.Variable(orthogonality_filter, trainable=False, dtype=tf.float32)
+
+
+def fc(a, num_units_out, activation_function=None, return_weights=False):
+    """This represents a full connected layer in a neural network.
+
+    Perform an affine transformation on matrix a with num_units_out outputs, followed by an optional activation
+    function.
 
     Args:
         a: An [m, l] tensor, the previous layer of an NN
         num_units_out: The number of rows in the output matrix.
+        activation_function: A non-linearity to apply post transformation, e.g.
 
-    Returns: An [m, num_units_out] tensor, the output of the affine transformation.
+    Returns: An [m, num_units_out] tensor, the output of the affine transformation (followed by activation function
+    if applied).
     """
     num_units_in = a.get_shape()[1]
     weights_initializer = tf.contrib.layers.variance_scaling_initializer(2.0)
     weights = tf.get_variable('weights', shape=[num_units_in, num_units_out], initializer=weights_initializer)
     biases = tf.get_variable('biases', shape=[num_units_out], initializer=tf.zeros_initializer)
-    a = tf.nn.xw_plus_b(a, weights, biases)
+    #a = tf.nn.xw_plus_b(a, weights, biases)
+    a = tf.matmul(a, weights)
     weight_reg = tf.nn.l2_loss(weights)
     tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, weight_reg)
+    if activation_function:
+        a = activation_function(a)
+    if return_weights:
+        return a, weights
     return a
 
 

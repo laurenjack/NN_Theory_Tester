@@ -40,12 +40,12 @@ def adversarial_set():
     return _to_data_set(x, y, is_adversary)
 
 
-def _to_data_set(X, y_scalar, adv_flag):
-    n = len(X)
-    X = np.concatenate([x.reshape(1, WIDTH, WIDTH) - 0.5 for x in X])
+def _to_data_set(x, y_scalar, adv_flag):
+    n = len(x)
+    x = np.concatenate([xi.reshape(1, WIDTH, WIDTH) for xi in x]) # - 0.5
     y = y_scalar * np.ones(n, dtype=np.int32)
     is_adversary = adv_flag * np.ones(n, dtype=np.bool)
-    return DataSet(X, y, is_adversary)
+    return DataSet(x, y, is_adversary)
 
 
 def _single_bar(column_to_fill):

@@ -1,7 +1,8 @@
 import tensorflow as tf
+import numpy as np
 
-import rbf
 import network
+import operation
 
 
 class FeedForward(network.Network):
@@ -12,15 +13,16 @@ class FeedForward(network.Network):
     argument to the constructor.
     """
 
-    def __init__(self, conf, end, num_inputs):
+    def __init__(self, conf, end, model_save_dir, num_inputs):
         """
         Args:
-            conf: A static set of properties to configure the network
-            end: The last layer/part of the network, e.g. an rbf-softmax end with a cross entropy loss function
+            conf: A static set of properties to configure the network.
+            end: The last layer/part of the network, e.g. an rbf-softmax end with a cross entropy loss function.
+            model_save_dir: The directory to save all this network's variables.
             num_inputs: The number of inputs for the network, e.g. could be 784, for the 784 pixels of MNIST.
         """
         input_shape = [None, num_inputs]
-        super(FeedForward, self).__init__(end, input_shape, False)
+        super(FeedForward, self).__init__(end, input_shape, False, model_save_dir)
         d = conf.d
 
         # Feed-forward
@@ -28,9 +30,18 @@ class FeedForward(network.Network):
         ins = [num_inputs] + hidden_sizes
         outs = hidden_sizes + [d]
         a = self.x
+        if conf.use_orthogonality_filters:
+            orthogonality_filter = operation.create_orthogonality_filter(num_inputs)
+            # a = a * orthogonality_filter
+            a = tf.matmul(a, orthogonality_filter)
         for l, inp, out in zip(range(len(outs[:-1])), ins[:-1], outs[:-1]):
             a = self._create_layer(a, l, [inp, out], activation_func=tf.nn.relu)
-        pre_z = self._create_layer(a, l+1, [ins[-1], outs[-1]], activation_func=tf.nn.relu)
+            if conf.use_orthogonality_filters:
+                orthogonality_filter = operation.create_orthogonality_filter(out)
+                # a = a * orthogonality_filter
+                a = tf.matmul(a, orthogonality_filter)
+        # TODO(Jack) deal with extra layer in Vanilla softmax case, and simplify orthogonality filter code
+        pre_z = self._create_layer(a, l + 1, [ins[-1], outs[-1]], activation_func=tf.nn.relu)
 
         self.all_end_tensors = self.end.tensors_for_network(pre_z)
         self.a = self.all_end_tensors[0]
@@ -46,11 +57,12 @@ class FeedForward(network.Network):
         b = tf.get_variable('b'+str(l),
                             shape[1],
                             initializer=bias_init)
-        a = tf.nn.xw_plus_b(a, W, b)
         # Add the activations from each layer to a list for post training reporting
+        a = tf.matmul(a, W)
         self.activation_list.append(a)
         if activation_func is not None:
             return activation_func(a)
         return a
+
 
 

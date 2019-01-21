@@ -35,12 +35,22 @@ def plot_all_image(X, predicted, actual):
     plt.show()
 
 def plot_all_with_originals(X, predicted, actual, originals):
-    for i in xrange(originals.shape[0]):
-        plt.figure(i + 1)
-        org = originals[i]
-        adv = X[i]
-        _plot_sub_image(org, 1)
-        _plot_sub_image(adv, 2)
+    # TODO(Jack) Refactor to handle different data sets properly
+    image_shape = X.shape
+    for i in xrange(image_shape[0]):
+        if len(image_shape) > 2:
+            # Show original then adversary
+            print 'Original:\n'
+            scipy.misc.imshow(originals[i])
+            print 'Adversary:\n'
+            scipy.misc.imshow(X[i])
+        else:
+            plt.figure(i + 1)
+            org = originals[i]
+            adv = X[i]
+            _plot_sub_image(org, 1)
+            _plot_sub_image(adv, 2)
+
     plt.show()
 
 def plot_histogram(x, bins=100):
