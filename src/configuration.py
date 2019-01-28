@@ -36,7 +36,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         self.data_dir = None # '/home/laurenjack/models/cifar-data'
         # (optional) Directory for saving models, the model will be stored in different sub directories based on
         # different combinations of is_resnet and is_rbf
-        self.model_save_dir = '/Users/jack/models' # '/home/laurenjack/models'  # '/Users/jack/models'
+        self.model_save_dir = '/home/laurenjack/models' # '/home/laurenjack/models'  # '/Users/jack/models'
         # Data set
         self.dataset_name = None # 'bird_or_bicycle'
 
@@ -87,7 +87,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Feed-forward specific parameters
         # List[int] - where the number of elements corresponds to the number of hidden layers BEFORE the z space.
         # (The z-space is the last hidden layer) The elements themselves are the size of each hidden layer
-        self.hidden_sizes = [100]
+        self.hidden_sizes = [784]
 
         # Resnet specific parameters, see: https://arxiv.org/abs/1512.03385
         # The number of filters in the first layer (the layer that moves over the image)
@@ -112,7 +112,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # Batch size
         self.m = 128
         # Learning Rate, and experimental multipliers on that learning rate for rbf components
-        self.lr = 0.002 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
+        self.lr = 0.02 # 0.001  # * float(self.d) ** 0.5 #0.001 # 0.00001
         self.z_bar_lr_increase_factor = 0.0 # float(self.d)  # ** 0.5
         self.tau_lr_increase_factor = 0.0  # 0.01 / self.lr  #* 3.0 #500.0 # + float(self.d) ** 0.5
         self.epochs = 20  # 100
