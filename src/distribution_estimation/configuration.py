@@ -17,13 +17,13 @@ class Configuration:
         # The number of observations in the dataset.
         self.n = 1000
         # The number of training epochs
-        self.epochs = 10
+        self.epochs = 50
         # The number of examples for training at each step
         self.m = 100
         # The number of reference examples (those part of the Kernel density estimate) for each training step
         self.r = 100
         # The learning rate for h
-        self.lr = 1.0
+        self.lr = 0.1
 
         self._validate()
 

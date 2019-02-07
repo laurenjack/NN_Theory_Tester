@@ -6,7 +6,7 @@ class KernelDensityEstimator(object):
     """
 
     def __init__(self, conf):
-        self.h = tf.Variable(2.0, name='h')
+        self.h = tf.Variable(0.2, name='h')
         self.m = conf.m
         self.r = conf.r
         self.lr = conf.lr
