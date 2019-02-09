@@ -1,3 +1,6 @@
+import tensorflow as tf
+
+
 conf = None  # singleton reference
 
 
@@ -14,16 +17,20 @@ class Configuration:
     """
 
     def __init__(self):
+        # The initial value of h
+        self.h_init = 0.3
         # The number of observations in the dataset.
-        self.n = 1000
+        self.n = 200
         # The number of training epochs
-        self.epochs = 50
+        self.epochs = 100
         # The number of examples for training at each step
         self.m = 100
         # The number of reference examples (those part of the Kernel density estimate) for each training step
         self.r = 100
         # The learning rate for h
-        self.lr = 0.1
+        self.lr = 0.01
+        # Floating point precision for tensorflow
+        self.float_precision = tf.float32
 
         self._validate()
 
