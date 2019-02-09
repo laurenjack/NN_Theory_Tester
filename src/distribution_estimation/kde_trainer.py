@@ -3,31 +3,39 @@ import numpy as np
 
 def train(kde, conf, sess, random):
     # Create a Data set
-    x = random.normal_numpy_array([conf.n])
+    #x = random.normal_numpy_array([conf.n])
+    x = random.normal_numpy_array([conf.n/4])
+    x = np.append(x, 10 + random.normal_numpy_array([conf.n/ 4]))
+    x = np.append(x, 20 + random.normal_numpy_array([conf.n / 4]))
+    x = np.append(x, 30 + random.normal_numpy_array([conf.n / 4]))
 
     train_op, cost_op, h_tensor, gradient_op = kde.squared_weighted_mean_error()
 
     # Iteratively train the distribution fitter
-    batch_size = conf.m + conf.r
-    batch_count = conf.n // batch_size
-    sample_each_epoch = batch_size * batch_count
+    m = conf.m
+    num_samples = conf.n - conf.r
+    batch_count = num_samples // m
+    sample_each_epoch = m * batch_count
 
     indices = np.arange(conf.n)
-    cost_average = 0.0
+    costs = []
     for e in xrange(conf.epochs):
+        print '\n Epoch: {e}'.format(e=e+1)
         random.shuffle(indices)
+        a_star_indices = indices[0:conf.r]
+        a_star = x[a_star_indices]
         # No partial batches here
-        for k in xrange(0, sample_each_epoch, batch_size):
+        for k in xrange(0, sample_each_epoch, m):
             # Sample a and a_star
-            star_start = k + conf.m
-            a_indices = indices[k:star_start]
+            start = conf.r + k
+            a_indices = indices[start:start + conf.m]
             a = x[a_indices]
-            a_star_indices = indices[star_start:star_start + conf.r]
-            a_star = x[a_star_indices]
 
             # Feed to the distribution fitter
             _, cost, h, gradient = sess.run([train_op, cost_op, h_tensor, gradient_op], feed_dict={kde.a: a, kde.a_star: a_star})
             print 'h: {h}   cost: {c}   h_gradient: {g}'.format(h=h, c=cost, g=gradient)
-            cost_average += cost
-    cost_average = cost_average / (conf.epochs * batch_count)
+            costs.append(cost)
+    cost_average = sum(costs) / (conf.epochs * batch_count)
     print '\nCost Average: {c}'.format(c=cost_average)
+    cost_max = max(costs)
+    print 'Max cost: {m}'.format(m=cost_max)

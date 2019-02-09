@@ -28,7 +28,7 @@ class KernelDensityEstimator(object):
         # No h or r as these cancel in the cost function
         kernel = tf.exp(-exponent)
         fa = tf.reduce_mean(kernel, axis=1)
-        weighted_error = kernel * a_difference / tf.reshape(fa, [m, 1])
+        weighted_error = kernel * a_difference / self.h / tf.reshape(fa, [m, 1])
         weighted_mean_error = tf.reduce_mean(weighted_error, axis=0)
         squared_weighted_mean_error = 0.5 * tf.reduce_sum(weighted_mean_error ** 2.0)
         train_op = tf.train.GradientDescentOptimizer(self.lr).minimize(squared_weighted_mean_error)
