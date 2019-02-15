@@ -11,3 +11,8 @@ class Random(object):
         """Shuffle a numpy array
         """
         np.random.shuffle(numpy_array)
+
+    def choice(self, x, ss, replace=False):
+        """ Given a numpy array, take a random sample of ss, along it's first axis (without replacement by default).
+        """
+        return np.random.choice(x, size=ss, replace=replace)

@@ -1,14 +1,7 @@
 import numpy as np
 
 
-def train(kde, conf, sess, random):
-    # Create a Data set
-    #x = random.normal_numpy_array([conf.n])
-    x = random.normal_numpy_array([conf.n/4])
-    x = np.append(x, 10 + random.normal_numpy_array([conf.n/ 4]))
-    x = np.append(x, 20 + random.normal_numpy_array([conf.n / 4]))
-    x = np.append(x, 30 + random.normal_numpy_array([conf.n / 4]))
-
+def train(kde, conf, session, random, x, collector):
     train_op, cost_op, h_tensor, gradient_op = kde.squared_weighted_mean_error()
 
     # Iteratively train the distribution fitter
@@ -32,7 +25,9 @@ def train(kde, conf, sess, random):
             a = x[a_indices]
 
             # Feed to the distribution fitter
-            _, cost, h, gradient = sess.run([train_op, cost_op, h_tensor, gradient_op], feed_dict={kde.a: a, kde.a_star: a_star})
+            _, cost, h, gradient = session.run([train_op, cost_op, h_tensor, gradient_op],
+                                               feed_dict={kde.a: a, kde.a_star: a_star, kde.batch_size: m})
+            collector.collect(kde, session)
             print 'h: {h}   cost: {c}   h_gradient: {g}'.format(h=h, c=cost, g=gradient)
             costs.append(cost)
     cost_average = sum(costs) / (conf.epochs * batch_count)
