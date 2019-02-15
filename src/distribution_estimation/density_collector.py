@@ -38,6 +38,7 @@ class UnivariateCollector(object):
 def create_univariate_collector(conf, random, x):
     r = conf.r
     means = conf.means
+    standard_deviation = conf.standard_deviation
     number_of_animation_points = conf.number_of_animation_points
     # Find the boundaries on the animation points
     upper_bound = max(means) + _SIGMA
@@ -49,19 +50,19 @@ def create_univariate_collector(conf, random, x):
     # Select a fixed set of reference points to stick with
     fixed_a_star = random.choice(x, r)
 
-    pa = _compute_actual(fixed_a, means)
+    pa = _compute_actual(fixed_a, means, standard_deviation)
 
     return UnivariateCollector(fixed_a, fixed_a_star, pa)
 
 
-def _compute_actual(fixed_a, means):
+def _compute_actual(fixed_a, means, standard_deviation):
     """ Compute the relative likelihoods from the actual distribution.
     """
     number_of_animation_points = fixed_a.shape[0]
     pa = np.zeros(number_of_animation_points, dtype=np.float32)
     for mean in means:
-        exponent = -(fixed_a - mean) ** 2.0 / 2.0
+        exponent = -(fixed_a - mean) ** 2.0 / (2.0 * standard_deviation ** 2.0)
         local_p = np.exp(exponent)
         pa += local_p
     number_of_means = float(len(means))
-    return 1.0 / ((2.0 * math.pi) ** 0.5 * number_of_means) * pa
+    return 1.0 / ((2.0 * math.pi) ** 0.5 * standard_deviation * number_of_means) * pa

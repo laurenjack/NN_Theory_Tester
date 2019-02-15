@@ -18,25 +18,25 @@ class Configuration:
 
     def __init__(self):
         # The initial value of h
-        self.h_init = 1.0
+        self.h_init = 0.3
         # [float] - A list of means, one for each Gaussian in the real distribution
-        self.means = [0.0]
+        self.means = [3.0, 9.0, 18.0]
         # float - The standard deviation of each Gaussian
-        self.standard_deviation = 1.0
+        self.standard_deviation = 2.5
         # The number of observations in the dataset.
         self.n = 10000
         # The number of training epochs
-        self.epochs = 20
+        self.epochs = 100
         # The number of examples for training at each step
         self.m = 1000
         # The number of reference examples (those part of the Kernel density estimate) for each training step
         self.r = 1000
         # The learning rate for h
-        self.lr = 0.002
+        self.lr = 1.0
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
         # Number of observations to be drawn when animating KDE versus actual_distribution
-        self.number_of_animation_points = 100
+        self.number_of_animation_points = 300
         # Interval of time in milliseconds between steps in an animation
         self.animation_interval = 100
 

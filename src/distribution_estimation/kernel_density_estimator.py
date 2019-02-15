@@ -24,7 +24,7 @@ class KernelDensityEstimator(object):
         a_difference, kernel, fa = self._compute_kernel()
         weighted_error = kernel * a_difference / self.h / tf.reshape(fa, [self.batch_size, 1]) # / self.h
         weighted_mean_error = tf.reduce_mean(weighted_error, axis=0)
-        squared_weighted_mean_error = 0.5 * tf.reduce_sum(weighted_mean_error ** 2.0)
+        squared_weighted_mean_error = 0.5 * tf.reduce_mean(weighted_mean_error ** 2.0)
         train_op = tf.train.GradientDescentOptimizer(self.lr).minimize(squared_weighted_mean_error)
         return train_op, squared_weighted_mean_error, self.h, tf.gradients(squared_weighted_mean_error, self.h)
 
