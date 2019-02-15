@@ -20,13 +20,13 @@ class Configuration:
         # The initial value of h
         self.h_init = 0.3
         # [float] - A list of means, one for each Gaussian in the real distribution
-        self.means = [3.0, 9.0, 18.0]
+        self.means = [1.0, 9.0, 18.0]
         # float - The standard deviation of each Gaussian
         self.standard_deviation = 2.5
         # The number of observations in the dataset.
         self.n = 10000
         # The number of training epochs
-        self.epochs = 100
+        self.epochs = 40
         # The number of examples for training at each step
         self.m = 1000
         # The number of reference examples (those part of the Kernel density estimate) for each training step
