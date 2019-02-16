@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 
 conf = None  # singleton reference
@@ -18,11 +19,11 @@ class Configuration:
 
     def __init__(self):
         # The initial value of h
-        self.h_init = 0.3
+        self.h_init = np.array([[1.0]])
         # [float] - A list of means, one for each Gaussian in the real distribution
-        self.means = [1.0, 9.0, 18.0]
+        self.means = [0.0]
         # float - The standard deviation of each Gaussian
-        self.standard_deviation = 2.5
+        self.standard_deviation = 1.0
         # The number of observations in the dataset.
         self.n = 10000
         # The number of training epochs
@@ -31,6 +32,8 @@ class Configuration:
         self.m = 1000
         # The number of reference examples (those part of the Kernel density estimate) for each training step
         self.r = 1000
+        # The number of dimensions, for the random variable a
+        self.d = 1
         # The learning rate for h
         self.lr = 1.0
         # Floating point precision for tensorflow

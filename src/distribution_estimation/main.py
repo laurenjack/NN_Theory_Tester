@@ -20,7 +20,7 @@ def run():
     session = tf.InteractiveSession()
     tf.global_variables_initializer().run()
 
-    x = data_generator.generate_gaussian_mixture(conf, random)
+    x = data_generator.generate_univariate_gaussian_mixture(conf, random)
 
     # Create a collector for animation
     collector = density_collector.create_univariate_collector(conf, random, x)

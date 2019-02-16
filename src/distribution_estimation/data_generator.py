@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def generate_gaussian_mixture(conf, random):
+def generate_univariate_gaussian_mixture(conf, random):
     """Generates a 1D numpy array, where each element is drawn from a mixture of Gaussians specified be means.
 
     Args:

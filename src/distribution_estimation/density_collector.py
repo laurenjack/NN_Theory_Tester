@@ -18,7 +18,11 @@ class UnivariateCollector(object):
         """
         """
         fa_op = kde.pdf()
-        fa = session.run(fa_op, feed_dict={kde.a: self.fixed_a, kde.a_star: self.fixed_a_star,
+        # TODO(Jack) remove HACK, to test out multivariate code in 1D case
+        r = self.fixed_a_star.shape[0]
+        a = self.fixed_a.reshape(self.number_animation_points, 1)
+        a_star = self.fixed_a_star.reshape(r, 1)
+        fa = session.run(fa_op, feed_dict={kde.a: a, kde.a_star: a_star,
                                            kde.batch_size: self.number_animation_points})
         self.fa_over_time.append(fa)
 

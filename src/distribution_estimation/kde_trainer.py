@@ -24,6 +24,10 @@ def train(kde, conf, session, random, x, collector):
             a_indices = indices[start:start + conf.m]
             a = x[a_indices]
 
+            # TODO(Jack) remove HACK, to test out multivariate code in 1D case
+            a = a.reshape(conf.m, 1)
+            a_star = a_star.reshape(conf.r, 1)
+
             # Feed to the distribution fitter
             _, cost, h, gradient = session.run([train_op, cost_op, h_tensor, gradient_op],
                                                feed_dict={kde.a: a, kde.a_star: a_star, kde.batch_size: m})
