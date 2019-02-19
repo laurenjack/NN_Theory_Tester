@@ -7,7 +7,8 @@ class KernelDensityEstimator(object):
     """
 
     def __init__(self, conf):
-        self.h = tf.Variable(conf.h_init, name='h', dtype=conf.float_precision)
+        self.R = tf.Variable(conf.R_init, name='R', dtype=conf.float_precision)
+        self.A = tf.matmul(tf.transpose(self.R), self.R)
         self.r = conf.r
         self.d = conf.d
         self.lr = conf.lr
@@ -22,12 +23,12 @@ class KernelDensityEstimator(object):
         distribution (which are used to give the Kernel Density Estimate), compute the squared weighted mean error,
         for each reference observation in a_star.
         """
-        difference_H_basis, kernel, fa = self._compute_kernel()
-        weighted_error = kernel * difference_H_basis / tf.reshape(fa, [self.batch_size, 1, 1]) # / self.h
+        difference_A_basis, kernel, fa = self._compute_kernel()
+        weighted_error = kernel * difference_A_basis / tf.reshape(fa, [self.batch_size, 1, 1])
         weighted_mean_error = tf.reduce_mean(weighted_error, axis=0)
         squared_weighted_mean_error = 0.5 * tf.reduce_mean(weighted_mean_error ** 2.0)
         train_op = tf.train.GradientDescentOptimizer(self.lr).minimize(squared_weighted_mean_error)
-        return train_op, squared_weighted_mean_error, self.h, tf.gradients(squared_weighted_mean_error, self.h)
+        return train_op, squared_weighted_mean_error, self.A, tf.gradients(squared_weighted_mean_error, self.A)
 
     def pdf(self):
         """ For the set of values a, compute the relative likelihoods from the pdf of the kernel density estimator.
@@ -35,15 +36,15 @@ class KernelDensityEstimator(object):
         Returns: A tensor, the relative likelihoods of each element of a.
         """
         _, _, fa = self._compute_kernel()
-        det_H = tf.matrix_determinant(self.h ** 2.0)
-        return 1.0 / ((2.0 * math.pi) ** self.d * det_H) ** 0.5 * fa
+        det_A = tf.matrix_determinant(self.A)
+        return 1.0 / ((2.0 * math.pi) ** (self.d * 0.5) * det_A) * fa
 
     def _compute_kernel(self):
-        H = self.h ** 2.0
         # H_inverse = tf.reshape(tf.matrix_inverse(H), [1, self.d, self.d])
-        H_inverse = tf.matrix_inverse(H)
+        A_inverse = tf.matrix_inverse(self.A)
+        H_inverse = tf.matmul(tf.transpose(A_inverse), A_inverse)
         difference = tf.reshape(self.a, [self.batch_size, 1, self.d]) - tf.reshape(self.a_star, [1, self.r, self.d])
-        difference_H_basis = tf.tensordot(difference, H_inverse ** 0.5, axes=[[2], [0]])
+        difference_A_basis = tf.tensordot(difference, A_inverse, axes=[[2], [0]])
         distance_squared = tf.reshape(tf.tensordot(difference, H_inverse, axes=[[2], [0]]),
                                       [self.batch_size, self.r, 1, self.d])
         distance_squared = tf.matmul(distance_squared, tf.reshape(difference, [self.batch_size, self.r, self.d, 1]))
@@ -53,4 +54,4 @@ class KernelDensityEstimator(object):
         # No h as this cancels in the cost function
         kernel = tf.exp(exponent)
         fa = tf.reduce_mean(tf.reshape(kernel, [self.batch_size, self.r]), axis=1)
-        return difference_H_basis, kernel, fa
+        return difference_A_basis, kernel, fa

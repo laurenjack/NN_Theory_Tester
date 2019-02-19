@@ -18,24 +18,24 @@ class Configuration:
     """
 
     def __init__(self):
-        # The initial value of h
-        self.h_init = np.array([[1.0]])
+        # The initial value of R
+        self.R_init = np.array([[1.0]])
         # [float] - A list of means, one for each Gaussian in the real distribution
-        self.means = [0.0]
+        self.means = [-4, 0.0, 7]
         # float - The standard deviation of each Gaussian
         self.standard_deviation = 1.0
         # The number of observations in the dataset.
         self.n = 10000
         # The number of training epochs
-        self.epochs = 40
+        self.epochs = 10
         # The number of examples for training at each step
         self.m = 1000
         # The number of reference examples (those part of the Kernel density estimate) for each training step
         self.r = 1000
         # The number of dimensions, for the random variable a
         self.d = 1
-        # The learning rate for h
-        self.lr = 1.0
+        # The learning rate for R
+        self.lr = 0.3
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
         # Number of observations to be drawn when animating KDE versus actual_distribution

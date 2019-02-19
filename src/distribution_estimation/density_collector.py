@@ -39,6 +39,10 @@ class UnivariateCollector(object):
         x.reshape(m, 1) - reference_set.reshape(1, r)
 
 
+class MultivariateCollector(object):
+    pass
+
+
 def create_univariate_collector(conf, random, x):
     r = conf.r
     means = conf.means
