@@ -15,4 +15,7 @@ class Random(object):
     def choice(self, x, ss, replace=False):
         """ Given a numpy array, take a random sample of ss, along it's first axis (without replacement by default).
         """
-        return np.random.choice(x, size=ss, replace=replace)
+        # Chose from an array of indices, this allows to select from len(x.shape) > 1
+        indices = np.arange(x.shape[0])
+        selected_indices = np.random.choice(indices, size=ss, replace=replace)
+        return x[selected_indices]

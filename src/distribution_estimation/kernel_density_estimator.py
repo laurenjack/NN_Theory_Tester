@@ -30,6 +30,7 @@ class KernelDensityEstimator(object):
         train_op = tf.train.GradientDescentOptimizer(self.lr).minimize(squared_weighted_mean_error)
         return train_op, squared_weighted_mean_error, self.A, tf.gradients(squared_weighted_mean_error, self.A)
 
+
     def pdf(self):
         """ For the set of values a, compute the relative likelihoods from the pdf of the kernel density estimator.
 

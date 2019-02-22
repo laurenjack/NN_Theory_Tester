@@ -1,20 +1,22 @@
 import numpy as np
 
 
-def generate_univariate_gaussian_mixture(conf, random):
-    """Generates a 1D numpy array, where each element is drawn from a mixture of Gaussians specified be means.
+def generate_gaussian_mixture(conf, random):
+    """Generates an [n, d], where the n elements are drawn from a mixture of Gaussians in d dimensions
 
     Args:
         conf: The density_estimation configuration
         random: Service object encapsulating random behavior
+        actual_A: The standard deviation matrix, the same one is applied across each Gaussian
 
-    Return: A 1D numpy array of floating point numbers, drawn from the Gaussian mixture
+    Return: A 1D numpy array of floating point numbers, drawn from the Gaussian mixture.
     """
     n = conf.n
+    d = conf.d
     means = conf.means
-    standard_deviation = conf.standard_deviation
+    actual_A = conf.actual_A
 
-    means = np.array(means)
     chosen_means = random.choice(means, n, replace=True)
 
-    return chosen_means + standard_deviation * random.normal_numpy_array([n])
+    z = random.normal_numpy_array([n, d])
+    return chosen_means + np.matmul(z, actual_A)
