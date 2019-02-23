@@ -22,6 +22,9 @@ def run():
 
     x = data_generator.generate_gaussian_mixture(conf, random)
 
+    # collector = density_collector.MeanSquaredErrorCollector(conf, random, x)
+    # kde_trainer.train(kde, conf, session, random, x, collector)
+
     # TODO(Jack) code smell here, duplicate code, refactor
     if conf.d == 1:
         # Create a collector for animation

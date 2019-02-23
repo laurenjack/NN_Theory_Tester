@@ -39,24 +39,23 @@ class UnivariateCollector(object):
 def create_univariate_collector(conf, random, x):
     r = conf.r
     # Convert means to 1D
-    means = conf.means[:, 0]
-    # In the univariate case, we use 1D arrays to graph the actual underlying distribution
-    standard_deviation = conf.actual_A[0, 0]
+    means = conf.means
+    sigma_inverse, sigma_determinant = _get_sigma_inverse_and_determinant(conf)
     number_of_animation_points = conf.number_of_animation_points
     # Find the boundaries on the animation points
-    upper_bound = means.max() + _SIGMA
-    lower_bound = means.min() - _SIGMA
+    upper_bound = means[:, 0].max() + _SIGMA
+    lower_bound = means[:, 0].min() - _SIGMA
     width = upper_bound - lower_bound
     # Generate equally spaced animation points
     points_for_graph = np.arange(0, number_of_animation_points) / float(number_of_animation_points)
     points_for_graph = lower_bound + points_for_graph * float(width)
+    points_for_graph = points_for_graph.reshape([number_of_animation_points, 1])
     # Select a fixed set of reference points to stick with
     fixed_a_star = random.choice(x, r)
 
-    pa = _compute_actual(points_for_graph, means, standard_deviation)
+    pa = _compute_actual(points_for_graph, means, sigma_inverse, sigma_determinant)
 
-    points_for_graph_reshaped = points_for_graph.reshape([number_of_animation_points, 1])
-    return UnivariateCollector(points_for_graph_reshaped, fixed_a_star, pa)
+    return UnivariateCollector(points_for_graph, fixed_a_star, pa)
 
 
 class MultivariateCollector(object):
@@ -91,6 +90,39 @@ def create_multivariate_collector(conf, random, x):
     return MultivariateCollector(fixed_a_star, z)
 
 
+class MeanSquaredErrorCollector(object):
+    """Reports on the mean squared error of the actual distribution less that given by the kde, i.e. p(x) - f(x).
+
+    This collector is only applicable where the actual function p(x) is a known mixture of gaussians
+    """
+
+    def __init__(self, conf, random, x):
+        self.m = conf.m
+        self.random = random
+        self.means = conf.means
+        self.sigma_inverse, self.sigma_determinant = _get_sigma_inverse_and_determinant(conf)
+        
+        # Copy as shuffle has a side effect
+        x_copy = np.copy(x)
+        random.shuffle(x_copy)
+        r = conf.r
+        self.fixed_a_star = x_copy[0:r]
+        self.a_all = x[r:]
+
+    def collect(self, kde, session):
+        # Get a batch of samples to compute the cost for
+        a = self.random.choice(self.a_all, self.m)
+
+        # Get kde pdf likelihoods
+        pdf = kde.pdf()
+        fa = session.run(pdf, feed_dict={kde.a: a, kde.a_star: self.fixed_a_star, kde.batch_size: self.m})
+        # Get the real likelihoods
+        pa = _compute_actual(a, self.means, self.sigma_inverse, self.sigma_determinant)
+
+        mean_squared_error = np.mean((pa - fa) ** 2.0)
+        print 'Mean Squared Error Against Actual: {mse}\n'.format(mse=mean_squared_error)
+
+
 class NullCollector(object):
 
     def collect(self, kde, session):
@@ -100,15 +132,26 @@ class NullCollector(object):
         return None
 
 
-def _compute_actual(points_for_graph, means, standard_deviation):
+def _compute_actual(points_for_graph, means, sigma_inverse, sigma_determinant):
     """ Compute the relative likelihoods from the actual distribution.
     """
-    number_of_animation_points = points_for_graph.shape[0]
-    pa = np.zeros(number_of_animation_points, dtype=np.float32)
-    number_of_means = means.shape[0]
-    for i in xrange(number_of_means):
-        mean = means[i]
-        exponent = -(points_for_graph - mean) ** 2.0 / (2.0 * standard_deviation ** 2.0)
-        local_p = np.exp(exponent)
-        pa += local_p
-    return 1.0 / ((2.0 * math.pi) ** 0.5 * standard_deviation * number_of_means) * pa
+    number_of_means, d = means.shape
+    n = points_for_graph.shape[0]
+
+    points_for_graph = points_for_graph.reshape(n, 1, d)
+    means = means.reshape(1, number_of_means, d)
+    difference = points_for_graph - means
+    distance = np.matmul(difference, sigma_inverse).reshape(n, number_of_means, 1, d)
+    distance = np.matmul(distance, difference.reshape(n, number_of_means, d, 1))
+    distance = distance.reshape(n, number_of_means)
+    pa_unnormed = np.sum(np.exp(-0.5 * distance), axis=1)
+    pa = 1.0 / (((2.0 * math.pi) ** d * sigma_determinant) ** 0.5 * number_of_means) * pa_unnormed
+    return pa
+
+
+def _get_sigma_inverse_and_determinant(conf):
+    A = conf.actual_A
+    sigma = np.matmul(A.transpose(), A)
+    sigma_inverse = np.linalg.inv(sigma)
+    sigma_determinant = np.linalg.det(sigma)
+    return sigma_inverse, sigma_determinant

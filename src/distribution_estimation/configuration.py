@@ -27,17 +27,20 @@ class Configuration:
         # The number of dimensions, for the random variable a
         self.d = 2
         # The initial value of R
-        self.R_init = 0.5 * np.eye(2) # 0.5 * np.array([[1.0, 1.0 / 2.0 ** 0.5], [0.0, 1.0 / 2.0 ** 0.5]])
+        self.R_init = 0.5 * np.eye(self.d) # 0.5 * np.array([[1.0, 1.0 / 2.0 ** 0.5], [0.0, 1.0 / 2.0 ** 0.5]])
         # [float] - A list of means, one for each Gaussian in the actual distribution
-        self.means = np.array([[-2.0, -2.0], [0.0, 2.0], [2.0, 2.0]])
+        self.means = np.zeros((1, self.d)) #  np.array([[-2.0, -2.0], [0.0, 2.0], [2.0, 2.0]])
         # float - The standard deviation matrix of the actual distribution, the same one is applied to each Gaussian
-        self.actual_A = np.array([[1.0, -1.0 / 2.0 ** 0.5], [-1.0 / 2.0 ** 0.5, 1.0]])
+        a = np.random.randn(self.d, self.d)
+        self.actual_A =  5.0 * np.matmul(a.transpose(), a) # np.array([[1.0, -1.0 / 2.0 ** 0.5], [-1.0 / 2.0 ** 0.5, 1.0]])
         # The number of training epochs
-        self.epochs = 20
+        self.epochs = 10
         # The learning rate for R
         self.lr = 0.3
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
+        # Show A each after each training batch
+        self.show_A = True
         # Number of observations to be drawn when animating KDE versus actual_distribution
         self.number_of_animation_points = 300
         # Interval of time in milliseconds between steps in an animation
