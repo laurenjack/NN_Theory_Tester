@@ -36,14 +36,14 @@ class UnivariateAnimator(object):
 
 class TwoDAnimator(object):
 
-    def __init__(self, conf):
+    def __init__(self, conf, actual_A):
         self.axis_max_and_min = conf.axis_max_and_min
         self.animation_interval = conf.animation_interval
         self.means = conf.means
         self.concentric_gap = conf.concentric_gap
         self.max_deviations = conf.max_deviations
         # Get the eigen-values and vectors of the standard deviation matrix, as the ellipse function requires
-        eigenvalues, Q = np.linalg.eig(conf.actual_A)
+        eigenvalues, Q = np.linalg.eig(actual_A)
         self.base_width = 2.0 * eigenvalues[0]
         self.base_height = 2.0 * eigenvalues[1]
         first_axis = Q[:, 0]

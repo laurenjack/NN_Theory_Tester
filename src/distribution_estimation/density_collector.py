@@ -36,11 +36,11 @@ class UnivariateCollector(object):
         x.reshape(m, 1) - reference_set.reshape(1, r)
 
 
-def create_univariate_collector(conf, random, x):
+def create_univariate_collector(conf, random, x, actual_A):
     r = conf.r
     # Convert means to 1D
     means = conf.means
-    sigma_inverse, sigma_determinant = _get_sigma_inverse_and_determinant(conf)
+    sigma_inverse, sigma_determinant = _get_sigma_inverse_and_determinant(actual_A)
     number_of_animation_points = conf.number_of_animation_points
     # Find the boundaries on the animation points
     upper_bound = means[:, 0].max() + _SIGMA
@@ -68,8 +68,9 @@ class MultivariateCollector(object):
     def collect(self, kde, session):
         """
         """
-        A_tensor = kde.A
-        A = session.run(A_tensor)
+        A_inverse_tensor = kde.A_inverse
+        A_inverse = session.run(A_inverse_tensor)
+        A = np.linalg.inv(A_inverse)
         # Observe the scaling for the new A (technically this isn't a random draw from the rbf, we're drawing from
         # each reference point, but doing so will allow us to focus on changes in A).
         animation_points = self.fixed_a_star + np.matmul(self.z, A)
@@ -96,11 +97,11 @@ class MeanSquaredErrorCollector(object):
     This collector is only applicable where the actual function p(x) is a known mixture of gaussians
     """
 
-    def __init__(self, conf, random, x):
+    def __init__(self, conf, random, x, actual_A):
         self.m = conf.m
         self.random = random
         self.means = conf.means
-        self.sigma_inverse, self.sigma_determinant = _get_sigma_inverse_and_determinant(conf)
+        self.sigma_inverse, self.sigma_determinant = _get_sigma_inverse_and_determinant(actual_A)
         
         # Copy as shuffle has a side effect
         x_copy = np.copy(x)
@@ -149,8 +150,7 @@ def _compute_actual(points_for_graph, means, sigma_inverse, sigma_determinant):
     return pa
 
 
-def _get_sigma_inverse_and_determinant(conf):
-    A = conf.actual_A
+def _get_sigma_inverse_and_determinant(A):
     sigma = np.matmul(A.transpose(), A)
     sigma_inverse = np.linalg.inv(sigma)
     sigma_determinant = np.linalg.det(sigma)

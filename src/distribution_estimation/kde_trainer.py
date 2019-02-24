@@ -2,7 +2,7 @@ import numpy as np
 
 
 def train(kde, conf, session, random, x, collector):
-    train_op, cost_op, A_tensor, gradient_op = kde.squared_weighted_mean_error()
+    train_op, cost_op, A_inverse_tensor, gradient_op, fa_op = kde.squared_weighted_mean_error()
 
     # Iteratively train the distribution fitter
     m = conf.m
@@ -11,7 +11,6 @@ def train(kde, conf, session, random, x, collector):
     sample_each_epoch = m * batch_count
 
     indices = np.arange(conf.n)
-    costs = []
     for e in xrange(conf.epochs):
         print '\n Epoch: {e}'.format(e=e+1)
         random.shuffle(indices)
@@ -25,12 +24,10 @@ def train(kde, conf, session, random, x, collector):
             a = x[a_indices]
 
             # Feed to the distribution fitter
-            _, cost, A, gradient = session.run([train_op, cost_op, A_tensor, gradient_op],
+            _, cost, A_inverse, gradient, fa = session.run([train_op, cost_op, A_inverse_tensor, gradient_op, fa_op],
                                                feed_dict={kde.a: a, kde.a_star: a_star, kde.batch_size: m})
             collector.collect(kde, session)
-            print 'A: {A}   cost: {c}   A_gradient: {g}'.format(A=A, c=cost, g=gradient)
-            costs.append(cost)
-    cost_average = sum(costs) / (conf.epochs * batch_count)
-    print '\nCost Average: {c}'.format(c=cost_average)
-    cost_max = max(costs)
-    print 'Max cost: {m}'.format(m=cost_max)
+            if conf.show_A:
+                A = np.linalg.inv(A_inverse)
+                print 'A: {A} \n   gradient: {g}   fa: {f}'.format(A=A, g=gradient, f=fa)
+

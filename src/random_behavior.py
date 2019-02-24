@@ -19,3 +19,7 @@ class Random(object):
         indices = np.arange(x.shape[0])
         selected_indices = np.random.choice(indices, size=ss, replace=replace)
         return x[selected_indices]
+
+    def uniform(self, low, high, size):
+        """Generate a Uniform normal numpy array with shape: size."""
+        return np.random.uniform(low, high, size=size)
