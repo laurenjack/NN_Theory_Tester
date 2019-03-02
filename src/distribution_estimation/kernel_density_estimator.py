@@ -32,7 +32,7 @@ class KernelDensityEstimator(object):
         squared_weighted_mean_error = 0.5 * tf.reduce_mean(weighted_mean_error ** 2.0)
         train_op = tf.train.GradientDescentOptimizer(self.lr).minimize(squared_weighted_mean_error)
         return train_op, squared_weighted_mean_error, self.A_inverse,\
-               tf.gradients(squared_weighted_mean_error, self.A_inverse), tf.reduce_min(self.pdf())
+               tf.gradients(squared_weighted_mean_error, self.R_inverse), tf.reduce_min(self.pdf())
 
 
     def pdf(self):

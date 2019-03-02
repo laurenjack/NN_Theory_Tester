@@ -26,8 +26,12 @@ def train(kde, conf, session, random, x, collector):
             # Feed to the distribution fitter
             _, cost, A_inverse, gradient, fa = session.run([train_op, cost_op, A_inverse_tensor, gradient_op, fa_op],
                                                feed_dict={kde.a: a, kde.a_star: a_star, kde.batch_size: m})
+            gradient = gradient[0]
             collector.collect(kde, session)
             if conf.show_A:
                 A = np.linalg.inv(A_inverse)
-                print 'A: {A} \n   gradient: {g}   fa: {f}'.format(A=A, g=gradient, f=fa)
+                determinant_g = np.linalg.det(gradient)
+                gradient_size = np.sum(gradient ** 2.0) ** 0.5
+                print 'A: {A} \n determinant_g: {d} \n gradient: {g}   fa: {f}'.format(A=A, d=determinant_g,
+                                                                                      g=gradient, f=fa)
 
