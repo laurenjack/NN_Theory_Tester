@@ -19,26 +19,26 @@ class Configuration:
 
     def __init__(self):
         # The number of observations in the dataset.
-        self.n = 10000
+        self.n = 20000
         # The number of examples for training at each step
         self.m = 1000
         # The number of reference examples (those part of the Kernel density estimate) for each training step
-        self.r = 1000
+        self.r = 10000
         # The number of dimensions, for the random variable a
-        self.d = 10
+        self.d = 1
         # The initial value of R
-        self.R_init = 0.1 ** (1.0 / float(self.d)) * np.eye(self.d) # 0.5 * np.array([[1.0, 1.0 / 2.0 ** 0.5], [0.0, 1.0 / 2.0 ** 0.5]])
+        self.R_init = (0.4 / float(self.d)) * np.eye(self.d) # 0.5 * np.array([[1.0, 1.0 / 2.0 ** 0.5], [0.0, 1.0 / 2.0 ** 0.5]])
         # [float] - A list of means, one for each Gaussian in the actual distribution
         self.means = np.zeros((1, self.d)) #  np.array([[-2.0, -2.0], [0.0, 2.0], [2.0, 2.0]])
         # The number of training epochs
         self.epochs = 40
         # The learning rate for R
-        self.lr = 0.3
+        self.lr = 10.0
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix
-        self.min_eigenvalue = 0.5
-        self.max_eigenvalue = 2.5
+        self.min_eigenvalue = 0.99999
+        self.max_eigenvalue = 1.00001
         # Show A each after each training batch
         self.show_A = True
         # Number of observations to be drawn when animating KDE versus actual_distribution
