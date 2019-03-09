@@ -47,12 +47,14 @@ def show_gradient():
         a_square = a_difference ** 2.0
 
         front_weight = K * a_difference / fx
-        main_delta = a_square - np.mean(K * a_square, axis=1).reshape(s, 1) / fx
+        main_delta = np.mean(K * a_square, axis=1).reshape(s, 1) / fx - a_square
         complete_term = front_weight * main_delta
         reduced_over_a = np.mean(complete_term, axis=0)
         reduced_over_a_star = np.mean(reduced_over_a)
-        plt.scatter(a_star, 100000 * np.mean(front_weight, axis=0) * reduced_over_a)
-        # plt.scatter(a_star, reduced_over_a, color='r')
+        full_term_before_reduction = np.mean(front_weight, axis=0) * reduced_over_a
+        plt.scatter(a_star, np.mean(front_weight, axis=0))
+        plt.scatter(a_star, reduced_over_a, color='r')
+        plt.scatter(a_star, full_term_before_reduction, color='g')
         plt.show()
         print reduced_over_a_star
         total += reduced_over_a_star

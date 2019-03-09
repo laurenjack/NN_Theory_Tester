@@ -19,15 +19,15 @@ class Configuration:
 
     def __init__(self):
         # The number of observations in the dataset.
-        self.n = 20000
+        self.n = 2000
         # The number of examples for training at each step
         self.m = 1000
         # The number of reference examples (those part of the Kernel density estimate) for each training step
-        self.r = 10000
+        self.r = 1000
         # The number of dimensions, for the random variable a
         self.d = 1
         # The initial value of R
-        self.R_init = (0.4 / float(self.d)) * np.eye(self.d) # 0.5 * np.array([[1.0, 1.0 / 2.0 ** 0.5], [0.0, 1.0 / 2.0 ** 0.5]])
+        self.R_init = (0.51581488872 / float(self.d)) * np.eye(self.d) # 0.5 * np.array([[1.0, 1.0 / 2.0 ** 0.5], [0.0, 1.0 / 2.0 ** 0.5]])
         # [float] - A list of means, one for each Gaussian in the actual distribution
         self.means = np.zeros((1, self.d)) #  np.array([[-2.0, -2.0], [0.0, 2.0], [2.0, 2.0]])
         # The number of training epochs
