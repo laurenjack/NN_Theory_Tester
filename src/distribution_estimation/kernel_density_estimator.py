@@ -17,22 +17,30 @@ class KernelDensityEstimator(object):
         self.lr = conf.lr
         self.batch_size = tf.placeholder(dtype=tf.int32, shape=[], name='batch_size')
         self.a = tf.placeholder(dtype=conf.float_precision, shape=[None, self.d], name='a')
-        self.a_star = tf.placeholder(dtype=conf.float_precision, shape=[self.r, self.d], name='a_star')
+        self.a_star1 = tf.placeholder(dtype=conf.float_precision, shape=[self.r, self.d], name='a_star1')
+        # self.a_star2 = tf.placeholder(dtype=conf.float_precision, shape=[self.r, self.d], name='a_star2')
 
-    def squared_weighted_mean_error(self):
+    def total_loss(self):
         """This function returns a tensor to be minimised with respect to h (the bandwidth of the kernel function).
 
         Given a set of m observations: a, and a set of r reference observation a_star drawn from the same empirical
         distribution (which are used to give the Kernel Density Estimate), compute the squared weighted mean error,
         for each reference observation in a_star.
         """
-        difference_A_basis, kernel, fa = self._compute_kernel()
-        weighted_error = kernel * difference_A_basis / (tf.reshape(fa, [self.batch_size, 1, 1]) + 10.0 ** -30)
+        return self._total_loss(self.A_inverse)
+
+
+    def _total_loss(self, A_inverse):
+        difference, kernel, fa1 = self._compute_kernel(A_inverse)
+        # _, _, fa2 = self._compute_kernel(A_inverse, self.a_star1)
+
+        weighted_error = kernel * difference / (tf.reshape(fa1, [self.batch_size, 1, 1]) + 10.0 ** -30)
         weighted_mean_error = tf.reduce_mean(weighted_error, axis=0)
-        squared_weighted_mean_error = 0.5 * tf.reduce_mean(weighted_mean_error ** 2.0)
-        train_op = tf.train.GradientDescentOptimizer(self.lr).minimize(squared_weighted_mean_error)
-        return train_op, squared_weighted_mean_error, self.A_inverse,\
-               tf.gradients(squared_weighted_mean_error, self.R_inverse), tf.reduce_min(self.pdf()[0])
+        bias_loss = 0.5 * tf.reduce_mean(weighted_mean_error ** 2.0)
+
+        # train_op = tf.train.GradientDescentOptimizer(self.lr).minimize(bias_loss)
+        return None, bias_loss, A_inverse, \
+               tf.gradients(bias_loss, self.R_inverse), tf.reduce_min(self.pdf()[0])
 
 
     def pdf(self):
@@ -40,14 +48,17 @@ class KernelDensityEstimator(object):
 
         Returns: A tensor, the relative likelihoods of each element of a.
         """
-        _, kernel, fa = self._compute_kernel()
-        det_A_inverse = tf.matrix_determinant(self.A_inverse)
+        return self._pdf(self.A_inverse)
+
+    def _pdf(self, A_inverse):
+        _, kernel, fa = self._compute_kernel(A_inverse)
+        det_A_inverse = tf.matrix_determinant(A_inverse)
         return det_A_inverse / (2.0 * math.pi) ** (self.d * 0.5) * fa, kernel
 
-    def _compute_kernel(self):
-        H_inverse = tf.matmul(self.A_inverse, tf.transpose(self.A_inverse))
-        difference = tf.reshape(self.a, [self.batch_size, 1, self.d]) - tf.reshape(self.a_star, [1, self.r, self.d])
-        difference_A_basis = tf.tensordot(difference, self.A_inverse, axes=[[2], [0]])
+    def _compute_kernel(self, A_inverse):
+        H_inverse = tf.matmul(A_inverse, tf.transpose(A_inverse))
+        difference = tf.reshape(self.a, [self.batch_size, 1, self.d]) - tf.reshape(self.a_star1, [1, self.r, self.d])
+        # difference_A_basis = tf.tensordot(difference, A_inverse, axes=[[2], [0]])
         distance_squared = tf.reshape(tf.tensordot(difference, H_inverse, axes=[[2], [0]]),
                                       [self.batch_size, self.r, 1, self.d])
         distance_squared = tf.matmul(distance_squared, tf.reshape(difference, [self.batch_size, self.r, self.d, 1]))
@@ -57,4 +68,5 @@ class KernelDensityEstimator(object):
         # No h as this cancels in the cost function
         kernel = tf.exp(exponent)
         fa = tf.reduce_mean(tf.reshape(kernel, [self.batch_size, self.r]), axis=1)
-        return difference_A_basis, kernel, fa
+        #return difference_A_basis, kernel, fa
+        return difference, kernel, fa
