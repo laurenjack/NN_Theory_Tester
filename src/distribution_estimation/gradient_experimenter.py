@@ -20,7 +20,7 @@ def show_variance_function():
     x, _ = data_generator.sample_gaussian_mixture()
 
     # Initialise the distribution fitter
-    kde = kernel_density_estimator.KernelDensityEstimator(conf, data_generator)
+    kde = kernel_density_estimator.KernelDensityEstimator(conf) #, data_generator)
 
     # Tensorflow setup
     session = tf.InteractiveSession()
@@ -29,7 +29,7 @@ def show_variance_function():
     # Create a placeholder to vary h
     A_inverse_placeholder = tf.placeholder(dtype=tf.float32, shape=[1, 1], name = 'A_inverse_placeholder')
     r = conf.r
-    s = conf.n - r
+    s = conf.n - 2*r
     loss_tensor = kde.loss(A_inverse_placeholder)
 
     hs = np.arange(0.05, 1.01, 0.01)
@@ -41,11 +41,12 @@ def show_variance_function():
         print h
         A_inverse = np.array([[1.0 / h]])
 
-        a_star = x[0:r]
-        a = x[r:]
+        a_star1 = x[0:r]
+        a_star2 = x[r:2*r]
+        a = x[2*r:]
 
-        loss = session.run(loss_tensor, feed_dict={kde.a: a, kde.a_star1: a_star, kde.batch_size: s,
-                                                            A_inverse_placeholder: A_inverse})
+        loss = session.run(loss_tensor, feed_dict={kde.a: a, kde.a_star1: a_star1, kde.a_star2: a_star2,
+                                                   kde.batch_size: s, A_inverse_placeholder: A_inverse})
         losses.append(loss)
 
     losses = np.array(losses)

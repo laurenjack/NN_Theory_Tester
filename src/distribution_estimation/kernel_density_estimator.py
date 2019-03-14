@@ -17,6 +17,7 @@ class KernelDensityEstimator(object):
         self.batch_size = tf.placeholder(dtype=tf.int32, shape=[], name='batch_size')
         self.a = tf.placeholder(dtype=conf.float_precision, shape=[None, self.d], name='a')
         self.a_star1 = tf.placeholder(dtype=conf.float_precision, shape=[self.r, self.d], name='a_star1')
+        self.a_star2 = tf.placeholder(dtype=conf.float_precision, shape=[self.r, self.d], name='a_star2')
 
     def loss(self, A_inverse):
         """This function returns a tensor to be minimised with respect to A_inverse (the inverse bandwidth matrix of the
@@ -29,17 +30,17 @@ class KernelDensityEstimator(object):
         distribution of d dimensions. Compute the kernel density estimate compute the squared weighted mean error,
         for each reference observation in a_star. TODO(Jack) expand on this
         """
-        fa = self.pdf(A_inverse)
+        fa = self.pdf(A_inverse, self.a_star1)
         # If a data generator was passed in, use the actual distribution from the data generator:
         if self.data_generator:
            pa_estimate = self.data_generator.pdf(self.a, self.batch_size)
         # Otherwise we have a real problem where the distribution is unknown
         else:
-            pa_estimate = None
+            pa_estimate = self.pdf(np.array([[10.0]], dtype=np.float32), self.a_star2)
         loss = 0.5 * tf.reduce_mean((fa - pa_estimate) ** 2.0)
         return loss
 
-    def pdf(self, A_inverse):
+    def pdf(self, A_inverse, a_star):
         """Compute f(a) for the [batch_size, d] set of points a, using the [r, d] set of reference points and the
         inverse bandwitdth matrix A_inverse.
 
@@ -50,7 +51,7 @@ class KernelDensityEstimator(object):
             A [batch_size] tensor. The relative likelihood f(a) for each element of a.
         """
         H_inverse = tf.matmul(A_inverse, tf.transpose(A_inverse))
-        difference = tf.reshape(self.a, [self.batch_size, 1, self.d]) - tf.reshape(self.a_star1, [1, self.r, self.d])
+        difference = tf.reshape(self.a, [self.batch_size, 1, self.d]) - tf.reshape(a_star, [1, self.r, self.d])
         distance_squared = tf.reshape(tf.tensordot(difference, H_inverse, axes=[[2], [0]]),
                                       [self.batch_size, self.r, 1, self.d])
         distance_squared = tf.matmul(distance_squared, tf.reshape(difference, [self.batch_size, self.r, self.d, 1]))
