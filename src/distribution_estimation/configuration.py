@@ -37,8 +37,8 @@ class Configuration:
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix
-        self.min_eigenvalue = 3.99999
-        self.max_eigenvalue = 4.00001
+        self.min_eigenvalue = 0.99999
+        self.max_eigenvalue = 1.00001
         # Show A each after each training batch
         self.show_A = True
         # Number of observations to be drawn when animating KDE versus actual_distribution
