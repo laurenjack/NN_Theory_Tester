@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 import configuration
-import data_generator
+import data_generator as dg
 import kernel_density_estimator
 import kde_trainer
 import density_collector
@@ -14,14 +14,13 @@ import matplotlib.pyplot as plt
 
 def show_variance_function():
     conf = configuration.get_configuration()
-    conf.do_train = False
     random = random_behavior.Random()
-    generator = data_generator.DataGenerator(conf, random)
+    data_generator = dg.DataGenerator(conf, random)
 
-    x, _ = generator.sample_gaussian_mixture()
+    x, _ = data_generator.sample_gaussian_mixture()
 
     # Initialise the distribution fitter
-    kde = kernel_density_estimator.KernelDensityEstimator(conf, generator)
+    kde = kernel_density_estimator.KernelDensityEstimator(conf, data_generator)
 
     # Tensorflow setup
     session = tf.InteractiveSession()
@@ -31,7 +30,7 @@ def show_variance_function():
     A_inverse_placeholder = tf.placeholder(dtype=tf.float32, shape=[1, 1], name = 'A_inverse_placeholder')
     r = conf.r
     s = conf.n - r
-    _, loss_tensor = kde.total_loss(A_inverse_placeholder)
+    loss_tensor = kde.loss(A_inverse_placeholder)
 
     hs = np.arange(0.05, 1.01, 0.01)
     losses = []

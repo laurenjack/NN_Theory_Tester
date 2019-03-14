@@ -1,8 +1,14 @@
 import numpy as np
+import tensorflow as tf
 
 
 def train(kde, conf, session, random, x, collector):
-    train_op, cost_op, A_inverse_tensor, gradient_op, fa_op = kde.squared_weighted_mean_error()
+    # Define the positive definite tensor A = RRt
+    R_inverse = tf.Variable(np.linalg.inv(conf.R_init), name='R', dtype=conf.float_precision)
+    A_inverse_tensor = tf.matmul(R_inverse, tf.transpose(R_inverse))
+    loss_tensor = kde.loss(A_inverse_tensor)
+    train_op = tf.train.GradientDescentOptimizer(conf.lr).minimize(loss_tensor)
+    tf.global_variables_initializer().run()
 
     # Iteratively train the distribution fitter
     m = conf.m
@@ -24,14 +30,13 @@ def train(kde, conf, session, random, x, collector):
             a = x[a_indices]
 
             # Feed to the distribution fitter
-            _, cost, A_inverse, gradient, fa = session.run([train_op, cost_op, A_inverse_tensor, gradient_op, fa_op],
-                                               feed_dict={kde.a: a, kde.a_star: a_star, kde.batch_size: m})
-            gradient = gradient[0]
+            _, loss, A_inverse = session.run([train_op, loss_tensor, A_inverse_tensor],
+                                               feed_dict={kde.a: a, kde.a_star1: a_star, kde.batch_size: m})
+            # gradient = gradient[0]
             collector.collect(kde, session)
             if conf.show_A:
                 A = np.linalg.inv(A_inverse)
-                determinant_g = np.linalg.det(gradient)
-                gradient_size = np.sum(gradient ** 2.0) ** 0.5
-                print 'A: {A} \n determinant_g: {d} \n gradient: {g}   fa: {f}'.format(A=A, d=determinant_g,
-                                                                                      g=gradient, f=fa)
+                # determinant_g = np.linalg.det(gradient)
+                # gradient_size = np.sum(gradient ** 2.0) ** 0.5
+                print 'Loss: {l}\nA: {A}\n'.format(l=loss, A=A)
 

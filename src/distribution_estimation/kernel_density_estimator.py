@@ -9,20 +9,16 @@ class KernelDensityEstimator(object):
     """Represents a Kernel Density Estimate with variable bandwidth h, over a set of reference samples a_star.
     """
 
-    def __init__(self, conf, data_generator):
-        self.do_train = conf.do_train
+    def __init__(self, conf, data_generator=None):
         self.data_generator = data_generator
-        self.R_inverse = tf.Variable(np.linalg.inv(conf.R_init), name='R', dtype=conf.float_precision)
-        self.A_inverse = tf.matmul(self.R_inverse, tf.transpose(self.R_inverse))
         self.r = conf.r
         self.d = conf.d
         self.lr = conf.lr
         self.batch_size = tf.placeholder(dtype=tf.int32, shape=[], name='batch_size')
         self.a = tf.placeholder(dtype=conf.float_precision, shape=[None, self.d], name='a')
         self.a_star1 = tf.placeholder(dtype=conf.float_precision, shape=[self.r, self.d], name='a_star1')
-        # self.a_star2 = tf.placeholder(dtype=conf.float_precision, shape=[self.r, self.d], name='a_star2')
 
-    def total_loss(self, A_inverse):
+    def loss(self, A_inverse):
         """This function returns a tensor to be minimised with respect to A_inverse (the inverse bandwidth matrix of the
         kernel function).
 
@@ -34,12 +30,14 @@ class KernelDensityEstimator(object):
         for each reference observation in a_star. TODO(Jack) expand on this
         """
         fa = self.pdf(A_inverse)
-        pa = self.data_generator.pdf(self.a, self.batch_size)
-        loss = 0.5 * tf.reduce_mean((fa - pa) ** 2.0)
-        train_op = None
-        if self.do_train:
-            train_op = tf.train.GradientDescentOptimizer(self.lr).minimize(bias_loss)
-        return train_op, loss
+        # If a data generator was passed in, use the actual distribution from the data generator:
+        if self.data_generator:
+           pa_estimate = self.data_generator.pdf(self.a, self.batch_size)
+        # Otherwise we have a real problem where the distribution is unknown
+        else:
+            pa_estimate = None
+        loss = 0.5 * tf.reduce_mean((fa - pa_estimate) ** 2.0)
+        return loss
 
     def pdf(self, A_inverse):
         """Compute f(a) for the [batch_size, d] set of points a, using the [r, d] set of reference points and the
