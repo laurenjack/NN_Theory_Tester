@@ -6,7 +6,9 @@ def train(kde, conf, session, random, x, collector):
     # Define the positive definite tensor A = RRt
     R_inverse = tf.Variable(np.linalg.inv(conf.R_init), name='R', dtype=conf.float_precision)
     A_inverse_tensor = tf.matmul(R_inverse, tf.transpose(R_inverse))
-    loss_tensor = kde.loss(A_inverse_tensor)
+    # Placeholder used for the A which determines p(a) estimation
+    low_bias_A_inverse = tf.placeholder(dtype=tf.float32, shape=[conf.d, conf.d], name='low_bias_A_inverse')
+    loss_tensor = kde.loss(A_inverse_tensor, low_bias_A_inverse)
     train_op = tf.train.GradientDescentOptimizer(conf.lr).minimize(loss_tensor)
     tf.global_variables_initializer().run()
 
@@ -27,14 +29,17 @@ def train(kde, conf, session, random, x, collector):
         a_star2 = x[a_star2_indices]
         # No partial batches here
         for k in xrange(0, sample_each_epoch, m):
+            #  Determine A inverse for the low bias estimate
+            A_inverse = session.run(A_inverse_tensor)
             # Sample a and a_star
             start = 2*r + k
             a_indices = indices[start:start + conf.m]
             a = x[a_indices]
 
             # Feed to the distribution fitter
-            feed_dict = {kde.a: a, kde.a_star1: a_star1, kde.a_star2: a_star2, kde.batch_size: m}
-            _, loss, A_inverse = session.run([train_op, loss_tensor, A_inverse_tensor], feed_dict=feed_dict)
+            feed_dict = {kde.a: a, kde.a_star1: a_star1, kde.a_star2: a_star2, low_bias_A_inverse: 5.0 * A_inverse,
+                         kde.batch_size: m}
+            _, loss = session.run([train_op, loss_tensor], feed_dict=feed_dict)
             # gradient = gradient[0]
             collector.collect(kde, session)
             if conf.show_A:

@@ -33,7 +33,7 @@ class Configuration:
         # The number of training epochs
         self.epochs = 40
         # The learning rate for R
-        self.lr = 30.0
+        self.lr = 50.0
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix

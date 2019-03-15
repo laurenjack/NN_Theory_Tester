@@ -21,6 +21,7 @@ def show_variance_function():
 
     # Initialise the distribution fitter
     kde = kernel_density_estimator.KernelDensityEstimator(conf) #, data_generator)
+    low_bias_A_inverse = tf.placeholder(dtype=tf.float32, shape=[conf.d, conf.d], name='low_bias_A_inverse')
 
     # Tensorflow setup
     session = tf.InteractiveSession()
@@ -30,7 +31,7 @@ def show_variance_function():
     A_inverse_placeholder = tf.placeholder(dtype=tf.float32, shape=[1, 1], name = 'A_inverse_placeholder')
     r = conf.r
     s = conf.n - 2*r
-    loss_tensor = kde.loss(A_inverse_placeholder)
+    loss_tensor = kde.loss(A_inverse_placeholder, low_bias_A_inverse)
 
     hs = np.arange(0.05, 1.01, 0.01)
     losses = []
@@ -45,8 +46,9 @@ def show_variance_function():
         a_star2 = x[r:2*r]
         a = x[2*r:]
 
-        loss = session.run(loss_tensor, feed_dict={kde.a: a, kde.a_star1: a_star1, kde.a_star2: a_star2,
-                                                   kde.batch_size: s, A_inverse_placeholder: A_inverse})
+        feed_dict = {kde.a: a, kde.a_star1: a_star1, kde.a_star2: a_star2, kde.batch_size: s,
+                     low_bias_A_inverse: np.array(5.0 * A_inverse), A_inverse_placeholder: A_inverse}
+        loss = session.run(loss_tensor, feed_dict=feed_dict)
         losses.append(loss)
 
     losses = np.array(losses)

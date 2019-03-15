@@ -19,7 +19,7 @@ class KernelDensityEstimator(object):
         self.a_star1 = tf.placeholder(dtype=conf.float_precision, shape=[self.r, self.d], name='a_star1')
         self.a_star2 = tf.placeholder(dtype=conf.float_precision, shape=[self.r, self.d], name='a_star2')
 
-    def loss(self, A_inverse):
+    def loss(self, A_inverse, low_bias_A_inverse=None):
         """This function returns a tensor to be minimised with respect to A_inverse (the inverse bandwidth matrix of the
         kernel function).
 
@@ -32,11 +32,11 @@ class KernelDensityEstimator(object):
         """
         fa = self.pdf(A_inverse, self.a_star1)
         # If a data generator was passed in, use the actual distribution from the data generator:
-        if self.data_generator:
+        if low_bias_A_inverse is None:
            pa_estimate = self.data_generator.pdf(self.a, self.batch_size)
         # Otherwise we have a real problem where the distribution is unknown
         else:
-            pa_estimate = self.pdf(np.array([[10.0]], dtype=np.float32), self.a_star2)
+            pa_estimate = self.pdf(low_bias_A_inverse, self.a_star2)
         loss = 0.5 * tf.reduce_mean((fa - pa_estimate) ** 2.0)
         return loss
 
