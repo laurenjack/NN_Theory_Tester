@@ -8,13 +8,20 @@ def train(kde, conf, session, random, x, collector):
     A_inverse_tensor = tf.matmul(R_inverse, tf.transpose(R_inverse))
     # Placeholder used for the A which determines p(a) estimation
     low_bias_A_inverse = tf.placeholder(dtype=tf.float32, shape=[conf.d, conf.d], name='low_bias_A_inverse')
-    loss_tensor = kde.loss(A_inverse_tensor, low_bias_A_inverse)
+    if conf.fit_to_underlying_pdf:
+        print 'TRAINING ON ACTUAL PDF'
+        loss_tensor, pa_tensor, fa_tensor = kde.loss(A_inverse_tensor)
+    else:
+        print 'Training on data, underlying pdf unknown'
+        loss_tensor = kde.loss(A_inverse_tensor, low_bias_A_inverse)
+
     train_op = tf.train.GradientDescentOptimizer(conf.lr).minimize(loss_tensor)
     tf.global_variables_initializer().run()
 
     # Iteratively train the distribution fitter
     m = conf.m
     r = conf.r
+    c = conf.c
     num_samples = conf.n - 2*r
     batch_count = num_samples // m
     sample_each_epoch = m * batch_count
@@ -37,14 +44,17 @@ def train(kde, conf, session, random, x, collector):
             a = x[a_indices]
 
             # Feed to the distribution fitter
-            feed_dict = {kde.a: a, kde.a_star1: a_star1, kde.a_star2: a_star2, low_bias_A_inverse: 5.0 * A_inverse,
+            feed_dict = {kde.a: a, kde.a_star1: a_star1, kde.a_star2: a_star2, low_bias_A_inverse: A_inverse / c,
                          kde.batch_size: m}
-            _, loss = session.run([train_op, loss_tensor], feed_dict=feed_dict)
+            _, loss, pa, fa = session.run([train_op, loss_tensor, pa_tensor, fa_tensor], feed_dict=feed_dict)
+            pa_mean = np.mean(pa)
+            fa_mean = np.mean(fa)
             # gradient = gradient[0]
             collector.collect(kde, session)
             if conf.show_A:
-                A = np.linalg.inv(A_inverse)
+                A_by_root_d = np.linalg.inv(A_inverse) * float(conf.d) ** 0.5
                 # determinant_g = np.linalg.det(gradient)
                 # gradient_size = np.sum(gradient ** 2.0) ** 0.5
-                print 'Loss: {l}\nA: {A}\n'.format(l=loss, A=A)
+                print 'Loss: {l}\nA by root d: {A}\n'.format(l=loss, A=A_by_root_d[0,0])
+                print 'p(a) mean: {p}   f(a) mean: {f}'.format(p=pa_mean, f=fa_mean)
 

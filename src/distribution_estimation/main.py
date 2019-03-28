@@ -17,7 +17,7 @@ def run():
     x, actual_A = data_generator.sample_gaussian_mixture()
 
     # Initialise the distribution fitter
-    kde = kernel_density_estimator.KernelDensityEstimator(conf) #, data_generator)
+    kde = kernel_density_estimator.KernelDensityEstimator(conf, data_generator)
 
     # Tensorflow setup
     session = tf.InteractiveSession()

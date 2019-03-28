@@ -20,8 +20,7 @@ def show_variance_function():
     x, _ = data_generator.sample_gaussian_mixture()
 
     # Initialise the distribution fitter
-    kde = kernel_density_estimator.KernelDensityEstimator(conf) #, data_generator)
-    low_bias_A_inverse = tf.placeholder(dtype=tf.float32, shape=[conf.d, conf.d], name='low_bias_A_inverse')
+    kde = kernel_density_estimator.KernelDensityEstimator(conf, data_generator)
 
     # Tensorflow setup
     session = tf.InteractiveSession()
@@ -31,7 +30,11 @@ def show_variance_function():
     A_inverse_placeholder = tf.placeholder(dtype=tf.float32, shape=[1, 1], name = 'A_inverse_placeholder')
     r = conf.r
     s = conf.n - 2*r
-    loss_tensor = kde.loss(A_inverse_placeholder, low_bias_A_inverse)
+    low_bias_A_inverse = tf.placeholder(dtype=tf.float32, shape=[conf.d, conf.d], name='low_bias_A_inverse')
+    if conf.fit_to_underlying_pdf:
+        loss_tensor = kde.loss(A_inverse_placeholder)
+    else:
+        loss_tensor = kde.loss(A_inverse_placeholder, low_bias_A_inverse)
 
     hs = np.arange(0.05, 1.01, 0.01)
     losses = []

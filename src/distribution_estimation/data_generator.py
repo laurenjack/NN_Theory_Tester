@@ -24,7 +24,7 @@ class DataGenerator(object):
         Q = _random_orthogonal_matrix(self.d)
         eigenvalues = random.uniform(min_eigenvalue, max_eigenvalue, self.d)
         upper_lambda = np.eye(self.d) * eigenvalues
-        self.actual_A = np.matmul(Q, np.matmul(upper_lambda, Q.transpose()))
+        self.actual_A = np.matmul(Q, np.matmul(upper_lambda, Q.transpose())) / float(self.d) ** 0.5
         self.sigma = np.matmul(self.actual_A.transpose(), self.actual_A)
         self.sigma_determinant = np.linalg.det(self.sigma)
         self.sigma_inverse = np.linalg.inv(self.sigma).astype(np.float32)

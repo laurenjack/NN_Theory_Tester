@@ -38,7 +38,7 @@ class KernelDensityEstimator(object):
         else:
             pa_estimate = self.pdf(low_bias_A_inverse, self.a_star2)
         loss = 0.5 * tf.reduce_mean((fa - pa_estimate) ** 2.0)
-        return loss
+        return loss, pa_estimate, fa
 
     def pdf(self, A_inverse, a_star):
         """Compute f(a) for the [batch_size, d] set of points a, using the [r, d] set of reference points and the
