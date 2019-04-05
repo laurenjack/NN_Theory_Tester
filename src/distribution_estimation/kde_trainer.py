@@ -52,7 +52,7 @@ def train(kde, conf, session, random, x, collector):
             # gradient = gradient[0]
             collector.collect(kde, session)
             if conf.show_A:
-                A_by_root_d = np.linalg.inv(A_inverse) * float(conf.d) ** 0.5
+                A_by_root_d = np.linalg.inv(A_inverse) * np.exp(1)
                 # determinant_g = np.linalg.det(gradient)
                 # gradient_size = np.sum(gradient ** 2.0) ** 0.5
                 print 'Loss: {l}\nA by root d: {A}\n'.format(l=loss, A=A_by_root_d[0,0])
