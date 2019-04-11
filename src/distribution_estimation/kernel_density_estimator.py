@@ -33,12 +33,12 @@ class KernelDensityEstimator(object):
         fa = self.pdf(A_inverse, self.a_star1)
         # If a data generator was passed in, use the actual distribution from the data generator:
         if low_bias_A_inverse is None:
-           pa_estimate = self.data_generator.pdf(self.a, self.batch_size)
+           pa_estimate, distance = self.data_generator.pdf(self.a, self.batch_size)
         # Otherwise we have a real problem where the distribution is unknown
         else:
             pa_estimate = self.pdf(low_bias_A_inverse, self.a_star2)
         loss = 0.5 * tf.reduce_mean((fa - pa_estimate) ** 2.0)
-        return loss, pa_estimate, fa
+        return loss, pa_estimate, fa, distance
 
     def pdf(self, A_inverse, a_star):
         """Compute f(a) for the [batch_size, d] set of points a, using the [r, d] set of reference points and the
@@ -57,8 +57,8 @@ class KernelDensityEstimator(object):
         distance_squared = tf.matmul(distance_squared, tf.reshape(difference, [self.batch_size, self.r, self.d, 1]))
         # Drop one of the unnecessary 1 dimensions, leave the other for future broadcasting.
         distance_squared = tf.reshape(distance_squared, [self.batch_size, self.r, 1])
-        exponent = -0.5 * distance_squared
+        exponent = 0.5 * (-distance_squared + self.d)
         kernel = tf.exp(exponent)
         det_A_inverse = tf.matrix_determinant(A_inverse)
         fa_unscaled = tf.reduce_mean(tf.reshape(kernel, [self.batch_size, self.r]), axis=1)
-        return det_A_inverse / (2.0 * math.pi) ** (self.d * 0.5) * fa_unscaled
+        return det_A_inverse * fa_unscaled # / (2.0 * math.pi) ** (self.d * 0.5)

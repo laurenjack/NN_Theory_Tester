@@ -10,7 +10,7 @@ def train(kde, conf, session, random, x, collector):
     low_bias_A_inverse = tf.placeholder(dtype=tf.float32, shape=[conf.d, conf.d], name='low_bias_A_inverse')
     if conf.fit_to_underlying_pdf:
         print 'TRAINING ON ACTUAL PDF'
-        loss_tensor, pa_tensor, fa_tensor = kde.loss(A_inverse_tensor)
+        loss_tensor, pa_tensor, fa_tensor, distance_tensor = kde.loss(A_inverse_tensor)
     else:
         print 'Training on data, underlying pdf unknown'
         loss_tensor = kde.loss(A_inverse_tensor, low_bias_A_inverse)
@@ -46,13 +46,13 @@ def train(kde, conf, session, random, x, collector):
             # Feed to the distribution fitter
             feed_dict = {kde.a: a, kde.a_star1: a_star1, kde.a_star2: a_star2, low_bias_A_inverse: A_inverse / c,
                          kde.batch_size: m}
-            _, loss, pa, fa = session.run([train_op, loss_tensor, pa_tensor, fa_tensor], feed_dict=feed_dict)
+            _, loss, pa, fa, distance = session.run([train_op, loss_tensor, pa_tensor, fa_tensor, distance_tensor], feed_dict=feed_dict)
             pa_mean = np.mean(pa)
             fa_mean = np.mean(fa)
             # gradient = gradient[0]
             collector.collect(kde, session)
             if conf.show_A:
-                A_by_root_d = np.linalg.inv(A_inverse) * np.exp(1)
+                A_by_root_d = np.linalg.inv(A_inverse) # * np.exp(1)
                 # determinant_g = np.linalg.det(gradient)
                 # gradient_size = np.sum(gradient ** 2.0) ** 0.5
                 print 'Loss: {l}\nA by root d: {A}\n'.format(l=loss, A=A_by_root_d[0,0])

@@ -28,15 +28,15 @@ class Configuration:
         # The number of dimensions, for the random variable a
         self.d = 20
         # The initial value of R
-        self.R_init = np.exp(-0.5) * np.eye(self.d) # (1.0 / float(self.d)) ** 0.25 *
+        self.R_init = np.eye(self.d) # np.exp(-0.5) *
         # The degree to which the bandwidth matrix of the estimate is scaled.
         self.c = 0.2 #** (1.0 / float(self.d))
         # [float] - A list of means, one for each Gaussian in the actual distribution
         self.means =  np.zeros((1, self.d)) #  np.array([[0.0], [5.0], [10.0]])
         # The number of training epochs
-        self.epochs = 60
+        self.epochs = 30
         # The learning rate for R
-        self.lr = 10.0 * (2 * math.pi * float(self.d)) #** 0.5
+        self.lr = 0.001 #* (2 * math.pi * float(self.d)) #** 0.5
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix

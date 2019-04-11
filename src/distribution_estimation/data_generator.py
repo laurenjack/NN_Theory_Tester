@@ -24,7 +24,7 @@ class DataGenerator(object):
         Q = _random_orthogonal_matrix(self.d)
         eigenvalues = random.uniform(min_eigenvalue, max_eigenvalue, self.d)
         upper_lambda = np.eye(self.d) * eigenvalues
-        self.actual_A = np.matmul(Q, np.matmul(upper_lambda, Q.transpose())) * np.exp(-1.0)
+        self.actual_A = np.matmul(Q, np.matmul(upper_lambda, Q.transpose())) # * np.exp(-1.0)
         self.sigma = np.matmul(self.actual_A.transpose(), self.actual_A)
         self.sigma_determinant = np.linalg.det(self.sigma)
         self.sigma_inverse = np.linalg.inv(self.sigma).astype(np.float32)
@@ -63,9 +63,10 @@ class DataGenerator(object):
                    [batch_size, self.number_of_means, 1, self.d])
         distance = tf.matmul(distance, difference)
         distance = tf.reshape(distance, [batch_size, self.number_of_means])
-        pa_unnormed = tf.reduce_sum(tf.exp(-0.5 * distance), axis=1)
-        pa = 1.0 / (((2.0 * math.pi) ** self.d * self.sigma_determinant) ** 0.5 * self.number_of_means) * pa_unnormed
-        return pa
+        exponent = 0.5 * (-distance + self.d)
+        pa_unnormed = tf.reduce_sum(tf.exp(exponent), axis=1)
+        pa = 1.0 / (self.sigma_determinant ** 0.5 * self.number_of_means) * pa_unnormed # (2.0 * math.pi) ** self.d *
+        return pa, distance
 
 
 def _random_orthogonal_matrix(d):
