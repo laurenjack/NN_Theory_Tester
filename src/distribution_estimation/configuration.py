@@ -20,7 +20,7 @@ class Configuration:
 
     def __init__(self):
         # The number of observations in the dataset.
-        self.n = 6000
+        self.n = 10000
         # The number of examples for training at each step
         self.m = 1000
         # The number of reference examples (those part of the Kernel density estimate) for each training step
@@ -34,9 +34,9 @@ class Configuration:
         # [float] - A list of means, one for each Gaussian in the actual distribution
         self.means =  np.zeros((1, self.d)) #  np.array([[0.0], [5.0], [10.0]])
         # The number of training epochs
-        self.epochs = 30
+        self.epochs = 50
         # The learning rate for R
-        self.lr = 0.001 #* (2 * math.pi * float(self.d)) #** 0.5
+        self.lr = 0.005 #* (2 * math.pi * float(self.d)) #** 0.5
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix

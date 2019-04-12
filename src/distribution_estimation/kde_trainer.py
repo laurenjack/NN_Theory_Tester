@@ -15,7 +15,14 @@ def train(kde, conf, session, random, x, collector):
         print 'Training on data, underlying pdf unknown'
         loss_tensor = kde.loss(A_inverse_tensor, low_bias_A_inverse)
 
-    train_op = tf.train.GradientDescentOptimizer(conf.lr).minimize(loss_tensor)
+    lr_tensor = tf.placeholder(dtype=tf)
+    optimiser = tf.train.GradientDescentOptimizer(conf.lr)
+    gradient_var_pairs = optimiser.compute_gradients(loss_tensor)
+    new_gradient_var_pairs = []
+    for gradient, var in gradient_var_pairs:
+        new_gradient = gradient / tf.reduce_mean(tf.abs(gradient))
+        new_gradient_var_pairs.append((new_gradient, var))
+    train_op = optimiser.apply_gradients(new_gradient_var_pairs)
     tf.global_variables_initializer().run()
 
     # Iteratively train the distribution fitter
