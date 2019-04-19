@@ -26,7 +26,7 @@ class Configuration:
         # The number of reference examples (those part of the Kernel density estimate) for each training step
         self.r = 1000
         # The number of dimensions, for the random variable a
-        self.d = 20
+        self.d = 50
         # The initial value of R
         self.R_init = np.eye(self.d) # np.exp(-0.5) *
         # The degree to which the bandwidth matrix of the estimate is scaled.
