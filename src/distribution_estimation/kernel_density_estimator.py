@@ -9,7 +9,8 @@ class KernelDensityEstimator(object):
     """Represents a Kernel Density Estimate with variable bandwidth h, over a set of reference samples a_star.
     """
 
-    def __init__(self, conf, data_generator=None):
+    def __init__(self, conf, pdf_functions, data_generator=None):
+        self.pdf_functions = pdf_functions
         self.data_generator = data_generator
         self.r = conf.r
         self.d = conf.d
@@ -62,3 +63,8 @@ class KernelDensityEstimator(object):
         det_A_inverse = tf.matrix_determinant(A_inverse)
         fa_unscaled = tf.reduce_mean(tf.reshape(kernel, [self.batch_size, self.r]), axis=1)
         return det_A_inverse * fa_unscaled # / (2.0 * math.pi) ** (self.d * 0.5)
+
+    def loss_chi_squared(self, A_inverse):
+        fa = self.pdf_functions.chi_squared_kde(A_inverse, self.a, self.a_star1, self.batch_size)
+        return -tf.reduce_mean(fa)
+

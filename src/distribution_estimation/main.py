@@ -6,6 +6,7 @@ import kernel_density_estimator
 import kde_trainer
 import density_collector
 import density_animator
+import pdf_functions as pf
 from src import random_behavior
 
 
@@ -17,7 +18,8 @@ def run():
     x, actual_A = data_generator.sample_gaussian_mixture()
 
     # Initialise the distribution fitter
-    kde = kernel_density_estimator.KernelDensityEstimator(conf, data_generator)
+    pdf_functions = pf.PdfFunctions(conf)
+    kde = kernel_density_estimator.KernelDensityEstimator(conf, pdf_functions, data_generator)
 
     # Tensorflow setup
     session = tf.InteractiveSession()

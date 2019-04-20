@@ -26,7 +26,7 @@ class Configuration:
         # The number of reference examples (those part of the Kernel density estimate) for each training step
         self.r = 1000
         # The number of dimensions, for the random variable a
-        self.d = 50
+        self.d = 5
         # The initial value of R
         self.R_init = np.eye(self.d) # np.exp(-0.5) *
         # The degree to which the bandwidth matrix of the estimate is scaled.
@@ -36,12 +36,12 @@ class Configuration:
         # The number of training epochs
         self.epochs = 50
         # The learning rate for R
-        self.lr = 0.005 #* (2 * math.pi * float(self.d)) #** 0.5
+        self.lr = 0.003 #* (2 * math.pi * float(self.d)) #** 0.5
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix
-        self.min_eigenvalue = 0.99999
-        self.max_eigenvalue = 1.00001
+        self.min_eigenvalue = 0.199999
+        self.max_eigenvalue = 1.50001
         # Show A each after each training batch
         self.show_A = True
         # Number of observations to be drawn when animating KDE versus actual_distribution

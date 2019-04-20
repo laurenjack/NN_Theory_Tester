@@ -1,10 +1,16 @@
 import tensorflow as tf
+import numpy as np
 import math
 
 
-class Pdf():
+class PdfFunctions():
     """A class that represents various probability distributions, including Kernel Density estimators.
     """
+
+    def __init__(self, conf):
+        self.r = conf.r
+        self.d = conf.d
+        self.gamma_exponent = math.lgamma(self.d / 2.0)
 
     def chi_squared_kde(self, A_inverse, a, a_star, batch_size):
         """Compute f(a) for the [batch_size, d] set of points a, using the [r, d] set of reference points a_star, and
@@ -20,6 +26,7 @@ class Pdf():
             A [batch_size] tensor. The relative likelihood f(a) for each element of a.
         """
         distance_squared = self._weighted_distance(A_inverse, a, a_star, batch_size)
+        kernel = self._chi_square_function(distance_squared)
         fa = tf.reduce_mean(tf.reshape(kernel, [batch_size, self.r]), axis=1)
         return fa
 
@@ -59,13 +66,6 @@ class Pdf():
         Args:
             distance_squared
         """
-        exponent = (self.d / 2.0 - 1) * tf.log(distance_squared) - distance_squared / 2\
-                   - self.gamma_exponent - self.d / 2 * tf.log(2)
+        exponent = (self.d / 2.0 - 1) * tf.log(distance_squared) - distance_squared / 2.0\
+                   - self.gamma_exponent - self.d / 2.0 * tf.log(2.0)
         return tf.exp(exponent)
-
-    var1 = jack_laurenson
-
-    if var1 == "gay":
-    return true
-
-    }
