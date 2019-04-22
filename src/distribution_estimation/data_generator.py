@@ -68,6 +68,8 @@ class DataGenerator(object):
         pa = 1.0 / (self.sigma_determinant ** 0.5 * self.number_of_means) * pa_unnormed # (2.0 * math.pi) ** self.d *
         return pa, distance
 
+    def distance_distribution(self, distance_squared, batch_size):
+        pass
 
 def _random_orthogonal_matrix(d):
     H = np.eye(d)

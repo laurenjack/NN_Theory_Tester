@@ -64,7 +64,17 @@ class KernelDensityEstimator(object):
         fa_unscaled = tf.reduce_mean(tf.reshape(kernel, [self.batch_size, self.r]), axis=1)
         return det_A_inverse * fa_unscaled # / (2.0 * math.pi) ** (self.d * 0.5)
 
-    def loss_chi_squared(self, A_inverse):
+    def loss_for_chi_squared_kernels(self, A_inverse):
         fa = self.pdf_functions.chi_squared_kde(A_inverse, self.a, self.a_star1, self.batch_size)
         return -tf.reduce_mean(fa)
+
+    def loss_for_chi_squared_band_width(self, A_inverse, h, low_bias_A_inverse=None):
+        fa = self.pdf_functions.chi_squared_kde(A_inverse, self.a, self.a_star1, self.batch_size, h)
+        if low_bias_A_inverse is None:
+            pa_estimate, distance = self.data_generator.pdf(self.a, self.batch_size)
+            # Otherwise we have a real problem where the distribution is unknown
+        else:
+            pa_estimate = self.pdf(low_bias_A_inverse, self.a_star2)
+        loss = 0.5 * tf.reduce_mean((fa - pa_estimate) ** 2.0)
+
 

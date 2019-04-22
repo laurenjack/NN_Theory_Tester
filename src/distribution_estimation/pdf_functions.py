@@ -12,7 +12,7 @@ class PdfFunctions():
         self.d = conf.d
         self.gamma_exponent = math.lgamma(self.d / 2.0)
 
-    def chi_squared_kde(self, A_inverse, a, a_star, batch_size):
+    def chi_squared_kde(self, A_inverse, a, a_star, batch_size, h=1.0):
         """Compute f(a) for the [batch_size, d] set of points a, using the [r, d] set of reference points a_star, and
         the inverse bandwitdth matrix A_inverse, using chi_squared kernels
 
@@ -21,12 +21,13 @@ class PdfFunctions():
             a: The points in the batch to train on.
             a_star: The reference points which form the centres for the Kernel Density Estimate
             batch_size: A scalar tensor, the number of examples in the current batch
+            h: The bandwidth
 
         Returns:
             A [batch_size] tensor. The relative likelihood f(a) for each element of a.
         """
         distance_squared = self._weighted_distance(A_inverse, a, a_star, batch_size)
-        kernel = self._chi_square_function(distance_squared)
+        kernel = self._chi_square_function(distance_squared, h)
         fa = tf.reduce_mean(tf.reshape(kernel, [batch_size, self.r]), axis=1)
         return fa
 
@@ -60,12 +61,18 @@ class PdfFunctions():
         # Drop one of the unnecessary 1 dimensions, leave the other for future broadcasting.
         return tf.reshape(distance_squared, [batch_size, self.r, 1])
 
-    def _chi_square_function(self, distance_squared):
+    def _chi_square_function(self, distance_squared, h=1.0):
         """Plug the tensor distance_squared into the chi-squared function.
 
         Args:
             distance_squared
         """
+        distance_squared = distance_squared / h
         exponent = (self.d / 2.0 - 1) * tf.log(distance_squared) - distance_squared / 2.0\
                    - self.gamma_exponent - self.d / 2.0 * tf.log(2.0)
-        return tf.exp(exponent)
+        return tf.exp(exponent) / h
+
+one_to_499 = np.arange(1, 500)
+foo = 499 * np.log(998) - 499 - np.sum(np.log(one_to_499)) - 500 * np.log(2)
+print foo
+print np.exp(foo)
