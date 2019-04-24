@@ -34,7 +34,7 @@ class Configuration:
         # [float] - A list of means, one for each Gaussian in the actual distribution
         self.means =  np.zeros((1, self.d)) #  np.array([[0.0], [5.0], [10.0]])
         # The number of training epochs
-        self.epochs = 50
+        self.epochs = 10
         # The learning rate for R
         self.lr = 0.003 #* (2 * math.pi * float(self.d)) #** 0.5
         # Floating point precision for tensorflow

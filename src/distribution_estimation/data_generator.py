@@ -11,7 +11,8 @@ class DataGenerator(object):
     in between the bounds specified by min_eigenvalue and min_eigenvalue. A = QLQt, where L is the diagonal matrix of
     eigenvalues.
     """
-    def __init__(self, conf, random):
+    def __init__(self, conf, pdf_functions, random):
+        self.pdf_functions = pdf_functions
         self.random = random
         self.n = conf.n
         self.d = conf.d
@@ -55,21 +56,30 @@ class DataGenerator(object):
         Return:
             The value of the pdf at for each point in a.
         """
+        distance_squared = self._distance_squared(a, batch_size)
+        exponent = 0.5 * (-distance_squared + self.d)
+        pa_unnormed = tf.reduce_sum(tf.exp(exponent), axis=1)
+        pa = 1.0 / (self.sigma_determinant ** 0.5 * self.number_of_means) * pa_unnormed # (2.0 * math.pi) ** self.d *
+        return pa, distance_squared
+
+    def distance_distribution(self, a, batch_size):
+        """
+        For batch_size points in a, report the probability that said point occurs that far from the mean.
+        """
+        distance_squared = self._distance_squared(a, batch_size)
+        return self.pdf_functions.chi_squared_distribution(distance_squared)
+
+
+    def _distance_squared(self, a, batch_size):
         a = tf.reshape(a, [batch_size, 1, self.d])
         means = self.means.reshape(1, self.number_of_means, self.d)
         difference = a - means
         difference = tf.reshape(difference, [batch_size, self.number_of_means, self.d, 1])
-        distance = tf.reshape(tf.tensordot(difference, self.sigma_inverse, axes=[[2], [0]]),
-                   [batch_size, self.number_of_means, 1, self.d])
-        distance = tf.matmul(distance, difference)
-        distance = tf.reshape(distance, [batch_size, self.number_of_means])
-        exponent = 0.5 * (-distance + self.d)
-        pa_unnormed = tf.reduce_sum(tf.exp(exponent), axis=1)
-        pa = 1.0 / (self.sigma_determinant ** 0.5 * self.number_of_means) * pa_unnormed # (2.0 * math.pi) ** self.d *
-        return pa, distance
-
-    def distance_distribution(self, distance_squared, batch_size):
-        pass
+        distance_squared = tf.reshape(tf.tensordot(difference, self.sigma_inverse, axes=[[2], [0]]),
+                              [batch_size, self.number_of_means, 1, self.d])
+        distance_squared = tf.matmul(distance_squared, difference)
+        distance_squared = tf.reshape(distance_squared, [batch_size, self.number_of_means])
+        return distance_squared
 
 def _random_orthogonal_matrix(d):
     H = np.eye(d)

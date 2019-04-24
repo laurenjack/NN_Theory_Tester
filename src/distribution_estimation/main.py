@@ -12,13 +12,13 @@ from src import random_behavior
 
 def run():
     conf = configuration.get_configuration()
+    pdf_functions = pf.PdfFunctions(conf)
     random = random_behavior.Random()
 
-    data_generator = dg.DataGenerator(conf, random)
+    data_generator = dg.DataGenerator(conf, pdf_functions, random)
     x, actual_A = data_generator.sample_gaussian_mixture()
 
     # Initialise the distribution fitter
-    pdf_functions = pf.PdfFunctions(conf)
     kde = kernel_density_estimator.KernelDensityEstimator(conf, pdf_functions, data_generator)
 
     # Tensorflow setup

@@ -11,7 +11,7 @@ def train(kde, conf, session, random, x, collector):
     if conf.fit_to_underlying_pdf:
         print 'TRAINING ON ACTUAL PDF'
         # loss_tensor, pa_tensor, fa_tensor, distance_tensor = kde.loss(A_inverse_tensor)
-        loss_tensor = kde.loss_chi_squared(A_inverse_tensor)
+        loss_tensor = kde.loss_for_chi_squared_kernels(A_inverse_tensor)
     else:
         print 'Training on data, underlying pdf unknown'
         loss_tensor = kde.loss(A_inverse_tensor, low_bias_A_inverse)
