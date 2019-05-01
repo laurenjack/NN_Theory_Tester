@@ -14,7 +14,6 @@ class DataGenerator(object):
     def __init__(self, conf, pdf_functions, random):
         self.pdf_functions = pdf_functions
         self.random = random
-        self.n = conf.n
         self.d = conf.d
         min_eigenvalue = conf.min_eigenvalue
         max_eigenvalue = conf.max_eigenvalue
@@ -30,7 +29,7 @@ class DataGenerator(object):
         self.sigma_determinant = np.linalg.det(self.sigma)
         self.sigma_inverse = np.linalg.inv(self.sigma).astype(np.float32)
 
-    def sample_gaussian_mixture(self):
+    def sample_gaussian_mixture(self, n):
         """Generates an [n, d] numpy array, where the n elements are drawn from a mixture of Gaussians in d dimensions
 
         Args:
@@ -40,10 +39,11 @@ class DataGenerator(object):
 
         Return: A [n, d] numpy array of floating point numbers, drawn from the Gaussian mixture.
         """
-        chosen_means = self.random.choice(self.means, self.n, replace=True)
+        chosen_means = self.random.choice(self.means, n, replace=True)
 
-        z = self.random.normal_numpy_array([self.n, self.d])
-        return chosen_means + np.matmul(z, self.actual_A), self.actual_A
+        z = self.random.normal_numpy_array([n, self.d])
+        x = chosen_means + np.matmul(z, self.actual_A)
+        return x.astype(np.float32), self.actual_A
 
     def pdf(self, a, batch_size):
         """ Compute the PDF of the Gaussian mixture associated with this data generator, for batch_size points in a.
@@ -67,7 +67,7 @@ class DataGenerator(object):
         For batch_size points in a, report the probability that said point occurs that far from the mean.
         """
         distance_squared = self._distance_squared(a, batch_size)
-        return self.pdf_functions.chi_squared_distribution(distance_squared)
+        return tf.reduce_mean(self.pdf_functions.chi_squared_distribution(distance_squared), axis=1)
 
 
     def _distance_squared(self, a, batch_size):

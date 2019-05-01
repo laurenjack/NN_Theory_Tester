@@ -11,32 +11,32 @@ class PdfFunctions():
         self.r = conf.r
         self.d = conf.d
         self.max_chi_exponent = self._chi_square_exponent(float(self.d - 2))
+        self.min_chi_exponent = self._chi_square_exponent(float(4 * self.d))
 
-    def chi_squared_kde(self, A_inverse, a, a_star, batch_size):
-        """Compute f(a) for the [batch_size, d] set of points a, using the [r, d] set of reference points a_star, and
-        the inverse bandwidth matrix A_inverse, using chi_squared kernels
+    def chi_squared_distance_estimator(self, H_inverse, a, a_star, batch_size):
+        """Model the distribution of the distance between points a and a_star using a chi_squared distribution
 
         Args:
-            A_inverse: A [d, d] tensor, the bandwidth of the kernel density estimate.
-            a: The points in the batch to train on.
-            a_star: The reference points which form the centres for the Kernel Density Estimate
-            batch_size: A scalar tensor, the number of examples in the current batch
-            h: The bandwidth
+            TODO(Jack)
 
         Returns:
-            A [batch_size] tensor. The relative likelihood f(a) for each element of a.
+            exponent - The chi-square exponent for the [batch_size, r] tensor a - a_star
+            loss - The loss function, chi-square weighted sum of exponents
         """
-        distance_squared = self._weighted_distance(A_inverse, a, a_star, batch_size)
+        distance_squared = self._weighted_distance(H_inverse, a, a_star, batch_size)
         exponent = self._chi_square_exponent(distance_squared)
-        kernel = tf.exp(exponent)
-        fa = tf.reduce_mean(tf.reshape(kernel, [batch_size, self.r]), axis=1)
-        return fa
+        kernel = tf.exp(tf.reshape(exponent, [batch_size, self.r]))
+        fa = kernel * tf.matrix_determinant(H_inverse) ** (1.0 / self.d)
+        # exponent = tf.reshape(exponent, [batch_size, self.r]) + tf.log(tf.matrix_determinant(H_inverse)) * (1.0 / self.d)
+        # loss = tf.nn.relu(exponent - self.min_chi_exponent)
+        return exponent, fa
 
-    def chi_square_kde_with_centered_exponent(self, A_inverse, a, a_star, batch_size, h):
-        distance_squared = self._weighted_distance(A_inverse, a, a_star, batch_size)
+    def chi_square_kde_centered_exponent(self, H_inverse, a, a_star, batch_size, h):
+        distance_squared = self._weighted_distance(H_inverse, a, a_star, batch_size)
         exponent = (self._chi_square_exponent(distance_squared) - self.max_chi_exponent) / h
+        # exponent = self._chi_square_exponent(distance_squared / h)
         kernel = tf.exp(exponent)
-        fa = tf.reduce_mean(tf.reshape(kernel, [batch_size, self.r]), axis=1) / h
+        fa = tf.exp(self.max_chi_exponent) * tf.reduce_mean(tf.reshape(kernel, [batch_size, self.r]), axis=1) / 2.0 / h ** 0.5
         return fa
 
 
@@ -60,16 +60,16 @@ class PdfFunctions():
         fa_unscaled = tf.reduce_mean(tf.reshape(kernel, [self.batch_size, self.r]), axis=1)
         return det_A_inverse * fa_unscaled
 
-    def chi_square_distribution(self, distance_squared):
+    def chi_squared_distribution(self, distance_squared):
         """
         Given a tensor of any non-zero shape, return the likelihood of X = distance_squared where X is a chi-squared
         distribution, for each element of distance_squared.
         """
+        distance_squared = distance_squared
         exponent = self._chi_square_exponent(distance_squared)
         return tf.exp(exponent)
 
-    def _weighted_distance(self, A_inverse, a, a_star, batch_size):
-        H_inverse = tf.matmul(A_inverse, tf.transpose(A_inverse))
+    def _weighted_distance(self, H_inverse, a, a_star, batch_size):
         difference = tf.reshape(a, [batch_size, 1, self.d]) - tf.reshape(a_star, [1, self.r, self.d])
         distance_squared = tf.reshape(tf.tensordot(difference, H_inverse, axes=[[2], [0]]),
                                       [batch_size, self.r, 1, self.d])

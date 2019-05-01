@@ -4,7 +4,7 @@ import numpy as np
 import configuration
 import data_generator as dg
 import kernel_density_estimator
-import kde_trainer
+import trainer
 import density_collector
 import density_animator
 from src import random_behavior
