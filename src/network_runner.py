@@ -136,6 +136,11 @@ class NetworkRunner(object):
         correct, incorrect = self.all_correct_incorrect(x, y)
         return correct.sample(sample_size), incorrect.sample(sample_size)
 
+    def close_session(self):
+        """Close the tensorflow session associated with this network runner.
+        """
+        self.sess.close()
+
     def _feed_and_return(self, x, y, op, indices, lr, sample_size, init_result_list=None):
         """See documentation of feed_and_run and feed_and_return"""
         if indices is None:

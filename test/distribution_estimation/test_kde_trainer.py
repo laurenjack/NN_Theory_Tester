@@ -3,7 +3,7 @@ import mock
 import numpy as np
 
 from test import test_utils
-from src.distribution_estimation import kde_trainer
+from src.distribution_estimation import trainer
 
 
 class TestKdeTrainer(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestKdeTrainer(unittest.TestCase):
         random.shuffle = mock.Mock()
 
         # Run the Kde trainer
-        kde_trainer.train(kde, conf, sess, random)
+        trainer.train(kde, conf, sess, random)
 
         # Assert that session.run was called with the correct elements
         random.normal_numpy_array.assert_called_once_with([12])

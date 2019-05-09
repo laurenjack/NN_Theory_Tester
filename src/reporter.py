@@ -16,9 +16,11 @@ class Reporter:
         prediction_analytics: A service instance, see prediction_analytics.py
     """
 
-    def __init__(self, num_class, prediction_analytics):
+    def __init__(self, num_class, prediction_analytics, real_conf):
         self.num_class = num_class
         self.prediction_analytics = prediction_analytics
+        global conf
+        conf = real_conf #TODO(Jack) Fix up
 
     def report_single_network(self, network_runner, data_set, training_results=None):
         """Module responsible for reporting on the results of a trained network.
@@ -29,7 +31,7 @@ class Reporter:
         y_validation = data_set.validation.y
         correct, incorrect = self._report(network_runner, data_set)
 
-        if conf.print_rbf_params and conf.is_rbf:
+        if conf.is_rbf and conf.print_rbf_params:
             self._print_rbf_bacth(x_validation, y_validation, network_runner)
 
         class_to_adversary = conf.class_to_adversary_class
@@ -39,7 +41,7 @@ class Reporter:
 
         # show adversaries
         if conf.show_adversaries:
-            x_adv, y_actual, x_actual = adversarial_gd(network_runner, correct, class_to_adversary)
+            x_adv, y_actual, x_actual = adversarial_gd(network_runner, correct, class_to_adversary, conf)
             adverse_prediction, _ = self._get_probabilities_for(network_runner, x_adv, y_actual, report=True)
             plot_all_with_originals(x_adv, adverse_prediction, y_actual, x_actual)
 
@@ -47,14 +49,14 @@ class Reporter:
         if conf.write_csv:
             self.prediction_analytics.write_csv(x_validation, y_validation, network_runner)
 
-        if conf.show_animation and training_results:
+        if training_results and conf.show_animation:
             animate(*training_results)
 
         if conf.show_node_distributions:
             self._random_node_distributions(network_runner, x_validation, y_validation,
                                             conf.number_of_node_distributions)
 
-        if conf.show_z_stats and conf.is_rbf:
+        if conf.is_rbf and conf.show_z_stats:
             x_train = data_set.train.x
             y_train = data_set.train.y
             # correct, incorrect, _, _ = network_runner.all_correct_incorrect(x_train, y_train)

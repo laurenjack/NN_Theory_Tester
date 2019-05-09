@@ -32,16 +32,14 @@ class FeedForward(network.Network):
         a = self.x
         if conf.use_orthogonality_filters:
             orthogonality_filter = operation.create_orthogonality_filter(num_inputs)
-            # a = a * orthogonality_filter
             a = tf.matmul(a, orthogonality_filter)
-        for l, inp, out in zip(range(len(outs[:-1])), ins[:-1], outs[:-1]):
+        for l, inp, out in zip(range(len(outs)), ins, outs):
             a = self._create_layer(a, l, [inp, out], activation_func=tf.nn.relu)
             if conf.use_orthogonality_filters:
                 orthogonality_filter = operation.create_orthogonality_filter(out)
-                # a = a * orthogonality_filter
                 a = tf.matmul(a, orthogonality_filter)
-        # TODO(Jack) deal with extra layer in Vanilla softmax case, and simplify orthogonality filter code
-        pre_z = self._create_layer(a, l + 1, [ins[-1], outs[-1]], activation_func=tf.nn.relu)
+        # TODO(Jack) simplify orthogonality filter code
+        pre_z = a
 
         self.all_end_tensors = self.end.tensors_for_network(pre_z)
         self.a = self.all_end_tensors[0]

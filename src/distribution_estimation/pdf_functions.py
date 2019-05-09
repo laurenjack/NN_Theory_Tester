@@ -23,9 +23,10 @@ class PdfFunctions():
             exponent - The chi-square exponent for the [batch_size, r] tensor a - a_star
             loss - The loss function, chi-square weighted sum of exponents
         """
+        r = a_star.shape[0]
         distance_squared = self._weighted_distance(H_inverse, a, a_star, batch_size)
         exponent = self._chi_square_exponent(distance_squared)
-        kernel = tf.exp(tf.reshape(exponent, [batch_size, self.r]))
+        kernel = tf.exp(tf.reshape(exponent, [batch_size, r]))
         fa = kernel * tf.matrix_determinant(H_inverse) ** (1.0 / self.d)
         # exponent = tf.reshape(exponent, [batch_size, self.r]) + tf.log(tf.matrix_determinant(H_inverse)) * (1.0 / self.d)
         # loss = tf.nn.relu(exponent - self.min_chi_exponent)
@@ -70,12 +71,12 @@ class PdfFunctions():
         return tf.exp(exponent)
 
     def _weighted_distance(self, H_inverse, a, a_star, batch_size):
-        difference = tf.reshape(a, [batch_size, 1, self.d]) - tf.reshape(a_star, [1, self.r, self.d])
+        r = a_star.shape[0]
+        difference = tf.reshape(a, [batch_size, 1, self.d]) - tf.reshape(a_star, [1, r, self.d])
         distance_squared = tf.reshape(tf.tensordot(difference, H_inverse, axes=[[2], [0]]),
-                                      [batch_size, self.r, 1, self.d])
-        distance_squared = tf.matmul(distance_squared, tf.reshape(difference, [batch_size, self.r, self.d, 1]))
-        # Drop one of the unnecessary 1 dimensions, leave the other for future broadcasting.
-        return tf.reshape(distance_squared, [batch_size, self.r, 1])
+                                      [batch_size, r, 1, self.d])
+        distance_squared = tf.matmul(distance_squared, tf.reshape(difference, [batch_size, r, self.d, 1]))
+        return tf.reshape(distance_squared, [batch_size, r])
 
     def _chi_square_exponent(self, distance_squared):
         """Plug the tensor distance_squared into the chi-squared function.

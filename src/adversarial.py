@@ -1,6 +1,6 @@
 import numpy as np
 import configuration
-conf = configuration.get_configuration()
+
 
 """Responsible for adversarial operations"""
 
@@ -14,9 +14,9 @@ conf = configuration.get_configuration()
         rbf region. Therefore, rather than maximising the loss, we minimise
         the loss with respect to a different target. Ideally the nearest z_bar"""
 
-def adversarial_gd(network_runner, correct, closest_classes):
+def adversarial_gd(network_runner, correct, closest_classes, conf):
     """Use gradient descent to generate adversarial examples"""
-    x, adversarial_y, actual_y = _select_sample(correct, closest_classes)
+    x, adversarial_y, actual_y = _select_sample(correct, closest_classes, conf)
     adverse_op = network_runner.network.gradient_wrt_inputs()
     x_orig = x
 
@@ -29,7 +29,7 @@ def adversarial_gd(network_runner, correct, closest_classes):
     return x, actual_y, x_orig
 
 
-def _select_sample(correct, closest_classes):
+def _select_sample(correct, closest_classes, conf):
     k1, k2 = closest_classes
     corr_k1 = correct.get_sample_of_class(k1, conf.adversarial_ss)
     x = corr_k1.x
