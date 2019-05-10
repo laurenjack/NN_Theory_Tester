@@ -9,6 +9,7 @@ import kernel_density_estimator
 import trainer as tr
 import tensorflow as tf
 import density_collector
+import distance_computer
 import numpy as np
 
 def run():
@@ -33,25 +34,31 @@ def run():
                                                                conf_network)
     corr, incorr = network_runner.all_correct_incorrect(x_adv, y_original)
     print corr.indices
-    a_original = network_runner.feed_and_return(x_original, y_original, activation_list_op)
-    a_adv = network_runner.feed_and_return(x_adv, y_original, activation_list_op)
 
-    # Train the chi square distance estimator
-    conf_distribution_estimation = configuration.get_configuration()
-    collector = density_collector.NullCollector()
-    random = random_behavior.Random()
-    trainer = tr.Tranier(conf_distribution_estimation, random)
-    pdf_functions = pf.PdfFunctions(conf_distribution_estimation)
-    kde = kernel_density_estimator.KernelDensityEstimator(conf_distribution_estimation, pdf_functions)
-    session = tf.InteractiveSession()
-    H_inverse = trainer.train_H(kde, session, np.copy(a), collector)
+    # a_original = network_runner.feed_and_return(x_original, y_original, activation_list_op)
+    # a_adv = network_runner.feed_and_return(x_adv, y_original, activation_list_op)
+
+    # # Train the chi square distance estimator
+    # conf_distribution_estimation = configuration.get_configuration()
+    # collector = density_collector.NullCollector()
+    # random = random_behavior.Random()
+    # trainer = tr.Tranier(conf_distribution_estimation, random)
+    # pdf_functions = pf.PdfFunctions(conf_distribution_estimation)
+    # kde = kernel_density_estimator.KernelDensityEstimator(conf_distribution_estimation, pdf_functions)
+    # session = tf.InteractiveSession()
+    # H_inverse = trainer.train_H(kde, session, np.copy(a), collector)
+
+    # m = conf_distribution_estimation.m
+    # original_wd = pdf_functions._weighted_distance(H_inverse, a[0:m], a_original, m)
+    # adv_wd = pdf_functions._weighted_distance(H_inverse, a[0:m], a_adv, m)
+    # original_wd, adv_wd = session.run([original_wd, adv_wd])
 
     # Compare the 10 closest points to the originals, and the adversaries
     def _report_closest_points(wd, x_batch, title):
         m = x_batch.shape[0]
         # exponent = exponent.transpose()
         # fa = fa.transpose()
-        wd = wd.transpose()
+        # wd = wd.transpose()
         sorted_indices = np.argsort(wd, axis=1)
         top_10 = sorted_indices[:, 0:10]
         for i in xrange(wd.shape[0]):
@@ -67,12 +74,14 @@ def run():
             # print top_10_fa
             print ''
 
-    m = conf_distribution_estimation.m
-    original_wd = pdf_functions._weighted_distance(H_inverse, a[0:m], a_original, m)
-    adv_wd = pdf_functions._weighted_distance(H_inverse, a[0:m], a_adv, m)
-    original_wd, adv_wd = session.run([original_wd, adv_wd])
-    _report_closest_points(original_wd, correct_train.x[0:m], 'original')
-    _report_closest_points(adv_wd, correct_train.x[0:m], 'adversarial')
+    session = network_runner.sess
+    correct_train_sample = correct_train.x[0:1000]
+    original_wd = distance_computer.network_distance(x_original, correct_train_sample, network_runner)
+    original_wd = session.run(original_wd)
+    adv_wd = distance_computer.network_distance(x_adv, correct_train_sample, network_runner)
+    adv_wd = session.run(adv_wd)
+    _report_closest_points(original_wd, correct_train_sample, 'original')
+    _report_closest_points(adv_wd, correct_train_sample, 'adversarial')
 
     print corr.indices
 

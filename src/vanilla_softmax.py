@@ -23,8 +23,8 @@ class VanillaSoftmax:
             A list of tensors, for use in the construction of a neural network.
         """
         with tf.variable_scope('vanilla_softmax'):
-            z = operation.fc(pre_z, self.num_class)
+            z, W = operation.fc(pre_z, self.num_class, return_weights=True)
             a = tf.nn.softmax(z)
             xe = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.y, logits=z)
             main_loss = tf.reduce_mean(xe)
-        return [a, main_loss, z]
+        return [a, main_loss, z, W]

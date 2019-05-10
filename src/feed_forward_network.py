@@ -24,6 +24,7 @@ class FeedForward(network.Network):
         input_shape = [None, num_inputs]
         super(FeedForward, self).__init__(end, input_shape, False, model_save_dir)
         d = conf.d
+        self.weight_list = []
 
         # Feed-forward
         hidden_sizes = conf.hidden_sizes
@@ -44,6 +45,7 @@ class FeedForward(network.Network):
         self.all_end_tensors = self.end.tensors_for_network(pre_z)
         self.a = self.all_end_tensors[0]
         self.loss = self.all_end_tensors[1]
+        self.softmax_weight = self.all_end_tensors[3]
         self.train_op = tf.train.MomentumOptimizer(learning_rate=conf.lr, momentum=0.9).minimize(self.loss)
 
     def _create_layer(self, a, l, shape, activation_func=None):
@@ -51,6 +53,7 @@ class FeedForward(network.Network):
         W = tf.get_variable('W'+str(l),
                         shape=shape,
                         initializer=weights_init)
+        self.weight_list.append(W)
         bias_init = tf.zeros_initializer()
         b = tf.get_variable('b'+str(l),
                             shape[1],
