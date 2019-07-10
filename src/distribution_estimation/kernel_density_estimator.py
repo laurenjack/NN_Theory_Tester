@@ -37,7 +37,7 @@ class KernelDensityEstimator(object):
         # Otherwise we have a real problem where the distribution is unknown
         else:
             pa_estimate = self.pdf(low_bias_A_inverse, self.a_star2)
-        pa_estimate = pa_estimate ** (1.0 / float(self.d))
+        pa_estimate = pa_estimate
         loss = 0.5 * tf.reduce_mean((fa - pa_estimate) ** 2.0)
         return loss, pa_estimate, fa, distance
 
