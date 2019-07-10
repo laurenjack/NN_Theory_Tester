@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-import configuration
+import distribution_configuration
 import data_generator as dg
 import kernel_density_estimator
 import trainer as tr
@@ -12,9 +12,10 @@ from src import random_behavior
 
 
 def run():
-    conf = configuration.get_configuration()
+    conf = distribution_configuration.get_configuration()
 
-    # Train H
+    # Train A
+
     graph_H = tf.Graph()
     with graph_H.as_default():
         pdf_functions = pf.PdfFunctions(conf)
@@ -26,11 +27,11 @@ def run():
         kde_H = kernel_density_estimator.KernelDensityEstimator(conf, pdf_functions, data_generator)
         # Tensorflow setup
         session = tf.InteractiveSession()
-        trained_H_inverse = trainer.train_H(kde_H, session, x, collector)
+        trained_A_inverse = trainer.train_A_for_gaussian_kernel(kde_H, session, x, collector)
         session.close()
 
-    print '\nActual H:\n'
-    print np.matmul(actual_A, actual_A)
+    print '\nActual A:\n'
+    print actual_A
 
     # # Train h
     # graph_h = tf.Graph()

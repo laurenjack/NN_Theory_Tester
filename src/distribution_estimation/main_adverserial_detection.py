@@ -1,22 +1,16 @@
-from src import network_factory
-from src import reporter_factory
-from src import random_behavior
-from src import adversarial
-import configuration_network
-import configuration
-import pdf_functions as pf
-import kernel_density_estimator
-import trainer as tr
-import tensorflow as tf
-import density_collector
-import distance_computer
 import numpy as np
+
+import network_configuration
+import distance_computer
+from src import adversarial
+from src.rbf_softmax import network_factory
+
 
 def run():
     """Train a neural network and test distribution estimations as a means of detecting adverserial examples for that
     network.
     """
-    conf_network = configuration_network.get_configuration()
+    conf_network = network_configuration.get_configuration()
     adversarial_ss = conf_network.adversarial_ss
     class_to_adversary = conf_network.class_to_adversary_class
     network_runner, data_set, training_results = network_factory.create_and_train_network(conf_network)

@@ -1,6 +1,6 @@
 import tensorflow as tf
-import numpy as np
-from visualize import *
+
+from src.synthetic_experiments.visualize import *
 
 epochs = 100
 

@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-import configuration
+import distribution_configuration
 import data_generator as dg
 import kernel_density_estimator
 import trainer
@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 
 def show_variance_function():
-    conf = configuration.get_configuration()
+    conf = distribution_configuration.get_configuration()
     random = random_behavior.Random()
     data_generator = dg.DataGenerator(conf, random)
 

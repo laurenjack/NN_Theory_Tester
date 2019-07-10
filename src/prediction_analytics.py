@@ -1,6 +1,7 @@
 import numpy as np
-import visualisation
-import configuration
+
+from src.rbf_softmax import configuration
+
 conf = configuration.get_configuration()
 
 

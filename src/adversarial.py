@@ -1,6 +1,4 @@
 import numpy as np
-import configuration
-
 
 """Responsible for adversarial operations"""
 

@@ -1,8 +1,7 @@
-import configuration
-import animator
-import train_rbf
-import network_factory
-import reporter_factory
+import src.rbf_softmax.network_factory
+import src.rbf_softmax.train_rbf
+import src.reporter_factory
+from src.rbf_softmax import animator, configuration
 
 
 def run_network(conf):
@@ -11,8 +10,8 @@ def run_network(conf):
     Args:
         conf: configuration.RbfSoftmaxConfiguration
     """
-    network_runner, data_set, training_results = network_factory.create_and_train_network(conf)
-    reporter = reporter_factory.create_reporter(data_set)
+    network_runner, data_set, training_results = src.rbf_softmax.network_factory.create_and_train_network(conf)
+    reporter = src.reporter_factory.create_reporter(data_set)
     reporter.report_single_network(network_runner, data_set, training_results)
 
 
@@ -22,15 +21,15 @@ def run_networks_and_report_transferability(conf):
     Args:
         conf: configuration.RbfSoftmaxConfiguration
     """
-    network_runners, data_set = network_factory.create_and_train_n_networks(conf)
-    reporter = reporter_factory.create_reporter(data_set)
+    network_runners, data_set = src.rbf_softmax.network_factory.create_and_train_n_networks(conf)
+    reporter = src.reporter_factory.create_reporter(data_set)
     reporter.report_with_adversaries_from_first(network_runners, data_set, conf.convincing_threshold)
 
 
 def run_rbf_test(conf):  # TODO(Jack) sort this rbf only code
     total_correct = 0
     for i in xrange(conf.num_runs):
-        train_result = train_rbf.train()
+        train_result = src.rbf_softmax.train_rbf.train()
         train_result.report_incorrect()
         num_correct = train_result.num_correct
         print float(num_correct) / float(conf.n) * 100

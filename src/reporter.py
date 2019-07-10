@@ -1,11 +1,10 @@
-import numpy as np
 import tensorflow as tf
 
-from visualisation import *
-from shortest_point_finder import find_shortest_point
 from adversarial import *
-from animator import animate
-import configuration
+from src.rbf_softmax import configuration
+from src.rbf_softmax.animator import animate
+from src.rbf_softmax.shortest_point_finder import find_shortest_point
+from visualisation import *
 conf = configuration.get_configuration()
 
 

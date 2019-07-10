@@ -1,8 +1,8 @@
 import tensorflow as tf
-import numpy as np
-import rbf as rb
-from gen_train_points import *
-import configuration
+
+import src.rbf_softmax.rbf as rb
+from src.rbf_softmax.gen_train_points import *
+
 conf = configuration.get_configuration()
 
 def train():

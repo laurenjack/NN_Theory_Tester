@@ -1,5 +1,6 @@
-from shortest_point_finder import *
 import numpy as np
+
+from src.rbf_softmax.shortest_point_finder import *
 
 
 class Conf:

@@ -1,8 +1,11 @@
 import unittest as test
-import tensorflow as tf
+
 import numpy as np
-import rbf as rb
-import configuration
+import tensorflow as tf
+
+import src.rbf_softmax.rbf as rb
+from src.rbf_softmax import configuration
+
 
 class TestRbf(test.TestCase):
 

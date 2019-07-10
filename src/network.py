@@ -47,7 +47,7 @@ class Network(object):
 
     # TODO(Jack) refactor this bad boy out for good
     def has_rbf(self):
-        import rbf
+        from src.rbf_softmax import rbf
         return isinstance(self.end, rbf.Rbf)
 
     # TODO(Jack) refactor this bad boy out for good

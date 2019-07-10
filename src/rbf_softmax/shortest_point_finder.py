@@ -1,7 +1,10 @@
+import math
+
 import numpy as np
 import tensorflow as tf
-import math
-import configuration
+
+from src.rbf_softmax import configuration
+
 conf = configuration.get_configuration()
 
 def find_shortest_point(z_bar, tau):

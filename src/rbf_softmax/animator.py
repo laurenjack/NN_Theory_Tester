@@ -1,11 +1,13 @@
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 import matplotlib.cm as cmx
 import matplotlib.colors as colors
+import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Ellipse
-import configuration
-conf = configuration.get_configuration()
+
+import src.rbf_softmax.configuration
+
+conf = src.rbf_softmax.configuration.get_configuration()
 
 
 def animate_spf(z_bar_pair, tau_pair, z_over_time):

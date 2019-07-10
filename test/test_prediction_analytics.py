@@ -1,8 +1,8 @@
 import unittest as test
 from mock import *
-from network_runner import PredictionReport
+from src.network_runner import PredictionReport
 import numpy as np
-from prediction_analytics import *
+from src.prediction_analytics import *
 
 class TestPredictionOutputWriter(test.TestCase):
 

@@ -3,17 +3,15 @@ import os
 import numpy as np
 import tensorflow as tf
 
-import configuration
-import feed_forward_network
-import resnet
-import data_set as ds
-import train_network
-import rbf
-import vanilla_softmax
-import artificial_problem as ap
-import collector as coll
-import network_runner as nr
-
+import src.data_set as ds
+import src.feed_forward_network
+import src.network_runner as nr
+import src.rbf_softmax.rbf
+import src.resnet
+import src.train_network
+import src.vanilla_softmax
+from src.rbf_softmax import collector as coll, configuration
+from src.synthetic_experiments import artificial_problem as ap
 
 _FEED_FORWARD = 'feed_forward'
 _RESNET = 'resnet'
@@ -41,16 +39,16 @@ def create_and_train_network(conf):
     graph = tf.Graph()
     with graph.as_default():
         data_set = _load_data_set(conf)
-        network = _build_network(conf, data_set, 'network0')
+        network = _build_network(conf, src.data_set, 'network0')
         network_runner = nr.build_network_runner(graph, network, conf.m, conf.is_rbf)
 
         if conf.is_rbf:
-            collector = coll.build_rbf_collector(data_set, conf.animation_ss)
+            collector = coll.build_rbf_collector(src.data_set, conf.animation_ss)
         else:
             collector = coll.NullCollector()
 
-        training_results = _train_or_load(conf, network_runner, data_set, collector)
-    return network_runner, data_set, training_results
+        training_results = _train_or_load(conf, src.network_runner, src.data_set, collector)
+    return src.network_runner, src.data_set, training_results
 
 
 def create_and_train_n_networks(conf):
@@ -79,12 +77,12 @@ def create_and_train_n_networks(conf):
         with graph.as_default():
             network_id = 'network{}'.format(i)
             # Model save directory disabled in multi-network case.
-            network = _build_network(conf, data_set, network_id)
+            network = _build_network(conf, src.data_set, network_id)
             network_runner = nr.build_network_runner(graph, network, conf.m, conf.is_rbf)
             collector = coll.NullCollector()
-            _train_or_load(conf, network_runner, data_set, collector)
-            network_runners.append(network_runner)
-    return network_runners, data_set
+            _train_or_load(conf, src.network_runner, src.data_set, collector)
+            network_runners.append(src.network_runner)
+    return network_runners, src.data_set
 
 
 
@@ -95,7 +93,7 @@ def _load_data_set(conf):
             data_set = ds.load_bird_or_bicycle()
         else:
             data_set = ds.load_cifar(conf.data_dir, conf.just_these_classes)
-        configuration.validate(conf, data_set)
+        configuration.validate(conf, src.data_set)
     else:
         # Use an artificial data set
         if conf.is_artificial_data:
@@ -104,7 +102,7 @@ def _load_data_set(conf):
         # Use MNIST
         else:
             data_set = ds.load_mnist()
-    return data_set
+    return src.data_set
 
 
 def _build_network(conf, data_set, network_id):
@@ -122,29 +120,29 @@ def _build_network(conf, data_set, network_id):
         if conf.is_resnet and conf.dataset_name == 'bird_or_bicycle':
             model_save_dir = os.path.join(model_save_dir, 'bird_or_bicycle')
 
-    end = _build_network_end(conf, data_set, network_id)
+    end = _build_network_end(conf, src.data_set, network_id)
     # Create a resnet
     if conf.is_resnet:
-        network = resnet.Resnet(conf, end, model_save_dir, data_set.image_width, data_set.image_crop_size)
+        network = src.resnet.Resnet(conf, end, model_save_dir, src.data_set.image_width, src.data_set.image_crop_size)
     # Create a feed forward network
     else:
-        num_inputs = data_set.train.x.shape[1]
-        network = feed_forward_network.FeedForward(conf, end, model_save_dir, num_inputs)
+        num_inputs = src.data_set.train.x.shape[1]
+        network = src.feed_forward_network.FeedForward(conf, end, model_save_dir, num_inputs)
     return network
 
 
 def _build_network_end(conf, data_set, network_id):
-    num_class = data_set.num_class
+    num_class = src.data_set.num_class
     if conf.is_rbf:
         z_bar_init = tf.truncated_normal_initializer(stddev=conf.z_bar_init_sd)
         tau_init = tf.constant_initializer(conf.tau_init * np.ones(shape=[conf.d, num_class]))
-        return rbf.Rbf(conf, z_bar_init, tau_init, num_class, network_id)
-    return vanilla_softmax.VanillaSoftmax(num_class, network_id)
+        return src.rbf_softmax.rbf.Rbf(conf, z_bar_init, tau_init, num_class, network_id)
+    return src.vanilla_softmax.VanillaSoftmax(num_class, network_id)
 
 
 def _train_or_load(conf, network_runner, data_set, collector):
     if not conf.do_train:
-        train_network.load_pre_trained(network_runner)
+        src.train_network.load_pre_trained(src.network_runner)
         return None
-    return train_network.train(conf, network_runner, data_set, collector)
+    return src.train_network.train(conf, src.network_runner, src.data_set, collector)
 

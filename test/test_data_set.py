@@ -1,6 +1,8 @@
 import unittest
-import data_set as ds
-import configuration
+
+import src.data_set as ds
+from src.rbf_softmax import configuration
+
 
 class TestDataSet(unittest.TestCase):
 
@@ -12,10 +14,10 @@ class TestDataSet(unittest.TestCase):
         classes = (0, 7)
         data_set = ds.load_cifar(data_dir, classes)
 
-        self.assertEqual(data_set.train.n, 9000)
-        self.assertEqual(data_set.validation.n, 1000)
-        self._assert_all_examples_are_of_class(data_set.train.y, classes)
-        self._assert_all_examples_are_of_class(data_set.validation.y, classes)
+        self.assertEqual(src.data_set.train.n, 9000)
+        self.assertEqual(src.data_set.validation.n, 1000)
+        self._assert_all_examples_are_of_class(src.data_set.train.y, classes)
+        self._assert_all_examples_are_of_class(src.data_set.validation.y, classes)
 
     def _assert_all_examples_are_of_class(self, y, classes):
         for i in xrange(y.shape[0]):

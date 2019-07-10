@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 import pdf_functions as pf
 import data_generator as dg
-import configuration
+import distribution_configuration
 from src import random_behavior
 
 
@@ -16,7 +16,7 @@ def _evenly_spaced_points(lower_bound, upper_bound, number_of_animation_points):
     return evenly_spaced_points.astype(np.float32)
 
 
-conf = configuration.get_configuration()
+conf = distribution_configuration.get_configuration()
 pdf_functions = pf.PdfFunctions(conf)
 random = random_behavior.Random()
 data_generator = dg.DataGenerator(conf, pdf_functions, random)

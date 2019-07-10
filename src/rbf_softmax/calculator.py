@@ -1,5 +1,4 @@
 import numpy as np
-import configuration
 
 logits = np.array([[-8.125, -5.28125], [-2.5, -55.125], [-56.125, -18.28125]], dtype=np.float32)
 rbf = np.exp(logits)

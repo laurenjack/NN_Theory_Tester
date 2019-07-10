@@ -1,6 +1,7 @@
 import numpy as np
-from data_set import Dataset
-from configuration import conf
+
+from src.data_set import Dataset
+from src.rbf_softmax.configuration import conf
 
 DATA_START = -3.0
 DATA_END = 3.0
@@ -51,5 +52,5 @@ if __name__ == '__main__':
     Xt = X.reshape(n_per_class, K, d).transpose(1, 2, 0)
     d0 = Xt[:, 0]
     d1 = Xt[:, 1]
-    import visualisation
-    visualisation.scatter_all('All x', d0, d1)
+    import src.visualisation
+    src.visualisation.scatter_all('All x', d0, d1)

@@ -37,6 +37,7 @@ class KernelDensityEstimator(object):
         # Otherwise we have a real problem where the distribution is unknown
         else:
             pa_estimate = self.pdf(low_bias_A_inverse, self.a_star2)
+        pa_estimate = pa_estimate ** (1.0 / float(self.d))
         loss = 0.5 * tf.reduce_mean((fa - pa_estimate) ** 2.0)
         return loss, pa_estimate, fa, distance
 
@@ -57,11 +58,14 @@ class KernelDensityEstimator(object):
         distance_squared = tf.matmul(distance_squared, tf.reshape(difference, [self.batch_size, self.r, self.d, 1]))
         # Drop one of the unnecessary 1 dimensions, leave the other for future broadcasting.
         distance_squared = tf.reshape(distance_squared, [self.batch_size, self.r, 1])
-        exponent = 0.5 * (-distance_squared + self.d)
+        exponent = 0.5 * (-distance_squared)
         kernel = tf.exp(exponent)
         det_A_inverse = tf.matrix_determinant(A_inverse)
-        fa_unscaled = tf.reduce_mean(tf.reshape(kernel, [self.batch_size, self.r]), axis=1)
-        return det_A_inverse * fa_unscaled # / (2.0 * math.pi) ** (self.d * 0.5)
+        kernel = det_A_inverse * kernel  / (2.0 * math.pi) ** (self.d * 0.5)
+        kernel = kernel #** (1.0 / float(self.d))
+        fa = tf.reduce_mean(tf.reshape(kernel, [self.batch_size, self.r]), axis=1)
+        # fa = det_A_inverse * fa_unscaled  / (2.0 * math.pi) ** (self.d * 0.5)
+        return fa
 
     def loss_for_estimating_H(self, H_inverse):
         _, fa = self.pdf_functions.chi_squared_distance_estimator(H_inverse, self.a, self.a_star1, self.batch_size)
