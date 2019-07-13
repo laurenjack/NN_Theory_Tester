@@ -6,12 +6,13 @@ from matplotlib import animation
 from matplotlib import patches
 
 
-class UnivariateAnimator(object):
+class UnivariateAnimator(object): #TODO(Jack) Test out one and 2 and store collector
 
     def __init__(self, conf):
         self.animation_interval = conf.animation_interval
 
-    def animate_density(self, a, pa, fa_over_time):
+    def animate_density(self, collector):
+        a, pa, fa_over_time = collector.results()
         figure, _ = plt.subplots()
         # Plot the actual underlying distribution p(a), which is fixed.
         plt.plot(a, pa)
@@ -54,7 +55,8 @@ class TwoDAnimator(object):
         if first_axis[1] < 0:
             self.angle = 360 - self.angle
 
-    def animate_density(self, fixed_a_star, z, A_over_time):
+    def animate_density(self, collector):
+        fixed_a_star, z, A_over_time = collector.results()
         figure, axis = plt.subplots()
         axis.set_xlim(-self.axis_max_and_min, self.axis_max_and_min)
         axis.set_ylim(-self.axis_max_and_min, self.axis_max_and_min)
@@ -92,5 +94,14 @@ class TwoDAnimator(object):
 
     def _scale_random_kde_draws(self, fixed_a_star, z, A):
         return fixed_a_star + np.matmul(z, A)
+
+
+class NullAnimator(object):
+
+    def animate_density(self, collector):
+        pass
+
+
+
 
 

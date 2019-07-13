@@ -33,13 +33,13 @@ class KernelDensityEstimator(object):
         fa = self.pdf(A_inverse, self.a_star1)
         # If a data generator was passed in, use the actual distribution from the data generator:
         if low_bias_A_inverse is None:
-           pa_estimate, distance = self.data_generator.pdf(self.a, self.batch_size)
+           pa_estimate = self.data_generator.pdf(self.a, self.batch_size)
         # Otherwise we have a real problem where the distribution is unknown
         else:
             pa_estimate = self.pdf(low_bias_A_inverse, self.a_star2)
         pa_estimate = pa_estimate
         loss = 0.5 * tf.reduce_mean((fa - pa_estimate) ** 2.0)
-        return loss, pa_estimate, fa, distance
+        return loss, pa_estimate, fa
 
     def pdf(self, A_inverse, a_star):
         """Compute f(a) for the [batch_size, d] set of points a, using the [r, d] set of reference points and the
@@ -66,19 +66,5 @@ class KernelDensityEstimator(object):
         fa = tf.reduce_mean(tf.reshape(kernel, [self.batch_size, self.r]), axis=1)
         # fa = det_A_inverse * fa_unscaled  / (2.0 * math.pi) ** (self.d * 0.5)
         return fa
-
-    def loss_for_estimating_H(self, H_inverse):
-        _, fa = self.pdf_functions.chi_squared_distance_estimator(H_inverse, self.a, self.a_star1, self.batch_size)
-        return -tf.reduce_mean(fa)
-
-    def loss_for_chi_squared_bandwidth(self, H_inverse, h, low_bias_h=None):
-        fa = self.pdf_functions.chi_square_kde_centered_exponent(H_inverse, self.a, self.a_star1, self.batch_size, h)
-        if low_bias_h is None:
-            pa_estimate = self.data_generator.distance_distribution(self.a, self.batch_size)
-            # Otherwise we have a real problem where the distribution is unknown
-        else:
-            raise NotImplementedError()
-        loss = 0.5 * tf.reduce_mean((fa - pa_estimate) ** 2.0)
-        return loss
 
 

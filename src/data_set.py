@@ -35,8 +35,8 @@ class Dataset:
         num_class: The number of class labels
         train: The Subset of examples for training
         validation: The Subset of examples for validation
-        image_width: (optional) The width of the image inputs, if the inputs are structured as square images
-        image_crop_size: (optional) For cropping square images
+        image_width: (optional) The width of the image inputs, if the inputs are structured as square chart_images
+        image_crop_size: (optional) For cropping square chart_images
     """
 
     def __init__(self, num_class, training_set, validation_set, image_width=None, image_crop_size=None):
@@ -52,7 +52,7 @@ class Subset:
 
     Attributes:
         x: The input examples, either an [n, d] matrix where d is the number of network inputs. Or an
-        [n, image_width, image_width, 3] tensor (i.e. a set of images).
+        [n, image_width, image_width, 3] tensor (i.e. a set of chart_images).
         y: An [n] vector of integers such that each element corresponds to a valid class, i.e.
         e is an element of Z: 0 <= e < num_class.
     """
@@ -70,8 +70,8 @@ class Subset:
 def load_mnist():
     """Get the mnist data set, will download underlying files if they aren't locally present.
 
-    Returns: A DataSet instance for MNIST. Where the images of each subset have the shape n * p
-    e.g. (50000 images * 784 pixels).
+    Returns: A DataSet instance for MNIST. Where the chart_images of each subset have the shape n * p
+    e.g. (50000 chart_images * 784 pixels).
     """
     # Load raw data.
     mnist_data = mnist.input_data.read_data_sets('MNIST_data', one_hot=False)
@@ -100,7 +100,7 @@ def load_cifar(data_dir, classes=None):
         classes: A binary tuple containing two integers from 0-9 each representing a CIFAR10 class. If this argument is
         provided, then only examples of these classes will be part of the data set (and all of such examples).
 
-    Returns: A DataSet instance for CIFAR10. Where each individual images has the shape [IMAGE_WIDTH, IMAGE_WIDTH, 3].
+    Returns: A DataSet instance for CIFAR10. Where each individual chart_images has the shape [IMAGE_WIDTH, IMAGE_WIDTH, 3].
     i.e. a subset of size n will have an x tensor of shape [n, IMAGE_WIDTH, IMAGE_WIDTH, 3]
 
     Raises:

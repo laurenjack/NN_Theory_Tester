@@ -4,23 +4,29 @@ import numpy as np
 import distribution_configuration
 import data_generator as dg
 import kernel_density_estimator
-import trainer
-import density_collector
-import density_animator
+import pdf_functions as pf
 from src import random_behavior
 
 import matplotlib.pyplot as plt
 
 
-def show_variance_function():
-    conf = distribution_configuration.get_configuration()
-    random = random_behavior.Random()
-    data_generator = dg.DataGenerator(conf, random)
+def show_loss_for(h_range):
+    """ For a 1D Gaussian mixture, show the loss function for the bandwidth estimation algorithm at each h specified in
+    h_range.
 
-    x, _ = data_generator.sample_gaussian_mixture()
+    Args:
+        h_range: A numpy array of shape [?], specific the values of h you would like to compute a loss for.
+    """
+    conf = distribution_configuration.get_configuration()
+    conf.d = 1
+    random = random_behavior.Random()
+    pdf_functions = pf.PdfFunctions(conf)
+    data_generator = dg.GaussianMixture(conf, pdf_functions, random)
+
+    x, _ = data_generator.sample(conf.n)
 
     # Initialise the distribution fitter
-    kde = kernel_density_estimator.KernelDensityEstimator(conf, data_generator)
+    kde = kernel_density_estimator.KernelDensityEstimator(conf, pdf_functions, data_generator)
 
     # Tensorflow setup
     session = tf.InteractiveSession()
@@ -32,16 +38,17 @@ def show_variance_function():
     s = conf.n - 2*r
     low_bias_A_inverse = tf.placeholder(dtype=tf.float32, shape=[conf.d, conf.d], name='low_bias_A_inverse')
     if conf.fit_to_underlying_pdf:
-        loss_tensor = kde.loss(A_inverse_placeholder)
+        loss_tensor = kde.loss(A_inverse_placeholder)[0]
     else:
-        loss_tensor = kde.loss(A_inverse_placeholder, low_bias_A_inverse)
+        loss_tensor = kde.loss(A_inverse_placeholder, low_bias_A_inverse)[0]
 
-    hs = np.arange(0.05, 1.01, 0.01)
     losses = []
 
-    number_of_h = hs.shape[0]
+    min_loss = 10.0 ** 10
+    min_h = None
+    number_of_h = h_range.shape[0]
     for i in xrange(number_of_h):
-        h = hs[i]
+        h = h_range[i]
         print h
         A_inverse = np.array([[1.0 / h]])
 
@@ -52,17 +59,20 @@ def show_variance_function():
         feed_dict = {kde.a: a, kde.a_star1: a_star1, kde.a_star2: a_star2, kde.batch_size: s,
                      low_bias_A_inverse: np.array(5.0 * A_inverse), A_inverse_placeholder: A_inverse}
         loss = session.run(loss_tensor, feed_dict=feed_dict)
+        if loss < min_loss:
+            min_loss = loss
+            min_h = h
         losses.append(loss)
 
+    print '\nMinimum at {}'.format(min_h)
     losses = np.array(losses)
-    plt.scatter(hs, losses)
+    plt.scatter(h_range, losses)
     plt.show()
 
 
-
 if __name__ == '__main__':
-    #show_gradient_bias()
-    show_variance_function()
+    h_range = np.arange(0.05, 1.01, 0.01)
+    show_loss_for(h_range)
 
 # -0.036934608722087675
 # -0.035532752567470856

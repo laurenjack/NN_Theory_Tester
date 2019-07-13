@@ -1,17 +1,32 @@
 import tensorflow as tf
-import numpy as np
 import math
 
 
-class PdfFunctions():
-    """A class that represents various probability distributions, including Kernel Density estimators.
+class PdfFunctions(object):
+    """A class that represents various probability distributions.
     """
 
-    def __init__(self, conf):
-        self.r = conf.r
-        self.d = conf.d
-        self.max_chi_exponent = self._chi_square_exponent(float(self.d - 2))
-        self.min_chi_exponent = self._chi_square_exponent(float(4 * self.d))
+    def gaussian_mixture(self, a, means, A, batch_size, d):
+        """ Compute the PDF of the Gaussian mixture associated with this data generator, for batch_size points in a.
+
+        Args:
+            a: A [batch_size, d] tensor of observations in the distribution space (doesn't neccessarily have to be
+            drawn from the Gaussian mixture).
+            A: The matrix Sigma=AtA, such that Sigma is the covariance matrix
+            batch_size: A tensor, the number of examples in a.
+            d: The number of dimension of a.
+
+        Return:
+            The value of the pdf at for each point in a.
+        """
+        number_of_means = means.shape[0]
+        sigma = tf.matmul(tf.transpose(A), A)
+        sigma_determinant = tf.matrix_determinant(sigma)
+        distance_squared = self._weighted_distance_from_all_means(a, means, sigma, batch_size, d)
+        exponent = 0.5 * (-distance_squared)
+        pa_unnormed = tf.reduce_sum(tf.exp(exponent), axis=1)
+        pa = 1.0 / (((2.0 * math.pi) ** d * sigma_determinant) ** 0.5 * number_of_means) * pa_unnormed
+        return pa
 
     def chi_squared_distance_estimator(self, H_inverse, a, a_star, batch_size):
         """Model the distribution of the distance between points a and a_star using a chi_squared distribution
@@ -23,69 +38,65 @@ class PdfFunctions():
             exponent - The chi-square exponent for the [batch_size, r] tensor a - a_star
             loss - The loss function, chi-square weighted sum of exponents
         """
-        r = a_star.shape[0]
+        r, d = a_star.shape
         distance_squared = self._weighted_distance(H_inverse, a, a_star, batch_size)
         exponent = self._chi_square_exponent(distance_squared)
         kernel = tf.exp(tf.reshape(exponent, [batch_size, r]))
-        fa = kernel * tf.matrix_determinant(H_inverse) ** (1.0 / self.d)
-        # exponent = tf.reshape(exponent, [batch_size, self.r]) + tf.log(tf.matrix_determinant(H_inverse)) * (1.0 / self.d)
+        fa = kernel * tf.matrix_determinant(H_inverse) ** (1.0 / d)
+        # exponent = tf.reshape(exponent, [batch_size, r]) + tf.log(tf.matrix_determinant(H_inverse)) * (1.0 / d)
         # loss = tf.nn.relu(exponent - self.min_chi_exponent)
         return exponent, fa
 
     def chi_square_kde_centered_exponent(self, H_inverse, a, a_star, batch_size, h):
+        r, d = a_star.shape
         distance_squared = self._weighted_distance(H_inverse, a, a_star, batch_size)
         exponent = (self._chi_square_exponent(distance_squared) - self.max_chi_exponent) / h
         # exponent = self._chi_square_exponent(distance_squared / h)
         kernel = tf.exp(exponent)
-        fa = tf.exp(self.max_chi_exponent) * tf.reduce_mean(tf.reshape(kernel, [batch_size, self.r]), axis=1) / 2.0 / h ** 0.5
+        fa = tf.exp(self.max_chi_exponent) * tf.reduce_mean(tf.reshape(kernel, [batch_size, r]), axis=1) / 2.0 / h ** 0.5
         return fa
 
-
-    def normal(self, A_inverse, a, a_star, batch_size):
-        """Compute f(a) for the [batch_size, d] set of points a, using the [r, d] set of reference points a_star, and
-        the inverse bandwitdth matrix A_inverse, using normal kernels
-
-        Args:
-            A_inverse: A [d, d] tensor, the bandwidth of the kernel density estimate.
-            a: The points in the batch to train on.
-            a_star: The reference points which form the centres for the Kernel Density Estimate
-            batch_size: A scalar tensor, the number of examples in the current batch
-
-        Returns:
-            A [batch_size] tensor. The relative likelihood f(a) for each element of a.
-        """
-        distance_squared = self._weighted_distance(A_inverse, a, a_star, batch_size)
-        exponent = -0.5 * (distance_squared + self.d * tf.log(2 * math.pi))
-        kernel = tf.exp(exponent)
-        det_A_inverse = tf.matrix_determinant(A_inverse)
-        fa_unscaled = tf.reduce_mean(tf.reshape(kernel, [self.batch_size, self.r]), axis=1)
-        return det_A_inverse * fa_unscaled
-
-    def chi_squared_distribution(self, distance_squared):
+    def chi_squared_distribution(self, d, distance_squared):
         """
         Given a tensor of any non-zero shape, return the likelihood of X = distance_squared where X is a chi-squared
         distribution, for each element of distance_squared.
         """
         distance_squared = distance_squared
-        exponent = self._chi_square_exponent(distance_squared)
+        exponent = self._chi_square_exponent(d, distance_squared)
         return tf.exp(exponent)
 
     def _weighted_distance(self, H_inverse, a, a_star, batch_size):
-        r = a_star.shape[0]
-        difference = tf.reshape(a, [batch_size, 1, self.d]) - tf.reshape(a_star, [1, r, self.d])
+        r, d = a_star.shape
+        difference = tf.reshape(a, [batch_size, 1, d]) - tf.reshape(a_star, [1, r, d])
         distance_squared = tf.reshape(tf.tensordot(difference, H_inverse, axes=[[2], [0]]),
-                                      [batch_size, r, 1, self.d])
-        distance_squared = tf.matmul(distance_squared, tf.reshape(difference, [batch_size, r, self.d, 1]))
+                                      [batch_size, r, 1, d])
+        distance_squared = tf.matmul(distance_squared, tf.reshape(difference, [batch_size, r, d, 1]))
         return tf.reshape(distance_squared, [batch_size, r])
 
-    def _chi_square_exponent(self, distance_squared):
+    def _weighted_distance_from_all_means(self, a, means, sigma, batch_size, d):
+        """For batch size examples in the tensor a of shape [batch_size, d], Find there weighted distance from all means
+        as inversely weighted by sigma.
+        """
+        number_of_means = means.shape[0]
+        sigma_inverse = tf.matrix_inverse(sigma)
+        a = tf.reshape(a, [batch_size, 1, d])
+        means = means.reshape(1, number_of_means, d)
+        difference = a - means
+        difference = tf.reshape(difference, [batch_size, number_of_means, d, 1])
+        distance_squared = tf.reshape(tf.tensordot(difference, sigma_inverse, axes=[[2], [0]]),
+                                      [batch_size, number_of_means, 1, d])
+        distance_squared = tf.matmul(distance_squared, difference)
+        distance_squared = tf.reshape(distance_squared, [batch_size, number_of_means])
+        return distance_squared
+
+    def _chi_square_exponent(self, d, distance_squared):
         """Plug the tensor distance_squared into the chi-squared function.
 
         Args:
             distance_squared
         """
-        exponent = (self.d / 2.0 - 1) * tf.log(distance_squared) - distance_squared / 2.0\
-                 - math.lgamma(self.d / 2.0) - self.d / 2.0 * tf.log(2.0)
+        exponent = (d / 2.0 - 1) * tf.log(distance_squared) - distance_squared / 2.0\
+                 - math.lgamma(d / 2.0) - d / 2.0 * tf.log(2.0)
         return exponent
 
 # d = 1000

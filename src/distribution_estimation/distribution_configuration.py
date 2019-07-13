@@ -13,12 +13,15 @@ def get_configuration():
     return conf
 
 
-class DensityConfiguration:
+class DensityConfiguration: #TODO(Jack) update documentation to reflect new configuration
     """Encapsulates the parameters regarding the structure, dataset, and training parameters of a Distribution
     Estimator.
     """
 
     def __init__(self):
+        # When true, trains on the actual pdf, i.e. minimise sum( (p(a) - f(a)) ** 2.0 ) directly. This is to isolate
+        # the training parameters for tuning. When this is false, we use proper bandwith estimation without cheating
+        self.fit_to_underlying_pdf = True
         # The number of observations in the dataset.
         self.n = 10000
         # The number of examples for training at each step
@@ -26,24 +29,25 @@ class DensityConfiguration:
         # The number of reference examples (those part of the Kernel density estimate) for each training step
         self.r = 1000
         # The number of dimensions, for the random variable a
-        self.d = 10
+        self.d = 1
         # The initial value of R
         self.R_init = 1.0 * np.eye(self.d) # np.exp(-0.5) *
-        self.h_init = 1.0
         # The degree to which the bandwidth matrix of the estimate is scaled.
         self.c = 0.2 #** (1.0 / float(self.d))
         # [float] - A list of means, one for each Gaussian in the actual distribution
         self.means = np.zeros((1, self.d))  # np.concatenate([-1.0 * np.ones((1, self.d)), 1.0 * np.ones((1, self.d))])
         # The number of training epochs
-        self.epochs = 10
+        self.epochs = 5
         # The learning rate for R
         self.lr_R = 0.006 #* (2 * math.pi * float(self.d)) #** 0.5
-        self.lr_h = 0.1
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix
         self.min_eigenvalue = 1.0
         self.max_eigenvalue = 1.0
+        # Alternatively, this fixed A will override the random generation of A with an
+        # pre-determined value, please leave as None if you don't want to do this.
+        self.fixed_A = None
         # Show A each after each training batch
         self.show_variable_during_training = True
         # Number of observations to be drawn when animating KDE versus actual_distribution
@@ -57,7 +61,6 @@ class DensityConfiguration:
         self.max_deviations = 4.0
         # For both the x and y axis, set the axis max and min (min will be the negative of this)
         self.axis_max_and_min = 8.0
-        self.fit_to_underlying_pdf = True
 
 
         self._validate()

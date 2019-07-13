@@ -12,31 +12,15 @@ class Tranier(object):
         self.d = conf.d
         self.epochs = conf.epochs
         self.lr_R = conf.lr_R
-        self.lr_h = conf.lr_h
         self.R_init = conf.R_init
-        self.h_init = conf.h_init
         self.float_precision = conf.float_precision
         self.show_variable_during_training = conf.show_variable_during_training
 
-    def train_H(self, kde, session, x, collector):
-        # Define the positive definite tensor sigma = AAt
-        A_inverse_tensor = tf.Variable(np.linalg.inv(self.A_init), name='A', dtype=self.float_precision)
-        H_inverse_tensor = tf.matmul(A_inverse_tensor, tf.transpose(A_inverse_tensor))
-        loss_tensor = kde.loss_for_estimating_H(H_inverse_tensor)
-        self._train(kde, loss_tensor, tf.matrix_inverse(H_inverse_tensor), session, x, collector, self.lr_A)
-        return session.run(H_inverse_tensor)
-
-    def train_h_for_chi_square_kernel(self, kde, session, x, collector, trained_H_inverse):
-        h_tensor = tf.Variable(self.h_init, name='h', dtype=self.float_precision)
-        loss_tensor = kde.loss_for_chi_squared_bandwidth(trained_H_inverse, h_tensor)
-        self._train(kde, loss_tensor, h_tensor, session, x, collector,  self.lr_h)
-        return session.run(h_tensor)
-
-    def train_A_for_gaussian_kernel(self, kde, session, x, collector):
+    def train_R_for_gaussian_kernel(self, kde, session, x, collector):
         # Define the positive definite tensor A = RRt
         R_inverse_tensor = tf.Variable(np.linalg.inv(self.R_init), name='R_inverse', dtype=self.float_precision)
         A_inverse_tensor = tf.matmul(R_inverse_tensor, tf.transpose(R_inverse_tensor))
-        loss_tensor, _, fa_tensor, _ = kde.loss(A_inverse_tensor)
+        loss_tensor, _, fa_tensor = kde.loss(A_inverse_tensor)
         self._train(kde, loss_tensor, tf.matrix_inverse(A_inverse_tensor), session, x, collector, self.lr_R, fa_tensor)
 
     def _train(self, kde, loss_tensor, tensor_to_watch, session, x, collector, lr, fa_tensor):
@@ -83,12 +67,3 @@ class Tranier(object):
                     mean_var /= float(self.d)
                     print mean_var
                     print 'Mean pa: {}\n'.format(np.mean(fa))
-
-
-        #
-        # if conf.fit_to_underlying_pdf:
-        #     print 'TRAINING ON ACTUAL PDF'
-        #     # loss_tensor, pa_tensor, fa_tensor, distance_tensor = kde.loss(A_inverse_tensor)
-        #     loss_tensor = kde.loss_for_chi_squared_kernels(H_inverse_tensor)
-        # else:
-        #     print 'Training on data, underlying pdf unknown'

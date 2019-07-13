@@ -4,7 +4,8 @@ import tensorflow as tf
 def network_distance(x, x_correct, network_runner):
     """
     Compute the network distance between an unkown batch of image x, against a set of correct validation example
-    x_correct, for the network.
+    x_correct, for the network. For a definition of network distance, see the following for a description of network
+    distance:
     """
     network = network_runner.network
     with network_runner.graph.as_default():

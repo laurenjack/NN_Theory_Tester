@@ -19,15 +19,15 @@ def _evenly_spaced_points(lower_bound, upper_bound, number_of_animation_points):
 conf = distribution_configuration.get_configuration()
 pdf_functions = pf.PdfFunctions(conf)
 random = random_behavior.Random()
-data_generator = dg.DataGenerator(conf, pdf_functions, random)
-a_star, _ = data_generator.sample_gaussian_mixture(conf.r)
+data_generator = dg.GaussianMixture(conf, pdf_functions, random)
+a_star, _ = data_generator.sample(conf.r)
 
 number_of_animation_points = 1000
 upper_bound = conf.d * 4
 lower_bound = 0
 evenly_spaced_distances = _evenly_spaced_points(lower_bound, upper_bound, number_of_animation_points)
 # Draw random points and scale to fit distances
-animation_points, _ = data_generator.sample_gaussian_mixture(number_of_animation_points)
+animation_points, _ = data_generator.sample(number_of_animation_points)
 sampled_distance = np.sum(animation_points ** 2.0, axis=1) ** 0.5
 animation_points = animation_points / sampled_distance.reshape(number_of_animation_points, 1)
 animation_points = animation_points * evenly_spaced_distances.reshape(number_of_animation_points, 1) ** 0.5

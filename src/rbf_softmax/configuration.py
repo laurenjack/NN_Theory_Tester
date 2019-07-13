@@ -96,7 +96,7 @@ class RbfSoftmaxConfiguration:  # TODO(Jack) set seed somewhere for np and tf
         # (the elements themselves). All stacks other than the first stack reduce the width (and height of the filters).
         # Incidentally the number of stacks less 1 specifies how many times the size of the filters drops by a factor
         # of 2. e.g. 32 * 32 -> 16 * 16  -> 8 * 8. Therefore, a config exception will be thrown if the number of
-        # elements in this list - 1 is greater than the powers of 2 that factor into the images width.
+        # elements in this list - 1 is greater than the powers of 2 that factor into the chart_images width.
         self.num_filter_for_stack = [32, 64, 128]
         # List[int] - The number of blocks per stack. Must be the same length as num_filter_for_stack
         self.num_blocks_per_stack = [5, 5, 5]

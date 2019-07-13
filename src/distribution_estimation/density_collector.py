@@ -42,7 +42,7 @@ def create_chi_squared_collector(conf, random, H_inverse, x, data_generator, pdf
     lower_bound = 0
     evenly_spaced_distances = _evenly_spaced_points(lower_bound, upper_bound, number_of_animation_points)
     # Draw random points and scale to fit distances
-    animation_points, _ = data_generator.sample_gaussian_mixture(number_of_animation_points)
+    animation_points = data_generator.sample(number_of_animation_points)
     sampled_distance = np.sum(animation_points ** 2.0, axis=1) ** 0.5
     animation_points = animation_points / sampled_distance.reshape(number_of_animation_points, 1)
     animation_points = animation_points * evenly_spaced_distances.reshape(number_of_animation_points, 1) ** 0.5
