@@ -21,11 +21,11 @@ class DensityConfiguration: #TODO(Jack) update documentation to reflect new conf
     def __init__(self):
         # When true, trains on the actual pdf, i.e. minimise sum( (p(a) - f(a)) ** 2.0 ) directly. This is to isolate
         # the training parameters for tuning. When this is false, we use proper bandwith estimation without cheating
-        self.fit_to_underlying_pdf = True
+        self.fit_to_underlying_pdf = False
         # The number of observations in the dataset.
         self.n = 10000
         # The number of examples for training at each step
-        self.m = 1000
+        self.m = 100
         # The number of reference examples (those part of the Kernel density estimate) for each training step
         self.r = 1000
         # The number of dimensions, for the random variable a
@@ -37,9 +37,13 @@ class DensityConfiguration: #TODO(Jack) update documentation to reflect new conf
         # [float] - A list of means, one for each Gaussian in the actual distribution
         self.means = np.zeros((1, self.d))  # np.concatenate([-1.0 * np.ones((1, self.d)), 1.0 * np.ones((1, self.d))])
         # The number of training epochs
-        self.epochs = 5
+        self.epochs = 32
         # The learning rate for R
-        self.lr_R = 0.006 #* (2 * math.pi * float(self.d)) #** 0.5
+        self.lr_R = 0.05 #* (2 * math.pi * float(self.d)) #** 0.5
+        # The epochs when to apply a step wise decrese to the learning rate
+        self.reduce_lr_epochs = [8, 16, 24]
+        # The factor to scale the learning rate down by
+        self.reduce_lr_factor = 0.3
         # Floating point precision for tensorflow
         self.float_precision = tf.float32
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix

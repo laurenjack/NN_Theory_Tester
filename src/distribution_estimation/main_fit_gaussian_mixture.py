@@ -25,9 +25,11 @@ def run():
     trainer = tr.Tranier(conf, random)
     data_generator = dg.GaussianMixture(conf, pdf_functions, random)
     kde = kernel_density_estimator.KernelDensityEstimator(conf, pdf_functions, data_generator)
+    # Create the graph
+    kde_tensors = kde.construct_kde_training_graph()
 
     # Generate random samples from the data, our training process will use them to form f(a).
-    x, actual_A = data_generator.sample(conf.n)
+    x = data_generator.sample(conf.n)
 
     # # Either set up a collector and animator, or don't collect anything where d > 2.
     # if conf.d == 1:
@@ -43,11 +45,12 @@ def run():
 
     # Graph created, data generated, collector setup - ready to actually train.
     session = tf.InteractiveSession()
-    trained_A_inverse = trainer.train_R_for_gaussian_kernel(kde, session, x, collector)
+    tf.global_variables_initializer().run()
+    trained_A_inverse = trainer.train_R_for_gaussian_kernel(kde, kde_tensors, session, x, collector)
     session.close()
 
     print '\nActual A:\n'
-    print actual_A
+    print data_generator.actual_A
 
     # Animate the training process, if d ==1 or d == 2.
     animator.animate_density(collector)
