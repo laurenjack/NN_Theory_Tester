@@ -41,7 +41,7 @@ def run(T):
         mean_h_from_px, variance_h_from_px = repeated_estimation.run(conf, T)
 
     difference_of_means = mean_h - mean_h_from_px
-    print '\nE(h) - E(h): {}'.format(difference_of_means)
+    print '\nmean f(x) - mean p(x): {}'.format(difference_of_means)
     print 'Standard Error for difference {}'.format(((variance_h / T) + (variance_h_from_px / T)) ** 0.5)
     print ''
 

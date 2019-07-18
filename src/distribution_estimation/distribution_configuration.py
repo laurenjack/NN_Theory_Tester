@@ -21,7 +21,7 @@ class DensityConfiguration: #TODO(Jack) update documentation to reflect new conf
     def __init__(self):
         # When true, trains on the actual pdf, i.e. minimise sum( (p(a) - f(a)) ** 2.0 ) directly. This is to isolate
         # the training parameters for tuning. When this is false, we use proper bandwith estimation without cheating
-        self.fit_to_underlying_pdf = False
+        self.fit_to_underlying_pdf = True
         # The number of observations in the dataset.
         self.n = 10000
         # The number of examples for training at each step
