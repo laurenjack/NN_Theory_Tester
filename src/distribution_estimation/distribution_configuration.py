@@ -35,13 +35,14 @@ class DensityConfiguration: #TODO(Jack) update documentation to reflect new conf
         # The degree to which the bandwidth matrix of the estimate is scaled.
         self.c = 0.2 #** (1.0 / float(self.d))
         # [float] - A list of means, one for each Gaussian in the actual distribution
-        self.means = np.zeros((1, self.d))  # np.concatenate([-1.0 * np.ones((1, self.d)), 1.0 * np.ones((1, self.d))])
+        self.means =  np.array([[-1.0], [0.0], [1.5], [4.0]], dtype=np.float32)
+        #np.zeros((1, self.d))  # np.concatenate([-1.0 * np.ones((1, self.d)), 1.0 * np.ones((1, self.d))])
         # The number of training epochs
-        self.epochs = 32
+        self.epochs = 100
         # The learning rate for R
         self.lr_R = 0.05 #* (2 * math.pi * float(self.d)) #** 0.5
         # The epochs when to apply a step wise decrese to the learning rate
-        self.reduce_lr_epochs = [8, 16, 24]
+        self.reduce_lr_epochs = [24, 48, 72]
         # The factor to scale the learning rate down by
         self.reduce_lr_factor = 0.3
         # Floating point precision for tensorflow
@@ -51,7 +52,7 @@ class DensityConfiguration: #TODO(Jack) update documentation to reflect new conf
         self.max_eigenvalue = 1.0
         # Alternatively, this fixed A will override the random generation of A with an
         # pre-determined value, please leave as None if you don't want to do this.
-        self.fixed_A = None
+        self.fixed_A = np.array([[0.5]], dtype=np.float32)
         # Show A each after each training batch
         self.show_variable_during_training = True
         # Number of observations to be drawn when animating KDE versus actual_distribution

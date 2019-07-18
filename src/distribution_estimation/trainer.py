@@ -42,6 +42,8 @@ class Tranier(object):
 
         indices = np.arange(n)
         for e in xrange(self.epochs):
+            if self.show_variable_during_training:
+                print '\n Epoch: {e}'.format(e=e + 1)
             self.random.shuffle(indices)
             if e in self.reduce_lr_epochs:
                 lr *= self.reduce_lr_factor
@@ -68,9 +70,8 @@ class Tranier(object):
                 feed_dict[kde.a_star1] = x[indices[k+m:k+m+r]]
                 feed_dict[kde.a_star2] = x[indices[k+m+r:k+m+2*r]]
                 _, loss, A, fa = session.run([train_tensor, loss_tensor, A_tensor, fa_tensor], feed_dict=feed_dict)
-                collector.collect(A_tensor, session)
+                collector.collect(kde, fa_tensor, session)
                 if self.show_variable_during_training:
-                    print '\n Epoch: {e}'.format(e=e + 1)
                     print 'Loss: {l}\n{A}'.format(l=loss, A=A[0,0:5])
                     mean_var = 0.0
                     for i in xrange(self.d):

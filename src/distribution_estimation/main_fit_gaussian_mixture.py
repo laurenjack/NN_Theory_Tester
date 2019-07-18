@@ -31,17 +31,13 @@ def run():
     # Generate random samples from the data, our training process will use them to form f(a).
     x = data_generator.sample(conf.n)
 
-    # # Either set up a collector and animator, or don't collect anything where d > 2.
-    # if conf.d == 1:
-    #     collector = density_collector.create_univariate_collector(conf, random, x, actual_A)
-    #     animator = density_animator.UnivariateAnimator(conf)
-    # elif conf.d == 2:
-    #     # Create a collector for animation
-    #     collector = density_collector.create_multivariate_collector(conf, random, x)
-    #     animator = density_animator.TwoDAnimator(conf, actual_A)
-    # else:
-    collector = density_collector.NullCollector()
-    animator = density_animator.NullAnimator()
+    # Set up a collector or animator, because we can see a pdf over a 1D variable!
+    if conf.d == 1:
+        collector = density_collector.create_univariate_collector(conf, random, x, data_generator.actual_A)
+        animator = density_animator.UnivariateAnimator(conf)
+    else:
+        collector = density_collector.NullCollector()
+        animator = density_animator.NullAnimator()
 
     # Graph created, data generated, collector setup - ready to actually train.
     session = tf.InteractiveSession()
