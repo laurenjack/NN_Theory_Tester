@@ -20,11 +20,11 @@ def run():
     """
     # Construct the Kernel density Estimator Graph - there's a bit of manual dependency injection here
     conf = distribution_configuration.get_configuration()
-    pdf_functions = pf.PdfFunctions()
-    random = random_behavior.Random()
-    trainer = tr.Tranier(conf, random)
-    data_generator = dg.GaussianMixture(conf, pdf_functions, random)
-    kde = kernel_density_estimator.KernelDensityEstimator(conf, pdf_functions, data_generator)
+    # pdf_functions = pf.PdfFunctions()
+    # random = random_behavior.Random()
+    # trainer = tr.Tranier(conf, random)
+    # data_generator = dg.GaussianMixture(conf, pdf_functions, random)
+    # kde = kernel_density_estimator.KernelDensityEstimator(conf, pdf_functions, data_generator)
     # Create the graph
     kde_tensors = kde.construct_kde_training_graph()
 
