@@ -1,11 +1,5 @@
 # NN_Theory_Tester
 
-This repo contains most of the code for my current research. Please see the Wiki for the theory and math pertaining to that research. This README is concerned with the structure of the code, whereas the Wiki describes the algorithms.
+INCOMPLETE - see wiki
 
-This project is desined for testing  new algoirthms and experiments pertaining to neural networks. The top level modules
-are designed for reuse, a sort of framework built on top of tensorflow 1.0. While frameworks such as Keras already exist, the
-need for low level features meant I stuck to tensorflow, and the framwork grew organically from there. The packages under src
-either pertain to a specific new algorithm/theory or a logical grouping of experiments. This README documents how this
-repository can be used, before briefly getting in to the specifics of each package.
-
-<h3>Top level - src</h3>
+This repo contains most of the code for my current research. Please see the Wiki for the theory and math pertaining to that research. When I get around to writing it, this README will be concerned with the structure of the code, whereas the Wiki describes the algorithms.
