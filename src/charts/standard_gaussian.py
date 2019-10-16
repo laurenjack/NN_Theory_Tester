@@ -21,10 +21,9 @@ def run(r, h, fa_title, single_kernel=False):
     conf.means = np.array([[0.0]], dtype=np.float32)
 
     # Construct the required services
-    pdf_functions = pf.PdfFunctions()
     random = random_behavior.Random()
-    gaussian_mixture = dg.GaussianMixture(conf, pdf_functions, random)
-    kde = kernel_density_estimator.KernelDensityEstimator(conf, pdf_functions, gaussian_mixture)
+    gaussian_mixture = dg.GaussianMixture(conf, random)
+    kde = kernel_density_estimator.KernelDensityEstimator(conf, gaussian_mixture)
 
     # Create some points to display p(a)
     a = np.arange(-5, 5.01, 0.01).astype(np.float32)

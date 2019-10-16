@@ -2,6 +2,8 @@ import numpy as np
 import tensorflow as tf
 import math
 
+import pdf_functions
+
 
 class GaussianMixture(object):
     """Class for generating data from known Gaussian mixtures, for experimenting with distribution estimation.
@@ -12,15 +14,13 @@ class GaussianMixture(object):
     in between the bounds specified by min_eigenvalue and min_eigenvalue (specified in distribution_configuration).
     A = QLQt.
     """
-    def __init__(self, conf, pdf_functions, random):
+    def __init__(self, conf, random):
         """ Constructs a DataGenerator in the contxt of a DensityConfiguration for Kernel Density Estimation
 
         Args:
             conf: A DensityConfiguration - used to specify the properties of the Gaussian
-            pdf_functions: PdfFunctions - service object with various pdf functions
             random: Random - Abstract's random behaviour such drawing the standard normal samples.
         """
-        self.pdf_functions = pdf_functions
         self.random = random
         self.d = conf.d
         min_eigenvalue = conf.min_eigenvalue
@@ -39,7 +39,14 @@ class GaussianMixture(object):
             # self.sigma = np.matmul(self.actual_A.transpose(), self.actual_A)
             # self.sigma_determinant = np.linalg.det(self.sigma)
             # self.sigma_inverse = np.linalg.inv(self.sigma).astype(np.float32)
+        else:
+            eigenvalues, Q = np.linalg.eig(self.actual_A)
+        self.Q = Q.astype(np.float32)
+        self.lam_inv = 1.0 / eigenvalues.astype(np.float32)
         self.actual_A = self.actual_A.astype(np.float32)
+
+    def actual_values(self):
+        return self.actual_A, self.lam_inv, self.means
 
 
     def sample(self, n):
@@ -69,7 +76,7 @@ class GaussianMixture(object):
         Return:
             p(a) - The value of the pdf at for each point in a.
         """
-        return self.pdf_functions.gaussian_mixture(a, self.means, self.actual_A, batch_size, self.d)
+        return pdf_functions.gaussian_mixture(a, self.means, self.actual_A, batch_size, self.d)
         #TODO(Jack) remove
         # distance_squared = self._distance_squared(a, batch_size)
         # exponent = 0.5 * (-distance_squared)
@@ -90,7 +97,7 @@ class GaussianMixture(object):
             A [batch_size] tensor, that represents the probability each point occurs as far as it does from the mean.
         """
         distance_squared = self._distance_squared(a, batch_size)
-        return tf.reduce_mean(self.pdf_functions.chi_squared_distribution(distance_squared), axis=1)
+        return tf.reduce_mean(pdf_functions.chi_squared_distribution(distance_squared), axis=1)
 
 
     def _distance_squared(self, a, batch_size):
@@ -120,4 +127,4 @@ def _random_orthogonal_matrix(d):
     D[-1] = (-1) ** (1 - (d % 2)) * D.prod()
     # Equivalent to np.dot(np.diag(D), H) but faster, apparently
     Q = (D * H.T).T
-    return Q
+    return Q.astype(np.float32)

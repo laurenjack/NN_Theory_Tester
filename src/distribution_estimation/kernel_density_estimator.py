@@ -11,8 +11,7 @@ class KernelDensityEstimator(object):
     f(a) for a given bandwidth.
     """
 
-    def __init__(self, conf, pdf_functions, data_generator=None):
-        self.pdf_functions = pdf_functions
+    def __init__(self, conf, data_generator=None):
         self.data_generator = data_generator
         self.r = conf.r
         self.d = conf.d

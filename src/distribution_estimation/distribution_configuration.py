@@ -21,7 +21,7 @@ class DensityConfiguration: #TODO(Jack) update documentation to reflect new conf
     def __init__(self):
         # When true, trains on the actual pdf, i.e. minimise sum( (p(a) - f(a)) ** 2.0 ) directly. This is to isolate
         # the training parameters for tuning. When this is false, we use proper bandwith estimation without cheating
-        self.fit_to_underlying_pdf = True
+        self.fit_to_underlying_pdf = False
         # The number of observations in the dataset.
         self.n = 10000
         # The number of examples for training at each step
@@ -31,11 +31,11 @@ class DensityConfiguration: #TODO(Jack) update documentation to reflect new conf
         # The number of dimensions, for the random variable a
         self.d = 1
         # The initial value of R
-        self.R_init = 1.0 * np.eye(self.d) # np.exp(-0.5) *
+        self.R_init = 5.0 * np.eye(self.d) # np.exp(-0.5) *
         # The degree to which the bandwidth matrix of the estimate is scaled.
         self.c = 0.2 #** (1.0 / float(self.d))
         # [float] - A list of means, one for each Gaussian in the actual distribution
-        self.means =  np.array([[-1.0], [0.0], [1.5], [4.0]], dtype=np.float32)
+        self.means = np.array([[-4.0], [-2.0], [0.0], [2.0], [4.0]], dtype=np.float32)#np.array([[-1.0], [0.0], [1.5], [4.0]], dtype=np.float32)
         #np.zeros((1, self.d))  # np.concatenate([-1.0 * np.ones((1, self.d)), 1.0 * np.ones((1, self.d))])
         # The number of training epochs
         self.epochs = 100
@@ -52,7 +52,7 @@ class DensityConfiguration: #TODO(Jack) update documentation to reflect new conf
         self.max_eigenvalue = 1.0
         # Alternatively, this fixed A will override the random generation of A with an
         # pre-determined value, please leave as None if you don't want to do this.
-        self.fixed_A = np.array([[0.5]], dtype=np.float32)
+        self.fixed_A = np.array([[0.4]], dtype=np.float32)
         # Show A each after each training batch
         self.show_variable_during_training = True
         # Number of observations to be drawn when animating KDE versus actual_distribution
