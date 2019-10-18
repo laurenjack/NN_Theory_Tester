@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 import mv_kernel_configuration
 from src import random_behavior
@@ -34,10 +35,11 @@ def run():
     tf.global_variables_initializer().run()
 
     # Build graph and train
-    trainer.train(mv_kde, session, x)
-    print 'Actual Lamda: {}'.format(1.0 / data_generator.lam_inv)
+    trainer.train(mv_kde, session, x, 1.0 / data_generator.lam_inv)
+    print 'Actual Lamda: {}'.format(1.0 / data_generator.lam_inv )
     print 'Actual Q: {}'.format(data_generator.Q)
 
 
 if __name__ == '__main__':
+    np.set_printoptions(precision=3, suppress=True)
     run()

@@ -1,6 +1,19 @@
 import numpy as np
 
 
+def random_postive_definite_decomposed(d, min_eigenvalue, max_eigenvalue):
+    Q = random_orthogonal_matrix(d)
+    eigenvalues = np.random.uniform(min_eigenvalue, max_eigenvalue, [d])
+    return Q, eigenvalues, Q.transpose()
+
+def random_positive_definite(d, min_eigenvalue, max_eigenvalue):
+    Q, eigenvalues, Qt = random_postive_definite_decomposed(d, min_eigenvalue, max_eigenvalue)
+    return np.matmul(Q * eigenvalues, Qt)
+
+def random_pd_Q_and_lam_inv(d, min_eigenvalue, max_eigenvalue):
+    Q, eigenvalues, Qt = random_postive_definite_decomposed(d, min_eigenvalue, max_eigenvalue)
+    return Q, 1.0 / eigenvalues
+
 def random_orthogonal_matrix(d):
     H = np.eye(d)
     D = np.ones((d,))

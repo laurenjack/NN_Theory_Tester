@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 import math
 
 
@@ -81,20 +82,18 @@ def chi_squared_distribution(d, distance_squared):
     return tf.exp(exponent)
 
 def _eigen_distances_squared(Q, lam_inv, a, a_star, batch_size):
-    r, d = a_star.shape
-    r = r.value
-    d = d.value
+    r, d = _shape(a_star)
     difference = tf.reshape(a, [batch_size, 1, d]) - tf.reshape(a_star, [1, r, d])
-    eigen_basis = tf.tensordot(difference, Q, axes=[[2], [0]]) * lam_inv
-    return eigen_basis ** 2.0
+    eigen_difference = tf.tensordot(difference, Q, axes=[[2], [0]]) * lam_inv
+    return eigen_difference ** 2.0
 
 
 def weighted_distance(H_inverse, a, a_star, batch_size):
-    r, d = a_star.shape
+    r, d = _shape(a_star)
     difference = tf.reshape(a, [batch_size, 1, d]) - tf.reshape(a_star, [1, r, d])
-    distance_squared = tf.reshape(tf.tensordot(difference, H_inverse, axes=[[2], [0]]),
+    weighted_difference = tf.reshape(tf.tensordot(difference, H_inverse, axes=[[2], [0]]),
                                   [batch_size, r, 1, d])
-    distance_squared = tf.matmul(distance_squared, tf.reshape(difference, [batch_size, r, d, 1]))
+    distance_squared = tf.matmul(weighted_difference, tf.reshape(difference, [batch_size, r, d, 1]))
     return tf.reshape(distance_squared, [batch_size, r])
 
 def _weighted_distance_from_all_means(a, means, sigma, batch_size, d):
@@ -128,6 +127,15 @@ def _chi_square_exponent(d, distance_squared):
              - math.lgamma(d / 2.0) - d / 2.0 * tf.log(2.0)
     return exponent
 
+
+def _shape(np_or_tf):
+    shape = np_or_tf.shape
+    if isinstance(np_or_tf, np.ndarray):
+        return shape
+    elif isinstance(np_or_tf, tf.Tensor):
+        return [dim.value for dim in shape]
+    raise ValueError("Expected an ndarray or tensor but got this object: {}".format(np_or_tf))
+
 # d = 1000
 # distance_sqaured = np.sum((np.random.randn(d) - np.random.randn(d)) ** 2.0)
 # one_to_d_minus_one = np.arange(1, d / 2)
@@ -135,3 +143,5 @@ def _chi_square_exponent(d, distance_squared):
 # print foo
 # # h = 1.0
 # print np.exp(foo)
+
+
