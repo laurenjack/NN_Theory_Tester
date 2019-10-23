@@ -26,11 +26,11 @@ class MultivariateKernelConfiguration:
         # The number of observations in the dataset.
         self.n = 3600
         # The number of examples for training at each step
-        self.m = 300
+        self.m = 30
         # The number of reference examples (those part of the Kernel density estimate) for each training step
         self.r = 300
         # The number of dimensions, for the random variable a
-        self.d = 2
+        self.d = 100
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix
         self.min_eigenvalue = 0.5
         self.max_eigenvalue = 2.0
@@ -46,13 +46,13 @@ class MultivariateKernelConfiguration:
         # [float] - A list of means, one for each Gaussian in the actual distribution
         self.means = np.zeros(shape=[1, self.d], dtype=np.float32)
         # The number of training epochs
-        self.epochs = 100
+        self.epochs = 200
         # The learning rate for R
         self.lr_init = 0.1 * self.d ** 0.5
         # The epochs when to apply a step wise decrese to the learning rate
-        self.reduce_lr_epochs = [15, 30, 45, 60, 75, 90]
+        self.reduce_lr_epochs = [50, 100, 130, 160, 170, 180, 190]
         # The factor to scale the learning rate down by
-        self.reduce_lr_factor = 0.3
+        self.reduce_lr_factor = 0.8
         # Alternatively, this fixed A will override the random generation of A with an
         # pre-determined value, please leave as None if you don't want to do this.
         Q = np.eye(self.d)#constant_creator.random_orthogonal_matrix(self.d)

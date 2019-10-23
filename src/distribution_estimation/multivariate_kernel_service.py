@@ -33,10 +33,6 @@ class MultivariateKernelService(object):
             pa_estimate, _ = pf.eigen_probabilities(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size)
         Qt = tf.transpose(Q)
         QtQ = tf.matmul(Qt, Q)
-        #A_inverse = tf.matmul(low_bias_Q * lam_inv ** 1, tf.transpose(low_bias_Q))
-        # sd_scaled = tf.tensordot(diff, A_inverse, axes=[[2], [0]])
-        #weighted_distance = pf.weighted_distance(sigma_inv, a, a_star1, batch_size)
-        # total_eigen_distance = tf.reduce_sum(eigen_distances, axis=2)
         A = tf.matmul(Q / lam_inv , Qt)
         loss_Q = tf.reduce_mean(eigen_distance)
         loss_lam = tf.reduce_mean((pa_estimate - fa) ** 2)
@@ -53,9 +49,9 @@ class MultivariateKernelService(object):
         # Update lambda inverse
         d_loss_dlam_inv = tf.gradients(loss_lam, lam_inv)[0]
         lam_inv_step = d_loss_dlam_inv / tf.norm(d_loss_dlam_inv)
-        lam_inv_train = tf.assign_sub(lam_inv, lr * lam_inv_step)
+        lam_inv_train = tf.assign_sub(lam_inv, lr * lam_inv_step * lam_inv)
 
-        return Q, lam_inv, Q_train, lam_inv_train, QtQ, pa_estimate, fa, A
+        return Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, fa, A
 
 
 class MvKdeGraph(object):
