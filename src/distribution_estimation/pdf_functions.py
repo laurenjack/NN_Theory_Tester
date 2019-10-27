@@ -37,10 +37,10 @@ def normal_seperate(a, mean, lam_inv, Q):
 def eigen_probabilities(Q, lam_inv, a, centres, batch_size):
     """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
     """
-    distances = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
+    distances, true_exp = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
     exponent = tf.exp(-0.5 * distances)
     mean_exp = tf.reduce_mean(exponent, axis=1)
-    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp, distances
+    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp, true_exp
 
 
 
@@ -85,7 +85,8 @@ def _eigen_distances_squared(Q, lam_inv, a, a_star, batch_size):
     r, d = _shape(a_star)
     difference = tf.reshape(a, [batch_size, 1, d]) - tf.reshape(a_star, [1, r, d])
     eigen_difference = tf.tensordot(difference, Q, axes=[[2], [0]]) * lam_inv
-    return eigen_difference ** 2.0
+    true_exp = tf.matmul(eigen_difference, tf.transpose(eigen_difference, [0, 2, 1]))
+    return eigen_difference ** 2.0, true_exp / d
 
 
 def weighted_distance(H_inverse, a, a_star, batch_size):

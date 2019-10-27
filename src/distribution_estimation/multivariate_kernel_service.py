@@ -23,7 +23,7 @@ class MultivariateKernelService(object):
         Q = tf.Variable(self.Q_init, name='Q', dtype=tf.float32)
         lam_inv = tf.Variable(self.lam_inv_init, name='lam_inv', dtype=tf.float32)
         # f(a) - our pdf
-        fa, eigen_distance = pf.eigen_probabilities(Q, lam_inv, a, a_star1, batch_size)
+        fa, true_exp = pf.eigen_probabilities(Q, lam_inv, a, a_star1, batch_size)
         # If actuals were passed in, train to fit on the actual distribution
         if self.actuals is not None:
             Q_act, lam_inv_act, means = self.actuals
@@ -34,7 +34,9 @@ class MultivariateKernelService(object):
         Qt = tf.transpose(Q)
         QtQ = tf.matmul(Qt, Q)
         A = tf.matmul(Q / lam_inv , Qt)
-        loss_Q = tf.reduce_mean(eigen_distance)
+        # Q_norm = tf.reduce_sum(Q ** 2, axis=1) ** 0.5
+        # exponent = tf.reduce_mean(eigen_distance, axis=1)
+        loss_Q = -tf.reduce_mean(tf.reduce_prod(fa *2.73, axis=1)) #-tf.reduce_mean(tf.exp(-true_exp)) #-tf.reduce_mean(tf.exp(-exponent / 2.0))
         loss_lam = tf.reduce_mean((pa_estimate - fa) ** 2)
         reg = tf.reduce_mean((QtQ - tf.eye(self.d)) ** 2)
 
