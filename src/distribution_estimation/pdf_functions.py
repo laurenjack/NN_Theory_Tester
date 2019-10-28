@@ -34,13 +34,30 @@ def normal_seperate(a, mean, lam_inv, Q):
     pa = 1.0 / (2.0 * math.pi) ** 0.5 * pa_unnormed
     return pa
 
+def unscaled_eigen_prob(Q, lam_inv, a, centres, batch_size):
+    """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
+    """
+    distances, true_exp = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
+    exponentials = tf.exp(-0.5 * distances)
+    return tf.reduce_mean(exponentials, axis=1)
+
 def eigen_probabilities(Q, lam_inv, a, centres, batch_size):
     """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
     """
     distances, true_exp = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
-    exponent = tf.exp(-0.5 * distances)
-    mean_exp = tf.reduce_mean(exponent, axis=1)
-    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp, true_exp
+    exponential = tf.exp(-0.5 * distances)
+    mean_exp = tf.reduce_mean(exponential, axis=1)
+    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp
+
+
+def product_of_kde(Q, lam_inv, a, centres, batch_size):
+    eigen_probs = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
+    return tf.reduce_prod(eigen_probs, axis=1)
+    # d, _ = _shape(Q)
+    # d = float(d)
+    # unscaled = unscaled_eigen_prob(Q, lam_inv, a, centres, batch_size)
+    # return 1.0 / (2.0 * math.pi) ** (d / 2) * tf.reduce_prod(lam_inv ** d * unscaled, axis=1)
+
 
 
 
@@ -133,7 +150,7 @@ def _shape(np_or_tf):
     shape = np_or_tf.shape
     if isinstance(np_or_tf, np.ndarray):
         return shape
-    elif isinstance(np_or_tf, tf.Tensor):
+    elif isinstance(np_or_tf, tf.Tensor) or isinstance(np_or_tf, tf.Variable):
         return [dim.value for dim in shape]
     raise ValueError("Expected an ndarray or tensor but got this object: {}".format(np_or_tf))
 

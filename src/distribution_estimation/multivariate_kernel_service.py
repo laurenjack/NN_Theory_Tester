@@ -23,25 +23,23 @@ class MultivariateKernelService(object):
         Q = tf.Variable(self.Q_init, name='Q', dtype=tf.float32)
         lam_inv = tf.Variable(self.lam_inv_init, name='lam_inv', dtype=tf.float32)
         # f(a) - our pdf
-        fa, true_exp = pf.eigen_probabilities(Q, lam_inv, a, a_star1, batch_size)
+        fa = pf.product_of_kde(Q, lam_inv, a, a_star1, batch_size)
         # If actuals were passed in, train to fit on the actual distribution
         if self.actuals is not None:
             Q_act, lam_inv_act, means = self.actuals
-            pa_estimate, _ = pf.eigen_probabilities(Q_act, lam_inv_act, a, means, batch_size)
+            A_actual = tf.matmul(Q_act / lam_inv_act , tf.transpose(Q_act))
+            pa_estimate = pf.gaussian_mixture(a, means, A_actual, batch_size, self.d)
         # Otherwise we have a real problem where the distribution is unknown
         else:
-            pa_estimate, _ = pf.eigen_probabilities(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size)
+            pa_estimate = pf.product_of_kde(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size)
         Qt = tf.transpose(Q)
         QtQ = tf.matmul(Qt, Q)
         A = tf.matmul(Q / lam_inv , Qt)
-        # Q_norm = tf.reduce_sum(Q ** 2, axis=1) ** 0.5
-        # exponent = tf.reduce_mean(eigen_distance, axis=1)
-        loss_Q = -tf.reduce_mean(tf.reduce_prod(fa *2.73, axis=1)) #-tf.reduce_mean(tf.exp(-true_exp)) #-tf.reduce_mean(tf.exp(-exponent / 2.0))
-        loss_lam = tf.reduce_mean((pa_estimate - fa) ** 2)
+        loss = tf.reduce_mean((pa_estimate - fa) ** 2)
         reg = tf.reduce_mean((QtQ - tf.eye(self.d)) ** 2)
 
         # Update Q
-        dloss_dQ = tf.gradients(loss_Q, Q)[0]
+        dloss_dQ, d_loss_dlam_inv = tf.gradients(loss, [Q, lam_inv])
         dreg_dQ = tf.gradients(reg, Q)[0]
         dloss_dQ_normed = dloss_dQ / tf.norm(dloss_dQ)
         dreg_dQ_normed = dreg_dQ / tf.norm(dreg_dQ)
@@ -49,11 +47,10 @@ class MultivariateKernelService(object):
         Q_step = Q_step / tf.norm(Q_step)
         Q_train = tf.assign_sub(Q, lr * Q_step)
         # Update lambda inverse
-        d_loss_dlam_inv = tf.gradients(loss_lam, lam_inv)[0]
         lam_inv_step = d_loss_dlam_inv / tf.norm(d_loss_dlam_inv)
         lam_inv_train = tf.assign_sub(lam_inv, lr * lam_inv_step * lam_inv)
 
-        return Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, fa, A
+        return Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, fa, A, loss
 
 
 class MvKdeGraph(object):

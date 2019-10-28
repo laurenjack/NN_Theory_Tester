@@ -22,7 +22,7 @@ def run():
     data_generator = dg.GaussianMixture(conf, random)
     actuals = None
     if conf.fit_to_underlying_pdf:
-        actuals = (data_generator.Q, data_generator.lam_inv, tf.constant(conf.means))
+        actuals = (data_generator.Q, data_generator.lam_inv, conf.means)
     mv_service = multivariate_kernel_service.MultivariateKernelService(conf, actuals)
     trainer = train_mv_kernel_estimator.Trainer(conf, random)
     mv_kde = multivariate_kernel_service.MvKdeGraph(conf, mv_service)
