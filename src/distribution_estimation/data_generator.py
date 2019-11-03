@@ -76,7 +76,7 @@ class GaussianMixture(object):
         Return:
             p(a) - The value of the pdf at for each point in a.
         """
-        return pdf_functions.gaussian_mixture(a, self.means, self.actual_A, batch_size, self.d)
+        px, _ = pdf_functions.gaussian_mixture(a, self.means, self.actual_A, batch_size, self.d)
         #TODO(Jack) remove
         # distance_squared = self._distance_squared(a, batch_size)
         # exponent = 0.5 * (-distance_squared)

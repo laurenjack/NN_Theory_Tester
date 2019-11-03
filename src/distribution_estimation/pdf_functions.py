@@ -26,6 +26,21 @@ def gaussian_mixture(a, means, A, batch_size, d):
     pa = 1.0 / (((2.0 * math.pi) ** d * sigma_determinant) ** 0.5 * number_of_means) * pa_unnormed
     return pa
 
+
+def normal_exponent(a, means, A, batch_size):
+    num_means, d = _shape(means)
+    sigma = tf.matmul(tf.transpose(A), A)
+    sigma_determinant = tf.matrix_determinant(sigma)
+    if num_means != 1:
+        raise ValueError('Invalid for a mixture of Gaussians, use a single means shape: [1, d] for a single Gaussian')
+    weighted_distance = _weighted_distance_from_all_means(a, means, sigma, batch_size, d)
+    exponent = - tf.reshape(weighted_distance, [batch_size]) / 2
+    scale = 1.0 / ((2.0 * math.pi) ** d * sigma_determinant) ** 0.5
+    pa = scale * tf.exp(exponent)
+    log_pa = exponent + tf.log(scale)
+    return pa, log_pa
+
+
 def normal_seperate(a, mean, lam_inv, Q):
     diffs = a - mean
     eigen_space_diffs = tf.matmul(diffs, Q) * lam_inv
@@ -44,9 +59,10 @@ def unscaled_eigen_prob(Q, lam_inv, a, centres, batch_size):
 def eigen_probabilities(Q, lam_inv, a, centres, batch_size):
     """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
     """
+    _, d = _shape(Q)
     distances, true_exp = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
     exponential = tf.exp(-0.5 * distances)
-    mean_exp = tf.reduce_mean(exponential, axis=1)
+    mean_exp = tf.reduce_mean(exponential, axis=1) # tf.exp(1.0) *
     return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp
 
 
@@ -59,6 +75,9 @@ def product_of_kde(Q, lam_inv, a, centres, batch_size):
     # return 1.0 / (2.0 * math.pi) ** (d / 2) * tf.reduce_prod(lam_inv ** d * unscaled, axis=1)
 
 
+def sum_of_log_eigen_probs(Q, lam_inv, a, centres, batch_size):
+    eigen_probs = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
+    return tf.reduce_sum(tf.log(eigen_probs), axis=1)
 
 
 def chi_squared_distance_estimator(H_inverse, a, a_star, batch_size):

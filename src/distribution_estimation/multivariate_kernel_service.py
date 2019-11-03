@@ -23,19 +23,19 @@ class MultivariateKernelService(object):
         Q = tf.Variable(self.Q_init, name='Q', dtype=tf.float32)
         lam_inv = tf.Variable(self.lam_inv_init, name='lam_inv', dtype=tf.float32)
         # f(a) - our pdf
-        fa = pf.product_of_kde(Q, lam_inv, a, a_star1, batch_size)
+        log_fa = pf.sum_of_log_eigen_probs(Q, lam_inv, a, a_star1, batch_size)
         # If actuals were passed in, train to fit on the actual distribution
         if self.actuals is not None:
             Q_act, lam_inv_act, means = self.actuals
             A_actual = tf.matmul(Q_act / lam_inv_act , tf.transpose(Q_act))
-            pa_estimate = pf.gaussian_mixture(a, means, A_actual, batch_size, self.d)
+            pa_estimate, log_pa = pf.normal_exponent(a, means, A_actual, batch_size)
         # Otherwise we have a real problem where the distribution is unknown
         else:
-            pa_estimate = pf.product_of_kde(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size)
+            pa_estimate, log_pa = pf.sum_of_log_eigen_probs(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size)
         Qt = tf.transpose(Q)
         QtQ = tf.matmul(Qt, Q)
         A = tf.matmul(Q / lam_inv , Qt)
-        loss = tf.reduce_mean((pa_estimate - fa) ** 2)
+        loss = tf.reduce_mean((log_pa - log_fa) ** 2) # tf.reduce_mean((pa_estimate - fa) ** 2) #
         reg = tf.reduce_mean((QtQ - tf.eye(self.d)) ** 2)
 
         # Update Q
@@ -50,7 +50,7 @@ class MultivariateKernelService(object):
         lam_inv_step = d_loss_dlam_inv / tf.norm(d_loss_dlam_inv)
         lam_inv_train = tf.assign_sub(lam_inv, lr * lam_inv_step * lam_inv)
 
-        return Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, fa, A, loss
+        return Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, log_fa, A, loss
 
 
 class MvKdeGraph(object):
