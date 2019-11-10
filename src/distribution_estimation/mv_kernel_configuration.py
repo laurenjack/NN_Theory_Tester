@@ -50,7 +50,7 @@ class MultivariateKernelConfiguration:
         # The learning rate for R
         self.lr_init = 0.2 * self.d ** 0.5
         # The epochs when to apply a step wise decrese to the learning rate
-        self.reduce_lr_epochs = [20, 40, 60, 80, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190]
+        self.reduce_lr_epochs = [20, 40, 60, 80, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190] #[50, 75, 100, 125, 150, 160, 170, 180, 190]#
         # The factor to scale the learning rate down by
         self.reduce_lr_factor = 0.8
         # Alternatively, this fixed A will override the random generation of A with an

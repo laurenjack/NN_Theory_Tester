@@ -27,17 +27,18 @@ def gaussian_mixture(a, means, A, batch_size, d):
     return pa
 
 
-def normal_exponent(a, means, A, batch_size):
+def normal_exponent(a, means, Q, lam_inv, batch_size):
+    A = tf.matmul(Q / lam_inv , tf.transpose(Q))
     num_means, d = _shape(means)
     sigma = tf.matmul(tf.transpose(A), A)
-    sigma_determinant = tf.matrix_determinant(sigma)
     if num_means != 1:
         raise ValueError('Invalid for a mixture of Gaussians, use a single means shape: [1, d] for a single Gaussian')
     weighted_distance = _weighted_distance_from_all_means(a, means, sigma, batch_size, d)
     exponent = - tf.reshape(weighted_distance, [batch_size]) / 2
-    scale = 1.0 / ((2.0 * math.pi) ** d * sigma_determinant) ** 0.5
-    pa = scale * tf.exp(exponent)
-    log_pa = exponent + tf.log(scale)
+    log_scale = np.sum(np.log(lam_inv)) - d / 2.0 * np.log(2.0 * math.pi)
+    #scale = 1.0 / ((2.0 * math.pi) ** d * sigma_determinant) ** 0.5
+    log_pa = exponent + log_scale
+    pa = tf.exp(exponent + log_scale)
     return pa, log_pa
 
 
@@ -56,18 +57,19 @@ def unscaled_eigen_prob(Q, lam_inv, a, centres, batch_size):
     exponentials = tf.exp(-0.5 * distances)
     return tf.reduce_mean(exponentials, axis=1)
 
+
 def eigen_probabilities(Q, lam_inv, a, centres, batch_size):
     """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
     """
     _, d = _shape(Q)
-    distances, true_exp = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
+    distances, difference = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
     exponential = tf.exp(-0.5 * distances)
     mean_exp = tf.reduce_mean(exponential, axis=1) # tf.exp(1.0) *
-    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp
+    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp, exponential, difference
 
 
 def product_of_kde(Q, lam_inv, a, centres, batch_size):
-    eigen_probs = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
+    eigen_probs, _ = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
     return tf.reduce_prod(eigen_probs, axis=1)
     # d, _ = _shape(Q)
     # d = float(d)
@@ -76,8 +78,30 @@ def product_of_kde(Q, lam_inv, a, centres, batch_size):
 
 
 def sum_of_log_eigen_probs(Q, lam_inv, a, centres, batch_size):
-    eigen_probs = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
-    return tf.reduce_sum(tf.log(eigen_probs), axis=1)
+    eigen_probs, individual_exponentials, difference = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
+    return tf.reduce_sum(tf.log(eigen_probs), axis=1), individual_exponentials, difference
+
+
+def gradients_with_flex_weights(log_delta, a_difference, Q, lamda_inverse, weights, batch_size):
+    """ Returns a modified version of the gradient of the mean square error function of log(px) - log(fx).
+
+    Specifically the modification is determined by the weights, which are in the default unmodified case, the
+    Gaussian exponential across each distance, for each distance.
+    """
+    _, r, d = _shape(a_difference)
+    rotated_difference = tf.tensordot(a_difference, Q, axes=[[2], [0]])
+    rotated_distance_squared = rotated_difference ** 2
+    variance = tf.reduce_sum(rotated_distance_squared * weights, axis=1)
+    log_delta = tf.reshape(log_delta, [batch_size, 1])
+    df_dlam_inv = tf.reduce_mean(log_delta * (1.0 / lamda_inverse - variance * lamda_inverse), axis=0)
+    dot_scaled_difference = -tf.reshape(rotated_difference * weights, [batch_size, r, 1, d]) *\
+                            tf.reshape(a_difference, [batch_size, r, d, 1])
+    dQ_single_point = tf.reduce_sum(dot_scaled_difference, axis=1) * lamda_inverse ** 2
+    log_delta = tf.reshape(log_delta, [batch_size, 1, 1])
+    df_dQ = tf.reduce_mean(log_delta * dQ_single_point, axis=0)
+    return df_dQ, df_dlam_inv
+
+
 
 
 def chi_squared_distance_estimator(H_inverse, a, a_star, batch_size):
@@ -121,8 +145,8 @@ def _eigen_distances_squared(Q, lam_inv, a, a_star, batch_size):
     r, d = _shape(a_star)
     difference = tf.reshape(a, [batch_size, 1, d]) - tf.reshape(a_star, [1, r, d])
     eigen_difference = tf.tensordot(difference, Q, axes=[[2], [0]]) * lam_inv
-    true_exp = tf.matmul(eigen_difference, tf.transpose(eigen_difference, [0, 2, 1]))
-    return eigen_difference ** 2.0, true_exp / d
+    # true_exp = tf.matmul(eigen_difference, tf.transpose(eigen_difference, [0, 2, 1]))
+    return eigen_difference ** 2.0, difference
 
 
 def weighted_distance(H_inverse, a, a_star, batch_size):
