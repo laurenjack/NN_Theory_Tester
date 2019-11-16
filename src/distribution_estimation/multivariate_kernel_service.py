@@ -23,7 +23,7 @@ class MultivariateKernelService(object):
         Q = tf.Variable(self.Q_init, name='Q', dtype=tf.float32)
         lam_inv = tf.Variable(self.lam_inv_init, name='lam_inv', dtype=tf.float32)
         # f(a) - our pdf
-        log_fa, exponentials, difference = pf.sum_of_log_eigen_probs(Q, lam_inv, a, a_star1, batch_size)
+        log_fa, exponentials, eigen_distances, difference = pf.sum_of_log_eigen_probs(Q, lam_inv, a, a_star1, batch_size)
         # If actuals were passed in, train to fit on the actual distribution
         if self.actuals is not None:
             Q_act, lam_inv_act, means = self.actuals
@@ -37,8 +37,15 @@ class MultivariateKernelService(object):
         # inv_log_fa = 1.0 / log_fa
         # inv_log_pa = 1.0 / log_pa
         loss = tf.reduce_mean((log_pa - log_fa) ** 2) # tf.reduce_mean((pa_estimate - fa) ** 2)
+        # chi_square = pf.chi_squared_distribution(self.d, tf.reduce_sum(eigen_distances, axis=2))
+        # chi_square_sum = tf.reshape(tf.reduce_sum(chi_square, axis=1), [batch_size, 1])
+        normal = tf.exp(self.d -0.5 * tf.reduce_sum(eigen_distances, axis=2))
+        normal_sum = tf.reshape(tf.reduce_sum(normal, axis=1), [batch_size, 1])
+        weights = normal / normal_sum
+        # weights = tf.reshape(weights, [batch_size, self.r, 1])
         weights = exponentials / tf.reshape(tf.reduce_sum(exponentials, axis=1), [batch_size, 1, self.d])
         log_delta = log_fa - log_pa
+        high_log = tf.nn.top_k(log_delta, k=10)
         reg = tf.reduce_mean((QtQ - tf.eye(self.d)) ** 2)
 
         # Update Q
@@ -55,7 +62,7 @@ class MultivariateKernelService(object):
         lam_inv_step = d_loss_dlam_inv / tf.norm(d_loss_dlam_inv)
         lam_inv_train = tf.assign_sub(lam_inv, lr * lam_inv_step * lam_inv)
 
-        return Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, log_fa, A, loss
+        return Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, log_fa, A, high_log # A, loss
 
 
 class MvKdeGraph(object):

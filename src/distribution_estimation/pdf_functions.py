@@ -65,11 +65,11 @@ def eigen_probabilities(Q, lam_inv, a, centres, batch_size):
     distances, difference = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
     exponential = tf.exp(-0.5 * distances)
     mean_exp = tf.reduce_mean(exponential, axis=1) # tf.exp(1.0) *
-    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp, exponential, difference
+    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp, exponential, distances, difference
 
 
 def product_of_kde(Q, lam_inv, a, centres, batch_size):
-    eigen_probs, _ = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
+    eigen_probs, _, _, _ = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
     return tf.reduce_prod(eigen_probs, axis=1)
     # d, _ = _shape(Q)
     # d = float(d)
@@ -78,8 +78,8 @@ def product_of_kde(Q, lam_inv, a, centres, batch_size):
 
 
 def sum_of_log_eigen_probs(Q, lam_inv, a, centres, batch_size):
-    eigen_probs, individual_exponentials, difference = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
-    return tf.reduce_sum(tf.log(eigen_probs), axis=1), individual_exponentials, difference
+    eigen_probs, individual_exponentials, distances, difference = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
+    return tf.reduce_sum(tf.log(eigen_probs), axis=1), individual_exponentials, distances, difference
 
 
 def gradients_with_flex_weights(log_delta, a_difference, Q, lamda_inverse, weights, batch_size):
@@ -137,7 +137,6 @@ def chi_squared_distribution(d, distance_squared):
     Given a tensor of any non-zero shape, return the likelihood of X = distance_squared where X is a chi-squared
     distribution, for each element of distance_squared.
     """
-    distance_squared = distance_squared
     exponent = _chi_square_exponent(d, distance_squared)
     return tf.exp(exponent)
 
@@ -185,7 +184,7 @@ def _chi_square_exponent(d, distance_squared):
         distance_squared
     """
     exponent = (d / 2.0 - 1) * tf.log(distance_squared) - distance_squared / 2.0\
-             - math.lgamma(d / 2.0) - d / 2.0 * tf.log(2.0)
+             - tf.lgamma(d / 2.0) - d / 2.0 * tf.log(2.0)
     return exponent
 
 

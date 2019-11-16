@@ -15,7 +15,7 @@ class PdfFunctionsSpec(unittest.TestCase):
 
 
     def test_sum_of_log_eigen_probs(self):
-        result, _, _ = pdf_functions.sum_of_log_eigen_probs(Q, lam_inv, a, a_star, 1)
+        result, _, _, _ = pdf_functions.sum_of_log_eigen_probs(Q, lam_inv, a, a_star, 1)
         dist0 = ((a[0] - a_star[0]).dot(Q) * lam_inv) ** 2
         dist1 = ((a[0] - a_star[1]).dot(Q) * lam_inv) ** 2
         f0 = np.exp(-0.5 * dist0) # / (2 * math.pi) ** 0.5 * lam_inv / 2.0
@@ -55,7 +55,7 @@ class PdfFunctionsSpec(unittest.TestCase):
         actual_lamda_inverse = np.array([1.0, 3.0], dtype=np.float32)
 
         _, log_pa = pdf_functions.normal_exponent(a, means, actual_Q, actual_lamda_inverse, 1)
-        log_fa, exponentials, difference = pdf_functions.sum_of_log_eigen_probs(Q_tensor, lam_inv_tensor, a, a_star, 1)
+        log_fa, exponentials, _, difference = pdf_functions.sum_of_log_eigen_probs(Q_tensor, lam_inv_tensor, a, a_star, 1)
         weights = exponentials / tf.reshape(tf.reduce_sum(exponentials, axis=1), [1, 1, 2])
         log_delta = log_fa - log_pa
 
