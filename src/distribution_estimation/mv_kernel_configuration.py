@@ -28,9 +28,9 @@ class MultivariateKernelConfiguration:
         # The number of examples for training at each step
         self.m = 30
         # The number of reference examples (those part of the Kernel density estimate) for each training step
-        self.r = 300
+        self.r = 1000
         # The number of dimensions, for the random variable a
-        self.d = 30
+        self.d = 2
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix
         self.min_eigenvalue = 0.5
         self.max_eigenvalue = 2.0

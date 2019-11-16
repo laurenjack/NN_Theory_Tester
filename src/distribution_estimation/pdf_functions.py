@@ -38,6 +38,7 @@ def normal_exponent(a, means, Q, lam_inv, batch_size):
     log_scale = np.sum(np.log(lam_inv)) - d / 2.0 * np.log(2.0 * math.pi)
     #scale = 1.0 / ((2.0 * math.pi) ** d * sigma_determinant) ** 0.5
     log_pa = exponent + log_scale
+    d = float(d)
     pa = tf.exp(exponent + log_scale)
     return pa, log_pa
 
@@ -53,6 +54,7 @@ def normal_seperate(a, mean, lam_inv, Q):
 def unscaled_eigen_prob(Q, lam_inv, a, centres, batch_size):
     """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
     """
+    d, _ = _shape(Q)
     distances, true_exp = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
     exponentials = tf.exp(-0.5 * distances)
     return tf.reduce_mean(exponentials, axis=1)
@@ -61,7 +63,8 @@ def unscaled_eigen_prob(Q, lam_inv, a, centres, batch_size):
 def eigen_probabilities(Q, lam_inv, a, centres, batch_size):
     """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
     """
-    _, d = _shape(Q)
+    d, _ = _shape(Q)
+    d = float(d)
     distances, difference = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
     exponential = tf.exp(-0.5 * distances)
     mean_exp = tf.reduce_mean(exponential, axis=1) # tf.exp(1.0) *
@@ -79,7 +82,8 @@ def product_of_kde(Q, lam_inv, a, centres, batch_size):
 
 def sum_of_log_eigen_probs(Q, lam_inv, a, centres, batch_size):
     eigen_probs, individual_exponentials, distances, difference = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
-    return tf.reduce_sum(tf.log(eigen_probs), axis=1), individual_exponentials, distances, difference
+    fa = tf.reduce_prod(eigen_probs, axis=1)
+    return fa, tf.reduce_sum(tf.log(eigen_probs), axis=1), individual_exponentials, distances, difference
 
 
 def gradients_with_flex_weights(log_delta, a_difference, Q, lamda_inverse, weights, batch_size):

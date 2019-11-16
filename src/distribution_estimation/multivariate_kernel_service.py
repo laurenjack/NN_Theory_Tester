@@ -23,7 +23,7 @@ class MultivariateKernelService(object):
         Q = tf.Variable(self.Q_init, name='Q', dtype=tf.float32)
         lam_inv = tf.Variable(self.lam_inv_init, name='lam_inv', dtype=tf.float32)
         # f(a) - our pdf
-        log_fa, exponentials, eigen_distances, difference = pf.sum_of_log_eigen_probs(Q, lam_inv, a, a_star1, batch_size)
+        fa, log_fa, exponentials, eigen_distances, difference = pf.sum_of_log_eigen_probs(Q, lam_inv, a, a_star1, batch_size)
         # If actuals were passed in, train to fit on the actual distribution
         if self.actuals is not None:
             Q_act, lam_inv_act, means = self.actuals
@@ -34,24 +34,13 @@ class MultivariateKernelService(object):
         Qt = tf.transpose(Q)
         QtQ = tf.matmul(Qt, Q)
         A = tf.matmul(Q / lam_inv, Qt)
-        # inv_log_fa = 1.0 / log_fa
-        # inv_log_pa = 1.0 / log_pa
-        loss = tf.reduce_mean((log_pa - log_fa) ** 2) # tf.reduce_mean((pa_estimate - fa) ** 2)
-        # chi_square = pf.chi_squared_distribution(self.d, tf.reduce_sum(eigen_distances, axis=2))
-        # chi_square_sum = tf.reshape(tf.reduce_sum(chi_square, axis=1), [batch_size, 1])
-        normal = tf.exp(self.d -0.5 * tf.reduce_sum(eigen_distances, axis=2))
-        normal_sum = tf.reshape(tf.reduce_sum(normal, axis=1), [batch_size, 1])
-        weights = normal / normal_sum
-        # weights = tf.reshape(weights, [batch_size, self.r, 1])
-        weights = exponentials / tf.reshape(tf.reduce_sum(exponentials, axis=1), [batch_size, 1, self.d])
-        log_delta = log_fa - log_pa
-        high_log = tf.nn.top_k(log_delta, k=10)
+        loss = tf.reduce_mean((pa_estimate - fa) ** 2) # tf.reduce_mean((pa_estimate - fa) ** 2)
+        high_log = tf.nn.top_k(-log_fa, k=10)
         reg = tf.reduce_mean((QtQ - tf.eye(self.d)) ** 2)
 
         # Update Q
         # dloss_dQ, d_loss_dlam_inv = tf.gradients(loss, [Q, lam_inv])
-        dloss_dQ, d_loss_dlam_inv = pf.gradients_with_flex_weights(log_delta, difference, Q, lam_inv, weights,
-                                                                   batch_size)
+        dloss_dQ, d_loss_dlam_inv = tf.gradients(loss, [Q, lam_inv])
         dreg_dQ = tf.gradients(reg, Q)[0]
         dloss_dQ_normed = dloss_dQ / tf.norm(dloss_dQ)
         dreg_dQ_normed = dreg_dQ / tf.norm(dreg_dQ)
