@@ -14,6 +14,7 @@ class MultivariateKernelService(object):
         self.Q_init = conf.Q_init
         self.lam_inv_init = conf.lam_inv_init
         self.actuals = actuals
+        self.c = conf.c
 
     def create_tensors(self, lr, batch_size, a, a_star1, a_star2, low_bias_Q, low_bias_lam_inv):
         """Build and return the tensors related to training, reporting and inference for a multivariate kernel density
@@ -22,15 +23,17 @@ class MultivariateKernelService(object):
         # Variables
         Q = tf.Variable(self.Q_init, name='Q', dtype=tf.float32)
         lam_inv = tf.Variable(self.lam_inv_init, name='lam_inv', dtype=tf.float32)
+        threshold = 2 * tf.reduce_sum(lam_inv ** 2)
         # f(a) - our pdf
-        fa, eigen_distances = pf.eigen_probabilities(Q, lam_inv, a, a_star1, batch_size)
+        fa, eigen_distances = pf.eigen_probabilities(Q, lam_inv, a, a_star1, batch_size, threshold)
         # If actuals were passed in, train to fit on the actual distribution
         if self.actuals is not None:
             Q_act, lam_inv_act, means = self.actuals
             pa_estimate, _ = pf.eigen_probabilities(Q_act, lam_inv_act, a, means, batch_size)
         # Otherwise we have a real problem where the distribution is unknown
         else:
-            pa_estimate, _ = pf.eigen_probabilities(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size)
+            lb_threshold = 2 * tf.reduce_sum(low_bias_lam_inv ** 2)
+            pa_estimate, _ = pf.eigen_probabilities(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size, lb_threshold)
         Qt = tf.transpose(Q)
         QtQ = tf.matmul(Qt, Q)
         A = tf.matmul(Q / lam_inv, Qt)

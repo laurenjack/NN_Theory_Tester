@@ -60,12 +60,19 @@ def unscaled_eigen_prob(Q, lam_inv, a, centres, batch_size):
     return tf.reduce_mean(exponentials, axis=1)
 
 
-def eigen_probabilities(Q, lam_inv, a, centres, batch_size):
+def eigen_probabilities(Q, lam_inv, a, centres, batch_size, threshold=None):
     """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
     """
-    d, _ = _shape(Q)
     distances, difference = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
     exponential = tf.exp(-0.5 * distances)
+    if threshold is not None:
+        r, _ = _shape(centres)
+        total_distance = tf.reduce_sum(distances, axis=2)
+        keep = tf.less(total_distance, threshold)
+        keep = tf.cast(keep, tf.float32)
+        keep = tf.reshape(keep, [batch_size, r, 1])
+        exponential = keep * exponential
+        distances = keep * distances
     mean_exp = tf.reduce_mean(exponential, axis=1)
     return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp, distances #, exponential, distances, difference
 

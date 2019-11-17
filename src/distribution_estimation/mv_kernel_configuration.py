@@ -44,11 +44,11 @@ class MultivariateKernelConfiguration:
         # The degree to which the low variance eigen-bandwidths are scaled down.
         self.c = 0.4
         # [float] - A list of means, one for each Gaussian in the actual distribution
-        self.means = np.zeros(shape=[1, self.d], dtype=np.float32)
+        self.means = np.array([np.zeros(self.d)], dtype=np.float32) # [2.0 * np.ones(self.d), np.zeros(self.d), -2.0 * np.ones(self.d)]
         # The number of training epochs
         self.epochs = 200
         # The learning rate for R
-        self.lr_init = 0.1 * self.d ** 0.5
+        self.lr_init =  0.1 * self.d ** 0.5
         # The epochs when to apply a step wise decrese to the learning rate
         self.reduce_lr_epochs = [50, 100, 130, 160, 170, 180, 190] # [20, 40, 60, 80, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190]
         # The factor to scale the learning rate down by
