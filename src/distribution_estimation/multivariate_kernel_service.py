@@ -23,24 +23,24 @@ class MultivariateKernelService(object):
         Q = tf.Variable(self.Q_init, name='Q', dtype=tf.float32)
         lam_inv = tf.Variable(self.lam_inv_init, name='lam_inv', dtype=tf.float32)
         # f(a) - our pdf
-        fa, log_fa, exponentials, eigen_distances, difference = pf.sum_of_log_eigen_probs(Q, lam_inv, a, a_star1, batch_size)
+        fa, eigen_distances = pf.eigen_probabilities(Q, lam_inv, a, a_star1, batch_size)
         # If actuals were passed in, train to fit on the actual distribution
         if self.actuals is not None:
             Q_act, lam_inv_act, means = self.actuals
-            pa_estimate, log_pa = pf.normal_exponent(a, means, Q_act, lam_inv_act, batch_size)
+            pa_estimate, _ = pf.eigen_probabilities(Q_act, lam_inv_act, a, means, batch_size)
         # Otherwise we have a real problem where the distribution is unknown
         else:
-            pa_estimate, log_pa = pf.sum_of_log_eigen_probs(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size)
+            pa_estimate, _ = pf.eigen_probabilities(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size)
         Qt = tf.transpose(Q)
         QtQ = tf.matmul(Qt, Q)
         A = tf.matmul(Q / lam_inv, Qt)
-        loss = tf.reduce_mean((pa_estimate - fa) ** 2) # tf.reduce_mean((pa_estimate - fa) ** 2)
-        high_log = tf.nn.top_k(-log_fa, k=10)
+        loss_Q = tf.reduce_mean(eigen_distances)
+        loss_lam_inv = tf.reduce_mean((pa_estimate - fa) ** 2)
         reg = tf.reduce_mean((QtQ - tf.eye(self.d)) ** 2)
 
         # Update Q
-        # dloss_dQ, d_loss_dlam_inv = tf.gradients(loss, [Q, lam_inv])
-        dloss_dQ, d_loss_dlam_inv = tf.gradients(loss, [Q, lam_inv])
+        dloss_dQ = tf.gradients(loss_Q, Q)[0]
+        d_loss_dlam_inv = tf.gradients(loss_lam_inv, lam_inv)[0]
         dreg_dQ = tf.gradients(reg, Q)[0]
         dloss_dQ_normed = dloss_dQ / tf.norm(dloss_dQ)
         dreg_dQ_normed = dreg_dQ / tf.norm(dreg_dQ)
@@ -51,7 +51,7 @@ class MultivariateKernelService(object):
         lam_inv_step = d_loss_dlam_inv / tf.norm(d_loss_dlam_inv)
         lam_inv_train = tf.assign_sub(lam_inv, lr * lam_inv_step * lam_inv)
 
-        return Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, log_fa, A, high_log # A, loss
+        return Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, fa, A, loss_lam_inv
 
 
 class MvKdeGraph(object):

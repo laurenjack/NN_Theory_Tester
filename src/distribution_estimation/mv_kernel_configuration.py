@@ -22,15 +22,15 @@ class MultivariateKernelConfiguration:
     def __init__(self):
         # When true, trains on the actual pdf, i.e. minimise sum( (p(a) - f(a)) ** 2.0 ) directly. This is to isolate
         # the training parameters for tuning. When this is false, we use proper bandwith estimation without cheating
-        self.fit_to_underlying_pdf = True
+        self.fit_to_underlying_pdf = False
         # The number of observations in the dataset.
         self.n = 3600
         # The number of examples for training at each step
         self.m = 30
         # The number of reference examples (those part of the Kernel density estimate) for each training step
-        self.r = 1000
+        self.r = 300
         # The number of dimensions, for the random variable a
-        self.d = 2
+        self.d = 100
         # The minimum and maximum eigenvalues of the underlying standard deviation matrix
         self.min_eigenvalue = 0.5
         self.max_eigenvalue = 2.0
@@ -50,7 +50,7 @@ class MultivariateKernelConfiguration:
         # The learning rate for R
         self.lr_init = 0.1 * self.d ** 0.5
         # The epochs when to apply a step wise decrese to the learning rate
-        self.reduce_lr_epochs = [20, 40, 60, 80, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190] #[50, 75, 100, 125, 150, 160, 170, 180, 190]#
+        self.reduce_lr_epochs = [50, 100, 130, 160, 170, 180, 190] # [20, 40, 60, 80, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190]
         # The factor to scale the learning rate down by
         self.reduce_lr_factor = 0.8
         # Alternatively, this fixed A will override the random generation of A with an

@@ -60,18 +60,18 @@ class Trainer(object):
                              pa_val[0], log_fa[0], A_val, losss_val, actual_lamda)
 
     def _report(self, Q_val, lam_inv_val, QtQ_val, a_val, pa_val, log_fa, A_val, losss_val, actual_lamda):
-        actual_scaled = actual_lamda * (4.0 /float((1 + 2) * self.r)) ** (1.0 / float(1 + 4))
+        actual_scaled = actual_lamda *  (4.0 /(3.0 * self.r)) ** 0.2
         A = np.diag(A_val)
-        # delta = A - actual_scaled
+        delta = A - actual_scaled
         #print 'a_diff: {}'.format(a_val)
         #print 'p(a): {}'.format(pa_val)
         #print 'log f(a): {}'.format(log_fa)
-        print 'Loss {}'.format(losss_val)
+        print 'Loss {}\n'.format(losss_val)
         # print 'Eigenvalues: {}\n'.format(1.0 / lam_inv_val)
         # print 'Actual eigenvalues: {}\n'.format(actual_lamda)
         # print 'Q: {}\n'.format(Q_val)
-        print 'A: {}\n'.format(A)
-        print 'Actual {}\n'.format(actual_scaled)
-        # print 'Delta: {}'.format(delta)
+        # print 'A: {}\n'.format(A)
+        # print 'Actual {}\n'.format(actual_scaled)
+        print 'Delta: {}'.format(delta)
         #print 'mse: {}\n'.format(np.mean(delta ** 2.0))
         # print 'QtQ: {}\n\n'.format(np.diag(QtQ_val))

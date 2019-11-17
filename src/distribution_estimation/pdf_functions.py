@@ -64,11 +64,10 @@ def eigen_probabilities(Q, lam_inv, a, centres, batch_size):
     """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
     """
     d, _ = _shape(Q)
-    d = float(d)
     distances, difference = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
     exponential = tf.exp(-0.5 * distances)
-    mean_exp = tf.reduce_mean(exponential, axis=1) # tf.exp(1.0) *
-    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp, exponential, distances, difference
+    mean_exp = tf.reduce_mean(exponential, axis=1)
+    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp, distances #, exponential, distances, difference
 
 
 def product_of_kde(Q, lam_inv, a, centres, batch_size):
