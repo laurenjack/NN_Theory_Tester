@@ -9,6 +9,7 @@ import tensorflow as tf
 
 
 _MNIST_NUM_CLASS = 10
+_MNIST_IMAGE_WIDTH = 28
 _CIFAR10_NUM_CLASS = 10
 _CIFAR10_IMAGE_WIDTH = 32
 _CIFAR10_VALIDATION_SET_PROPORTION = 0.1
@@ -85,7 +86,7 @@ def load_mnist():
     # Create training and validation sets
     train_set = Subset(x_train, y_train)
     validation_set = Subset(x_validation, y_validation)
-    return Dataset(_MNIST_NUM_CLASS, train_set, validation_set)
+    return Dataset(_MNIST_NUM_CLASS, train_set, validation_set, _MNIST_IMAGE_WIDTH)
 
 
 def load_cifar(data_dir, classes=None):

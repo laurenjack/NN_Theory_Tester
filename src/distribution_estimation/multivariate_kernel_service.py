@@ -7,7 +7,8 @@ class MultivariateKernelService(object):
     estimator.
     """
     
-    def __init__(self, conf, actuals=None):
+    def __init__(self, pdf_service, conf, actuals=None):
+        self.pdf_service = pdf_service
         self.r = conf.r
         self.d = conf.d
         self.k = conf.k
@@ -25,15 +26,15 @@ class MultivariateKernelService(object):
         lam_inv = tf.Variable(self.lam_inv_init, name='lam_inv', dtype=tf.float32)
         threshold = 2 * tf.reduce_sum(lam_inv ** 2)
         # f(a) - our pdf
-        fa, eigen_distances = pf.eigen_probabilities(Q, lam_inv, a, a_star1, batch_size, threshold)
+        fa, eigen_distances = self.pdf_service.eigen_probabilities(Q, lam_inv, a, a_star1, batch_size) #, threshold)
         # If actuals were passed in, train to fit on the actual distribution
         if self.actuals is not None:
             Q_act, lam_inv_act, means = self.actuals
-            pa_estimate, _ = pf.eigen_probabilities(Q_act, lam_inv_act, a, means, batch_size)
+            pa_estimate, _ = self.pdf_service.eigen_probabilities(Q_act, lam_inv_act, a, means, batch_size)
         # Otherwise we have a real problem where the distribution is unknown
         else:
             lb_threshold = 2 * tf.reduce_sum(low_bias_lam_inv ** 2)
-            pa_estimate, _ = pf.eigen_probabilities(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size, lb_threshold)
+            pa_estimate, _ = self.pdf_service.eigen_probabilities(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size) #, lb_threshold)
         Qt = tf.transpose(Q)
         QtQ = tf.matmul(Qt, Q)
         A = tf.matmul(Q / lam_inv, Qt)

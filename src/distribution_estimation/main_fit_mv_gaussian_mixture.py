@@ -6,6 +6,7 @@ from src import random_behavior
 import data_generator as dg
 import train_mv_kernel_estimator
 import multivariate_kernel_service
+import pdf_functions as pf
 
 
 def run():
@@ -23,7 +24,9 @@ def run():
     actuals = None
     if conf.fit_to_underlying_pdf:
         actuals = (data_generator.Q, data_generator.lam_inv, conf.means)
-    mv_service = multivariate_kernel_service.MultivariateKernelService(conf, actuals)
+    distance_function = pf.EigenDistance()
+    pdf_service = pf.PdfFunctionService(distance_function)
+    mv_service = multivariate_kernel_service.MultivariateKernelService(pdf_service, conf, actuals)
     trainer = train_mv_kernel_estimator.Trainer(conf, random)
     mv_kde = multivariate_kernel_service.MvKdeGraph(conf, mv_service)
 
@@ -36,7 +39,7 @@ def run():
 
     # Build graph and train
     trainer.train(mv_kde, session, x, 1.0 / data_generator.lam_inv)
-    print 'Actual Lamda: {}'.format(1.0 / data_generator.lam_inv )
+    print 'Actual Lamda: {}'.format(1.0 / data_generator.lam_inv)
     print 'Actual Q: {}'.format(data_generator.Q)
 
 
