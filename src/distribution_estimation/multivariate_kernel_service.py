@@ -12,29 +12,32 @@ class MultivariateKernelService(object):
         self.r = conf.r
         self.d = conf.d
         self.k = conf.k
-        self.Q_init = conf.Q_init
-        self.lam_inv_init = conf.lam_inv_init
         self.actuals = actuals
         self.c = conf.c
+        self.min_eigenvalue = conf.min_eigenvalue
+        self.max_eigenvalue = conf.max_eigenvalue
 
-    def create_tensors(self, lr, batch_size, a, a_star1, a_star2, low_bias_Q, low_bias_lam_inv):
+    def create_tensors(self, lr, batch_size, a, a_star1, a_star2, Q_init, lam_inv_init):
         """Build and return the tensors related to training, reporting and inference for a multivariate kernel density
         estimator.
         """
+        # Placeholders
+        low_bias_Q = tf.placeholder(dtype=tf.float32, shape=[self.d, self.d], name='low_bias_Q')
+        low_bias_lam_inv = tf.placeholder(dtype=tf.float32, shape=[self.d], name='low_bias_lam_inv')
         # Variables
-        Q = tf.Variable(self.Q_init, name='Q', dtype=tf.float32)
-        lam_inv = tf.Variable(self.lam_inv_init, name='lam_inv', dtype=tf.float32)
+        Q = tf.Variable(Q_init, name='Q', dtype=tf.float32)
+        lam_inv = tf.Variable(lam_inv_init, name='lam_inv', dtype=tf.float32)
         threshold = 2 * tf.reduce_sum(lam_inv ** 2)
         # f(a) - our pdf
-        fa, eigen_distances = self.pdf_service.eigen_probabilities(Q, lam_inv, a, a_star1, batch_size) #, threshold)
+        fa, eigen_distances = self.pdf_service.eigen_probabilities(lam_inv, a, a_star1, batch_size, Q) #, threshold)
         # If actuals were passed in, train to fit on the actual distribution
         if self.actuals is not None:
             Q_act, lam_inv_act, means = self.actuals
-            pa_estimate, _ = self.pdf_service.eigen_probabilities(Q_act, lam_inv_act, a, means, batch_size)
+            pa_estimate, _ = self.pdf_service.eigen_probabilities(lam_inv_act, a, means, batch_size, Q_act)
         # Otherwise we have a real problem where the distribution is unknown
         else:
             lb_threshold = 2 * tf.reduce_sum(low_bias_lam_inv ** 2)
-            pa_estimate, _ = self.pdf_service.eigen_probabilities(low_bias_Q, low_bias_lam_inv, a, a_star2, batch_size) #, lb_threshold)
+            pa_estimate, _ = self.pdf_service.eigen_probabilities(low_bias_lam_inv, a, a_star2, batch_size, low_bias_Q) #, lb_threshold)
         Qt = tf.transpose(Q)
         QtQ = tf.matmul(Qt, Q)
         A = tf.matmul(Q / lam_inv, Qt)
@@ -55,21 +58,36 @@ class MultivariateKernelService(object):
         lam_inv_step = d_loss_dlam_inv / tf.norm(d_loss_dlam_inv)
         lam_inv_train = tf.assign_sub(lam_inv, lr * lam_inv_step * lam_inv)
 
-        return Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, fa, A, loss_lam_inv
+        tensors = Q_train, lam_inv_train, Q, lam_inv, QtQ, pa_estimate, fa, A, loss_lam_inv
+        return MvKdeGraph(low_bias_Q, low_bias_lam_inv, tensors)
+
+
+    def create_tensors_lam_only(self, lr, batch_size, a, a_star1, a_star2, low_bias_lam_inv):
+        shape = low_bias_lam_inv.shape
+        initializer = tf.random_uniform_initializer(minval=self.min_eigenvalue, maxval=self.max_eigenvalue)
+        lam_inv = tf.get_variable('lamda_inverse', shape=shape, initializer=initializer)
+        threshold = 2 * tf.reduce_sum(lam_inv ** 2)
+        fa, eigen_distances = self.pdf_service.eigen_probabilities(lam_inv, a, a_star1, batch_size)  # , threshold)
+        lb_threshold = 2 * tf.reduce_sum(low_bias_lam_inv ** 2)
+        pa_estimate, _ = pf.eigen_probabilities(low_bias_lam_inv, a, a_star2, batch_size)  # , lb_threshold)
+        train, _ = self._lamda_inv_train(pa_estimate, fa, lam_inv, lr)
+        return train, lam_inv
+
+    def _lamda_inv_train(self, pa_estimate, fa, lam_inv, lr):
+        loss_lam_inv = tf.reduce_mean((pa_estimate - fa) ** 2)
+        d_loss_dlam_inv = tf.gradients(loss_lam_inv, lam_inv)[0]
+        lam_inv_step = d_loss_dlam_inv / tf.norm(d_loss_dlam_inv)
+        lam_inv_train = tf.assign_sub(lam_inv, lr * lam_inv_step * lam_inv)
+        return lam_inv_train, loss_lam_inv
+
 
 
 class MvKdeGraph(object):
     """Represents a complete multivariate kernel density estimator graph."""
 
-    def __init__(self, conf, multivariate_kernel_service):
+    def __init__(self, low_bias_Q, low_bias_lam_inv, tensors):
         # Placeholders
-        self.lr = tf.placeholder(dtype=tf.float32, shape=[], name='lr')
-        self.batch_size = tf.placeholder(dtype=tf.int32, shape=[], name='batch_size')
-        self.a = tf.placeholder(dtype=tf.float32, shape=[None, conf.d], name='a')
-        self.a_star1 = tf.placeholder(dtype=tf.float32, shape=[conf.r, conf.d], name='a_star1')
-        self.a_star2 = tf.placeholder(dtype=tf.float32, shape=[conf.r, conf.d], name='a_star2')
-        self.low_bias_Q = tf.placeholder(dtype=tf.float32, shape=[conf.d, conf.d], name='low_bias_Q')
-        self.low_bias_lam_inv = tf.placeholder(dtype=tf.float32, shape=[conf.d], name='low_bias_lam_inv')
+        self.low_bias_Q = low_bias_Q
+        self.low_bias_lam_inv = low_bias_lam_inv
         # Tensors used for training and reporting
-        self.tensors = multivariate_kernel_service.create_tensors(self.lr, self.batch_size, self.a, self.a_star1,
-                                                                  self.a_star2, self.low_bias_Q, self.low_bias_lam_inv)
+        self.tensors = tensors

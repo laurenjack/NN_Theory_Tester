@@ -25,20 +25,16 @@ def run():
     if conf.fit_to_underlying_pdf:
         actuals = (data_generator.Q, data_generator.lam_inv, conf.means)
     distance_function = pf.EigenDistance()
+    # distance_function = pf.IndependentDistance()
     pdf_service = pf.PdfFunctionService(distance_function)
     mv_service = multivariate_kernel_service.MultivariateKernelService(pdf_service, conf, actuals)
     trainer = train_mv_kernel_estimator.Trainer(conf, random)
-    mv_kde = multivariate_kernel_service.MvKdeGraph(conf, mv_service)
 
     # Generate random samples from the data, our training process will use them to form f(a).
     x = data_generator.sample(conf.n)
 
-    # Initialise variables
-    session = tf.InteractiveSession()
-    tf.global_variables_initializer().run()
-
     # Build graph and train
-    trainer.train(mv_kde, session, x, 1.0 / data_generator.lam_inv)
+    trainer.train(mv_service, x, 1.0 / data_generator.lam_inv)
     print 'Actual Lamda: {}'.format(1.0 / data_generator.lam_inv)
     print 'Actual Q: {}'.format(data_generator.Q)
 

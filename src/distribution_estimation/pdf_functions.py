@@ -60,38 +60,6 @@ def unscaled_eigen_prob(Q, lam_inv, a, centres, batch_size):
     return tf.reduce_mean(exponentials, axis=1)
 
 
-def eigen_probabilities(Q, lam_inv, a, centres, batch_size, threshold=None):
-    """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
-    """
-    distances, difference = _eigen_distances_squared(Q, lam_inv, a, centres, batch_size)
-    exponential = tf.exp(-0.5 * distances)
-    if threshold is not None:
-        r, _ = _shape(centres)
-        total_distance = tf.reduce_sum(distances, axis=2)
-        keep = tf.less(total_distance, threshold)
-        keep = tf.cast(keep, tf.float32)
-        keep = tf.reshape(keep, [batch_size, r, 1])
-        exponential = keep * exponential
-        distances = keep * distances
-    mean_exp = tf.reduce_mean(exponential, axis=1)
-    return 1.0 / (2.0 * math.pi) ** 0.5 * lam_inv * mean_exp, distances
-
-
-def product_of_kde(Q, lam_inv, a, centres, batch_size):
-    eigen_probs, _, _, _ = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
-    return tf.reduce_prod(eigen_probs, axis=1)
-    # d, _ = _shape(Q)
-    # d = float(d)
-    # unscaled = unscaled_eigen_prob(Q, lam_inv, a, centres, batch_size)
-    # return 1.0 / (2.0 * math.pi) ** (d / 2) * tf.reduce_prod(lam_inv ** d * unscaled, axis=1)
-
-
-def sum_of_log_eigen_probs(Q, lam_inv, a, centres, batch_size):
-    eigen_probs, individual_exponentials, distances, difference = eigen_probabilities(Q, lam_inv, a, centres, batch_size)
-    fa = tf.reduce_prod(eigen_probs, axis=1)
-    return fa, tf.reduce_sum(tf.log(eigen_probs), axis=1), individual_exponentials, distances, difference
-
-
 def gradients_with_flex_weights(log_delta, a_difference, Q, lamda_inverse, weights, batch_size):
     """ Returns a modified version of the gradient of the mean square error function of log(px) - log(fx).
 
@@ -214,10 +182,10 @@ class PdfFunctionService(object):
     def __init__(self, distance_function):
         self.distance_function = distance_function
 
-    def eigen_probabilities(self, Q, lam_inv, a, centres, batch_size, threshold=None):
+    def eigen_probabilities(self, lam_inv, a, centres, batch_size, Q=None, threshold=None):
         """Return the eigen probabilities for any pdf based on the mean sum from Gaussian centres.
         """
-        distances = self.distance_function.squared(Q, lam_inv, a, centres, batch_size)
+        distances = self.distance_function.squared(lam_inv, a, centres, batch_size, Q)
         exponential = tf.exp(-0.5 * distances)
         if threshold is not None:
             r, _ = _shape(centres)
@@ -233,26 +201,41 @@ class PdfFunctionService(object):
 
 class EigenDistance(object):
 
-    def squared(self, Q, lam_inv, a, a_star, batch_size):
+    def squared(self, lam_inv, a, a_star, batch_size, Q):
         r, d = _shape(a_star)
         difference = tf.reshape(a, [batch_size, 1, d]) - tf.reshape(a_star, [1, r, d])
         eigen_difference = tf.tensordot(difference, Q, axes=[[2], [0]]) * lam_inv
         # true_exp = tf.matmul(eigen_difference, tf.transpose(eigen_difference, [0, 2, 1]))
         return eigen_difference ** 2.0
 
+
+class IndependentDistance(object):
+
+    def squared(self, lam_inv, a, a_star, batch_size):
+        r, d = _shape(a_star)
+        difference = tf.reshape(a, [batch_size, 1, d]) - tf.reshape(a_star, [1, r, d])
+        scaled_difference = lam_inv * difference
+        return scaled_difference * scaled_difference
+
+
 class ConvolutionDistance(object):
 
     def __init__(self, stride):
         self.stride = stride
 
-    def squared(self, lam_inv, a, a_star, batch_size):
+    def squared(self, lam_inv, a, a_star, batch_size, Q):
+        """ Q should be unused here, just matches interface.
+        """
         stride = self.stride
         r, w, _, depth = _shape(a_star)
         difference = tf.reshape(a, [batch_size, 1, w, w, depth]) - tf.reshape(a_star, [1, r, w, w, depth])
         full_batch = batch_size * r
         shaped_for_conv = tf.reshape(difference, [full_batch, w, w, depth])
         convolved = tf.nn.conv2d(shaped_for_conv, lam_inv, [1, stride, stride, 1], padding='SAME')
-        return convolved * convolved
+        squared = convolved * convolved
+        squared = tf.reshape(squared, [batch_size, r, w, w, depth])
+        d = w * w * depth
+        return tf.reshape(squared, [batch_size, r, d])
 
 
 
