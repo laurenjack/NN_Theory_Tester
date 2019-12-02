@@ -36,7 +36,6 @@ class MultivariateKernelConfiguration:
         self.max_eigenvalue = 2.0
         # The initial value of Q in f(a)
         Q, lam_inv = constant_creator.random_pd_Q_and_lam_inv(self.d, self.min_eigenvalue, self.max_eigenvalue)
-        Q = np.eye(self.d)
         self.Q_init = Q + 0.001
         # The initial value of lam_inv in f(a)
         self.lam_inv_init = lam_inv #np.random.uniform(0.5, 2.0, size=[self.d]).astype(np.float32)
